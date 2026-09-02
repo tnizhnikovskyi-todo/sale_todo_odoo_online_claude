@@ -40,10 +40,13 @@ Odoo Online (SaaS), без кастомних модулів. Стадія — �
 docs/рішення.md              журнал рішень із датами
 docs/аудит-стенд-odoo19.md   що звірено з живим стендом, що переформульовано
 docs/відкриті-питання.md     що ще не вирішено
+docs/аналіз-прайсу.md        зведений аналіз прайсу за семи лінзами (02.09.2026), пріоритети правок
+docs/аналіз-прайсу/          повні звіти A–G, знімок прайсу, скрипти, deps-fragment.json (поле dep)
 data/price.json              ДЖЕРЕЛО ПРАВДИ для прайсу
 tools/build_calculator.py    вшиває price.json у calculator.html
 artifacts/concept.html       концепція, 10 вкладок
 artifacts/calculator.html    калькулятор для сейла (згенерований)
+artifacts/price-analysis.html зведення аналізу прайсу (для Artifact)
 ```
 
 ## Як працювати з прайсом
