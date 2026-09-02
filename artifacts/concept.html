@@ -1,0 +1,1781 @@
+<title>Департамент odoo.com</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+:root{
+  --ground:#FBF9FA;
+  --surface:#FFFFFF;
+  --surface-2:#F4F0F2;
+  --ink:#1D181C;
+  --ink-2:#463E45;
+  --muted:#6C6270;
+  --line:#E2DADF;
+  --line-strong:#CDC1C9;
+  --accent:#6D4462;
+  --accent-soft:#F2E9EF;
+  --allow:#0F6E68;
+  --allow-soft:#E6F1EF;
+  --deny:#A63D2E;
+  --deny-soft:#F8EAE7;
+  --escalate:#8A6009;
+  --escalate-soft:#F7EFDC;
+  --shadow:0 1px 2px rgba(29,24,28,.05), 0 8px 24px -16px rgba(29,24,28,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#171317;
+    --surface:#1F1A1F;
+    --surface-2:#272029;
+    --ink:#F1EAEE;
+    --ink-2:#D2C7CE;
+    --muted:#9C909A;
+    --line:#332B33;
+    --line-strong:#4A3F4A;
+    --accent:#C994B8;
+    --accent-soft:#2C2029;
+    --allow:#5CBFB2;
+    --allow-soft:#172A29;
+    --deny:#E28A78;
+    --deny-soft:#2E1E1B;
+    --escalate:#D9AC4E;
+    --escalate-soft:#2B2317;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -16px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#171317;
+  --surface:#1F1A1F;
+  --surface-2:#272029;
+  --ink:#F1EAEE;
+  --ink-2:#D2C7CE;
+  --muted:#9C909A;
+  --line:#332B33;
+  --line-strong:#4A3F4A;
+  --accent:#C994B8;
+  --accent-soft:#2C2029;
+  --allow:#5CBFB2;
+  --allow-soft:#172A29;
+  --deny:#E28A78;
+  --deny-soft:#2E1E1B;
+  --escalate:#D9AC4E;
+  --escalate-soft:#2B2317;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -16px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+  font-size:16px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- shell ---------- */
+.shell{max-width:1180px;margin:0 auto;padding:0 24px 96px}
+
+.masthead{
+  padding:56px 0 28px;
+  border-bottom:1px solid var(--line);
+  display:flex;flex-direction:column;gap:14px;
+}
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--accent);
+}
+.masthead h1{
+  font-family:Literata,Georgia,serif;
+  font-weight:700;font-size:clamp(30px,4.4vw,46px);line-height:1.1;
+  margin:0;letter-spacing:-.015em;text-wrap:balance;
+}
+.standfirst{
+  font-family:Literata,Georgia,serif;
+  font-size:clamp(16px,1.9vw,19px);line-height:1.55;color:var(--ink-2);
+  max-width:62ch;margin:0;
+}
+.stamp{
+  display:flex;flex-wrap:wrap;gap:6px 18px;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:11.5px;color:var(--muted);letter-spacing:.03em;
+}
+
+/* ---------- layout ---------- */
+.body-grid{display:grid;grid-template-columns:1fr;gap:0}
+@media (min-width:940px){
+  .body-grid{grid-template-columns:216px 1fr;gap:56px;align-items:start}
+}
+
+nav.tabs{
+  position:sticky;top:0;z-index:20;
+  background:var(--ground);
+  border-bottom:1px solid var(--line);
+  margin:0 -24px;padding:0 24px;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+nav.tabs::-webkit-scrollbar{display:none}
+.tablist{display:flex;gap:2px;min-width:max-content;padding:8px 0}
+@media (min-width:940px){
+  nav.tabs{
+    position:sticky;top:24px;
+    border-bottom:0;background:transparent;
+    margin:44px 0 0;padding:0;overflow:visible;
+  }
+  .tablist{flex-direction:column;min-width:0;gap:1px;padding:0}
+}
+
+.tab{
+  appearance:none;border:0;background:transparent;cursor:pointer;
+  font-family:"IBM Plex Sans",sans-serif;font-size:13.5px;font-weight:500;
+  color:var(--muted);
+  padding:8px 12px;border-radius:5px;
+  text-align:left;white-space:nowrap;
+  display:flex;align-items:baseline;gap:9px;
+  transition:color .14s, background .14s;
+}
+.tab .n{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:10.5px;color:var(--line-strong);letter-spacing:.05em;
+}
+.tab:hover{color:var(--ink);background:var(--surface-2)}
+.tab[aria-selected="true"]{color:var(--ink);background:var(--accent-soft);font-weight:600}
+.tab[aria-selected="true"] .n{color:var(--accent)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+main{padding-top:36px;min-width:0}
+@media (min-width:940px){main{padding-top:44px;max-width:74ch}}
+
+.panel[hidden]{display:none}
+.panel{animation:rise .22s ease-out}
+@keyframes rise{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.panel{animation:none}}
+
+/* ---------- typography ---------- */
+h2{
+  font-family:Literata,Georgia,serif;
+  font-weight:700;font-size:clamp(23px,3vw,30px);line-height:1.2;
+  margin:0 0 10px;letter-spacing:-.012em;text-wrap:balance;
+}
+h3{
+  font-family:Literata,Georgia,serif;
+  font-weight:600;font-size:19px;line-height:1.3;
+  margin:0 0 8px;text-wrap:balance;
+}
+h4{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-weight:500;font-size:11.5px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 10px;
+}
+p{margin:0 0 14px;max-width:68ch}
+main p:last-child{margin-bottom:0}
+strong{font-weight:600;color:var(--ink)}
+em{font-style:italic}
+a{color:var(--accent)}
+
+.lede{
+  font-family:Literata,Georgia,serif;
+  font-size:18px;line-height:1.55;color:var(--ink-2);
+  margin:0 0 26px;max-width:64ch;
+}
+
+section.blk{margin:0 0 44px}
+section.blk:last-child{margin-bottom:0}
+.rule{height:1px;background:var(--line);border:0;margin:0 0 30px}
+
+ul,ol{margin:0 0 14px;padding-left:20px;max-width:68ch}
+li{margin-bottom:6px}
+li::marker{color:var(--line-strong)}
+ol li::marker{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--accent)}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:0 0 20px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:14.5px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--muted);font-weight:500;
+  background:var(--surface-2);
+  border-bottom:1px solid var(--line-strong);
+}
+tbody tr:last-child td{border-bottom:0}
+td.num{font-variant-numeric:tabular-nums;font-family:"IBM Plex Mono",monospace;font-size:13px;white-space:nowrap}
+th.w-sm{width:22%}
+
+/* ---------- perimeter: the core visual motif ---------- */
+.perimeter{display:grid;gap:16px;margin:0 0 22px}
+@media (min-width:700px){.perimeter{grid-template-columns:1fr 1fr}}
+.zone{
+  border:1px solid var(--line);border-radius:9px;padding:18px 18px 16px;
+  background:var(--surface);position:relative;overflow:hidden;
+}
+.zone::before{content:"";position:absolute;inset:0 auto 0 0;width:3px}
+.zone.inside::before{background:var(--allow)}
+.zone.later::before{background:var(--escalate)}
+.zone.later{border-style:dashed;background:transparent}
+.zone.later h4{color:var(--escalate)}
+.zone.full{grid-column:1 / -1}
+.zone.outside::before{background:var(--deny)}
+.zone h4{margin-bottom:12px}
+.zone.inside h4{color:var(--allow)}
+.zone.outside h4{color:var(--deny)}
+.zone ul{margin:0;padding-left:17px;font-size:14.5px}
+.zone li{margin-bottom:7px}
+.zone li:last-child{margin-bottom:0}
+
+/* ---------- callouts ---------- */
+.note{
+  border-left:3px solid var(--accent);
+  background:var(--accent-soft);
+  padding:15px 18px;border-radius:0 8px 8px 0;
+  margin:0 0 22px;
+}
+.note h4{color:var(--accent);margin-bottom:7px}
+.note p{margin-bottom:0;font-size:15px}
+.note p + p{margin-top:10px}
+
+.warn{
+  border-left:3px solid var(--deny);
+  background:var(--deny-soft);
+  padding:15px 18px;border-radius:0 8px 8px 0;margin:0 0 22px;
+}
+.warn h4{color:var(--deny);margin-bottom:7px}
+.warn p{margin-bottom:0;font-size:15px}
+.warn p + p{margin-top:10px}
+
+.open{
+  border:1px dashed var(--line-strong);
+  border-radius:8px;padding:15px 18px;margin:0 0 22px;background:transparent;
+}
+.open h4{color:var(--escalate);margin-bottom:7px}
+.open p,.open ul{margin-bottom:0;font-size:15px}
+.open ul{padding-left:18px}
+
+/* ---------- cards ---------- */
+.cards{display:grid;gap:14px;margin:0 0 22px}
+@media (min-width:760px){.cards.two{grid-template-columns:1fr 1fr}}
+.card{
+  border:1px solid var(--line);border-radius:9px;background:var(--surface);
+  padding:17px 18px;box-shadow:var(--shadow);
+}
+.card h3{font-size:17px;margin-bottom:4px}
+.card .meta{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:11px;letter-spacing:.05em;color:var(--muted);
+  margin:0 0 10px;display:flex;flex-wrap:wrap;gap:4px 14px;
+}
+.card p{font-size:14.5px;margin-bottom:0}
+.card p + p{margin-top:9px}
+.card ul{font-size:14.5px;margin:9px 0 0;padding-left:17px}
+
+/* ---------- numeric tables ---------- */
+tr.total td{background:var(--surface-2);font-weight:600;border-top:1px solid var(--line-strong)}
+td.pos{color:var(--allow)}
+td.hl{color:var(--accent);font-weight:600}
+table.calc{min-width:600px}
+table.calc td.num,table.calc th.num{text-align:right}
+.assume{
+  border:1px dashed var(--line-strong);border-radius:9px;
+  padding:18px 20px 4px;margin:0 0 24px;background:var(--surface);
+}
+.assume h4{color:var(--accent)}
+.assume .tw{border:0;background:transparent;margin-bottom:14px}
+.assume table{min-width:420px}
+.assume thead th{background:transparent;border-bottom:1px solid var(--line)}
+.bignum{
+  display:flex;flex-wrap:wrap;gap:14px;margin:0 0 22px;
+}
+.bignum div{
+  flex:1 1 190px;border:1px solid var(--line);border-radius:9px;
+  background:var(--surface);padding:15px 17px;
+}
+.bignum b{
+  display:block;font-family:"IBM Plex Mono",monospace;
+  font-size:23px;font-weight:500;color:var(--ink);
+  font-variant-numeric:tabular-nums;letter-spacing:-.01em;margin-bottom:3px;
+}
+.bignum span{font-size:13px;color:var(--muted);line-height:1.4;display:block}
+
+/* ---------- figures ---------- */
+figure{margin:0 0 8px}
+.figwrap{
+  overflow-x:auto;border:1px solid var(--line);border-radius:9px;
+  background:var(--surface);padding:22px 20px 18px;margin:0 0 12px;
+}
+.figwrap svg{display:block;width:100%;min-width:520px;height:auto}
+figcaption{
+  font-size:14.5px;line-height:1.5;color:var(--muted);
+  max-width:66ch;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);
+}
+figcaption b{color:var(--ink-2);font-weight:600}
+.legend{
+  display:flex;flex-wrap:wrap;gap:9px 22px;margin:0 0 26px;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;color:var(--muted);
+}
+.legend span{display:flex;align-items:center;gap:8px}
+.legend i{width:16px;height:3px;border-radius:2px;flex:none}
+
+.card h3 code{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:15px;font-weight:500;
+  background:var(--surface-2);border:1px solid var(--line);
+  padding:1px 6px;border-radius:4px;
+}
+.card ul b{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:13px;font-weight:500;color:var(--accent);
+}
+
+/* ---------- phases ---------- */
+.phase{
+  display:grid;gap:4px 18px;
+  grid-template-columns:auto 1fr;
+  padding:18px 0;border-top:1px solid var(--line);
+}
+.phase:last-of-type{border-bottom:1px solid var(--line)}
+.phase .tag{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:11px;letter-spacing:.08em;color:var(--accent);
+  padding-top:4px;white-space:nowrap;
+}
+.phase .who{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:11px;color:var(--muted);letter-spacing:.04em;
+  grid-column:2;margin-bottom:6px;
+}
+.phase h3{grid-column:2;margin-bottom:2px}
+.phase .content{grid-column:2}
+.phase .content p{font-size:14.5px;margin-bottom:8px}
+.phase .content p:last-child{margin-bottom:0}
+.gate{
+  margin-top:10px;padding:11px 14px;border-radius:7px;
+  background:var(--surface-2);border:1px solid var(--line);
+  font-size:14px;
+}
+.gate b{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--escalate);
+  display:block;margin-bottom:4px;font-weight:500;
+}
+@media (max-width:620px){
+  .phase{grid-template-columns:1fr}
+  .phase .tag,.phase .who,.phase h3,.phase .content{grid-column:1}
+}
+
+/* ---------- pills ---------- */
+.pill{
+  display:inline-block;font-family:"IBM Plex Mono",monospace;
+  font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+  padding:2px 7px;border-radius:4px;white-space:nowrap;
+}
+.pill.hi{background:var(--deny-soft);color:var(--deny)}
+.pill.mid{background:var(--escalate-soft);color:var(--escalate)}
+.pill.lo{background:var(--allow-soft);color:var(--allow)}
+
+.foot{
+  margin-top:56px;padding-top:20px;border-top:1px solid var(--line);
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted);
+  letter-spacing:.03em;
+}
+</style>
+
+<div class="shell">
+
+  <header class="masthead">
+    <div class="eyebrow">Концепція · внутрішній документ · чернетка</div>
+    <h1>Департамент odoo.com</h1>
+    <p class="standfirst">Окремий контур доставки для клієнтів, які живуть цілком на Odoo Online. Не технічне обмеження команди, а інша бізнес-модель — з іншим клієнтом, іншим циклом, іншою одиницею доходу і власною дисципліною меж.</p>
+    <div class="stamp">
+      <span>Сегмент: UA, облік поза Odoo</span>
+      <span>Модель: фікс за модуль, ставка €50/год</span>
+      <span>Старт: пілот на виділених людях, без штату</span>
+      <span>Скоуп: у базі клієнта тільки штатна конфігурація</span>
+    </div>
+  </header>
+
+  <div class="body-grid">
+
+    <nav class="tabs" aria-label="Розділи концепції">
+      <div class="tablist" role="tablist">
+        <button class="tab" role="tab" id="t1" aria-controls="p1" aria-selected="true"><span class="n">01</span>Мандат</button>
+        <button class="tab" role="tab" id="t2" aria-controls="p2" aria-selected="false"><span class="n">02</span>Межі</button>
+        <button class="tab" role="tab" id="t3" aria-controls="p3" aria-selected="false"><span class="n">03</span>Продукт</button>
+        <button class="tab" role="tab" id="t4" aria-controls="p4" aria-selected="false"><span class="n">04</span>Процес</button>
+        <button class="tab" role="tab" id="t9" aria-controls="p9" aria-selected="false"><span class="n">05</span>Маршрути</button>
+        <button class="tab" role="tab" id="t8" aria-controls="p8" aria-selected="false"><span class="n">06</span>Claude в контурі</button>
+        <button class="tab" role="tab" id="t5" aria-controls="p5" aria-selected="false"><span class="n">07</span>Актив і економіка</button>
+        <button class="tab" role="tab" id="t10" aria-controls="p10" aria-selected="false"><span class="n">08</span>Розрахунки</button>
+        <button class="tab" role="tab" id="t6" aria-controls="p6" aria-selected="false"><span class="n">09</span>Стик і ризики</button>
+        <button class="tab" role="tab" id="t7" aria-controls="p7" aria-selected="false"><span class="n">10</span>Запуск</button>
+      </div>
+    </nav>
+
+    <main>
+
+    <!-- ============ 01 МАНДАТ ============ -->
+    <div class="panel" role="tabpanel" id="p1" aria-labelledby="t1">
+      <h2>Навіщо окремий департамент</h2>
+      <p class="lede">Тезу варто сформулювати різко, бо від неї залежить усе решта: «odoo.com only» — це не команда, яка робить те саме дешевше. Це інший бізнес усередині компанії, який випадково користується тим самим продуктом.</p>
+
+      <section class="blk">
+        <h4>Два контури поруч</h4>
+        <div class="tw">
+          <table>
+            <thead>
+              <tr><th class="w-sm">Вимір</th><th>Важкий контур (нинішній)</th><th>Легкий контур (odoo.com)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><b>Клієнт</b></td><td>50–500 користувачів, тендер, багатомісячне рішення</td><td>5–50 користувачів, рішення за 2–4 тижні</td></tr>
+              <tr><td><b>Цикл угоди</b></td><td>3–9 місяців</td><td>2–6 тижнів</td></tr>
+              <tr><td><b>Продукт</b></td><td>ТР → розробка → приймання за AC</td><td>конфігурація з прайсу модулів</td></tr>
+              <tr><td><b>Ядро команди</b></td><td>BA + Python-розробник</td><td>аналітик + Claude</td></tr>
+              <tr><td><b>Одиниця доходу</b></td><td>людино-години</td><td>фікс за модуль</td></tr>
+              <tr><td><b>Головний ризик</b></td><td>строки розробки</td><td>пообіцяли те, чого SaaS не вміє</td></tr>
+              <tr><td><b>Що масштабується</b></td><td>кількість сильних людей</td><td>бібліотека повторюваних рішень</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Змішувати їх в одній команді не можна з однієї конкретної причини: <strong>розробник завжди розв'яже задачу кодом.</strong> Якщо в команді є людина, здатна написати модуль, дисципліна «тільки Studio» розсиплеться за місяць — не через саботаж, а тому що кодом швидше і красивіше. Департамент існує рівно для того, щоб фізично прибрати цю можливість зі столу.</p>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Мотив і протиріччя в ньому</h2>
+        <p>Обрано два мотиви одночасно: <strong>вийти в новий сегмент SMB</strong>, який зараз не беремо взагалі, і <strong>розвантажити основну команду</strong> від дрібних впроваджень. Вони сумісні, але не однаково.</p>
+
+        <div class="warn">
+          <h4>Протиріччя, яке треба зафіксувати на вході</h4>
+          <p>«Розвантаження» природно читається як «передамо туди дрібних клієнтів, які в нас уже є». Це не спрацює. Наявні клієнти вже сидять на T&amp;M, на кастомних модулях і на очікуванні, що будь-яку хотілку можна доробити кодом. Більшість із них у межі Odoo Online <em>не влізе</em> — не через розмір, а через накопичений кастом.</p>
+          <p>Якщо не поставити цю межу відразу, департамент стане звалищем незручних задач основної команди й помре за півроку — з поганою статистикою, яка ще й «доведе», що ідея була погана.</p>
+        </div>
+
+        <h3>Робоче формулювання мандату</h3>
+        <div class="note">
+          <p>Департамент бере <strong>новий вхідний потік</strong> малих українських компаній, які готові вести операційну діяльність на Odoo Online і не потребують у ньому регламентного обліку, і доводить їх до працюючої системи за 2–4 тижні. Робить це <strong>аналітик, який не налаштовує систему руками</strong>: усе, що потрібно зробити в базі, виконує Claude через зовнішній API, а за аналітиком — клієнт, рішення і приймання.</p>
+        </div>
+
+        <h3>Роль аналітика</h3>
+        <p>Це найнеочевидніша частина конструкції, і від неї залежить, кого шукати. Аналітик у цьому контурі <strong>не налаштовує систему</strong> — він її проєктує й приймає. Усе, що потрібно натиснути, зробити полем чи автоматизацією, виконує Claude через API.</p>
+
+        <div class="perimeter">
+          <div class="zone inside full">
+            <h4>Що робить аналітик</h4>
+            <ul>
+              <li>Говорить із клієнтом: кваліфікація, діагностика, щотижневі демонстрації, запуск</li>
+              <li>Ухвалює рішення про межі: що беремо, що в стоп-лист, коли віддаємо нагору</li>
+              <li>Визначає рівень складності по кожній позиції прайсу і несе за нього відповідальність</li>
+              <li>Ставить задачу інструменту й <strong>приймає результат очима в системі</strong>, а не за звітом</li>
+              <li>Розбирає проєкт після запуску і повертає в бібліотеку те, що знадобилося вдруге</li>
+            </ul>
+          </div>
+          <div class="zone outside full">
+            <h4>Чого аналітик не робить</h4>
+            <ul>
+              <li>Не клікає в Studio й не збирає конфігурацію руками</li>
+              <li>Не пише код — ні в Odoo, ні навколо неї</li>
+              <li>Не чистить вивантаження й не готує файли імпорту</li>
+              <li>Не пише документацію: карта налаштування знімається з бази</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="note">
+          <h4>Наслідок для найму</h4>
+          <p>Шукаємо не «конфігуратора Odoo», а людину, яка вміє <strong>розпитати клієнта, ухвалити рішення і перевірити результат.</strong> Знання Odoo потрібне на рівні «розумію, що система вміє і де межа», а не на рівні швидких рук у Studio.</p>
+          <p>Це ширший ринок і дешевший найм, ніж класичний функціональний консультант. І це водночас головна вимога до інструментарію: якщо він не працює, така людина не зможе закрити проєкт узагалі — на відміну від конфігуратора, який просто зробив би руками й довше.</p>
+        </div>
+
+        <h3>Що мандатом <em>не</em> є</h3>
+        <ul>
+          <li>Не міграція наявного портфеля. Кожен перехід чинного клієнта в легкий контур — окреме рішення, а не правило.</li>
+          <li>Не «дешевий підрозділ» для клієнтів, які торгуються. Ціна нижча через інший обсяг, а не через знижку.</li>
+          <li>Не пісочниця для стажерів. Аналітик на SMB-проєкті приймає більше рішень самостійно, ніж джун у великій команді.</li>
+          <li>Не служба підтримки основного департаменту.</li>
+        </ul>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Сегмент: UA, облік поза Odoo</h2>
+        <p>Це найважливіший вибір у всій конструкції, і він знімає найбільший ризик. Формулювати його треба точно — <b>перевірено на стенді Odoo 19</b>:</p>
+        <div class="tw">
+          <table>
+            <thead><tr><th class="w-sm">Що є в стандарті</th><th>Чого немає і не буде на SaaS</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Модуль <b>l10n_ua</b> встановлюється штатно: план рахунків за ПСБО і ставки ПДВ (20 / 14 / 7 / 0)</td>
+                <td>Жодного українського регламентного звіту: у базі 24 фінзвіти, усі без прив’язки до країни. Декларації ПДВ, Ф1/Ф2 немає</td>
+              </tr>
+              <tr>
+                <td>Аналітика, каси, взаєморозрахунки, група компаній — повний управлінський контур</td>
+                <td>Податкових накладних, РК, ЕДО і будь-якої інтеграції з M.E.Doc чи «Вчасно» — ні модуля, ні формату</td>
+              </tr>
+              <tr>
+                <td>Друковані форми українською робимо в Studio під узгоджений перелік</td>
+                <td>Курсів НБУ немає серед 31 провайдера автозавантаження — тільки імпортом</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Тому продавати треба так: <strong>Odoo — управлінський і операційний контур, регламентна звітність і ЕДО лишаються в BAS та M.E.Doc.</strong> Формулювання «в Odoo є український план рахунків» правдиве й корисне — але за ним мусить одразу йти «а звітності немає», інакше клієнт дочує тільки першу половину.</p>
+        <p>Тому цільовий клієнт описується так: <strong>регламентний облік у BAS або на аутсорсі, Odoo — операційна система бізнесу.</strong> Продажі, закупівлі, склад, проєкти, сервіс, CRM, планування, аналітика. Гроші й первинка синхронізуються, але живуть в іншій системі.</p>
+        <p>Побічний ефект — позиціювання стає чіткішим, ніж у конкурентів: ми не сперечаємося з головбухом, ми не чіпаємо його систему, ми даємо операційці те, чого BAS не дає ніколи.</p>
+        <div class="open">
+          <h4>Відкрите питання до наступної ітерації</h4>
+          <p>Чи входить у сегмент управлінський облік в Odoo (кешфлоу, P&amp;L за напрямами, взаєморозрахунки) — без фіскальної частини? Технічно так, і це сильний аргумент продажу, але він вимагає, щоб дані з BAS заходили регулярно й чисто, а обмін у нас ручний і на боці клієнта. Пропозиція: у пілоті взяти одного клієнта саме з цим і подивитися, чи витримує ручний режим.</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============ 02 МЕЖІ ============ -->
+    <div class="panel" role="tabpanel" id="p2" aria-labelledby="t2" hidden>
+      <h2>Технічний периметр</h2>
+      <p class="lede">Стоп-лист — головний управлінський артефакт департаменту. Важливіший за прайс: прайс можна переписати, а обіцянку, яку неможливо виконати, доводиться відпрацьовувати безкоштовно.</p>
+
+      <section class="blk">
+        <div class="perimeter">
+          <div class="zone inside">
+            <h4>У периметрі</h4>
+            <ul>
+              <li>Стандартні застосунки Odoo в повному складі</li>
+              <li>Odoo Studio: поля, подання, звіти, меню, автоматизації</li>
+              <li>Серверні дії та автоматизації Studio</li>
+              <li>Штатний експорт і імпорт списків через інтерфейс</li>
+              <li>Зовнішній API як <b>наш</b> інструмент впровадження — ним працює Claude</li>
+              <li>Шаблони документів, права доступу, багатокомпанійність</li>
+              <li>Завжди актуальна версія — нульовий технічний борг</li>
+            </ul>
+          </div>
+          <div class="zone outside">
+            <h4>Поза периметром — назавжди</h4>
+            <ul>
+              <li>Кастомні та сторонні модулі, OCA</li>
+              <li>Прямий доступ до БД, SQL, файлова система</li>
+              <li>Власні cron-задачі всередині Odoo</li>
+              <li>Відкладання оновлення версії</li>
+              <li>Успадкування моделей і перевизначення методів</li>
+              <li>Складні QWeb-звіти поза можливостями редактора Studio</li>
+            </ul>
+          </div>
+          <div class="zone later full">
+            <h4>Поза скоупом — доступне, але свідомо не продаємо</h4>
+            <ul>
+              <li><b>API як послуга клієнту.</b> Вебхуки, подієві сценарії, обмін даними в реальному часі — технічно доступні, але ми їх не продаємо й не обіцяємо</li>
+              <li>Будь-які подієві інтеграції: Make, n8n, власні конектори</li>
+              <li>Будь-який власний конектор, зокрема шлюз до BAS</li>
+              <li>Компетенція інтеграцій у команді — її свідомо не тримаємо</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="warn">
+          <h4>Умова, яку треба назвати в першій же розмові</h4>
+          <p>Studio, багатокомпанійність і зовнішній API доступні на плані <strong>Custom</strong>, а не Standard. Отже, клієнт департаменту завжди на Custom — без цього ми технічно не можемо працювати.</p>
+          <p>Ліцензійною частиною департамент не займається: клієнт оформлює підписку сам, ми її не продаємо, не перепродаємо і на ній не заробляємо. Але сказати про цю умову треба на першій зустрічі, інакше вона спливе на етапі оплати і зіпсує угоду, яку ми вже вважали своєю. Точні умови планів варто звірити з чинним прайсом Odoo — вони змінювалися.</p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Де проходить межа</h2>
+        <p>Формулювання, яке працює на кожній зустрічі: <strong>у базі клієнта — тільки штатна конфігурація Odoo.</strong> Не має значення, натиснув її людина в Studio чи записав інструмент через API: важливо, що після нас база лишається такою, яку Odoo сама оновлює і сама підтримує.</p>
+        <p>Звідси два різні заперечення, які легко змішати. <em>«Ви що, лізете в базу програмно?»</em> — так, своїм інструментом, і це наша внутрішня справа. <em>«Зробіть нам інтеграцію»</em> — ні, і це вже питання зобов'язань перед клієнтом. Технічна можливість і продуктова обіцянка тут навмисно розведені: перше є, другого немає.</p>
+        <p>Практично це означає, що департамент не тримає компетенції інтеграцій узагалі. Немає людини, яка вміє написати конектор, — отже, немає й спокуси пообіцяти його на зустрічі.</p>
+        <div class="open">
+          <h4>Що це означає для стику з BAS</h4>
+          <p>Сегмент обрано так, що регламентний облік лишається в BAS, — отже, дані все одно мусять ходити між системами. <strong>Це не наша робота ні в якому вигляді.</strong> Ми не будуємо конектор, не пишемо регламент обміну і не беремо за нього грошей: як саме вивантаження ходитимуть, клієнт домовляється зі своїм бухгалтером.</p>
+          <p>Наша частина тут одна: <strong>назвати обмеження вголос на першій зустрічі</strong> і переконатися, що клієнт розуміє, чия це відповідальність. Для компанії на 5–50 користувачів ручний обмін — робочий режим, але він мусить бути названий як постійна умова, а не тимчасова незручність.</p>
+          <p>Звідси ще один критерій кваліфікації: <strong>обсяг документообігу.</strong> Там, де щодня сотні документів, ручний обмін не тягне, і клієнт не наш — незалежно від того, хто його налаштовує.</p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Стоп-лист</h2>
+        <p>Кожен рядок — це запит, який звучить нормально на першій зустрічі й убиває фікс на третьому тижні.</p>
+        <div class="tw">
+          <table>
+            <thead>
+              <tr><th>Запит клієнта</th><th class="w-sm">Чому не тут</th><th class="w-sm">Куди</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Бухоблік і податкова звітність України, ПН, ТТН</td><td>потрібен модуль локалізації</td><td>лишається в BAS</td></tr>
+              <tr><td>Виробництво з WIP за ділянками, складна валюація</td><td>потрібні рахунки віртуальних локацій і доробки</td><td>важкий контур</td></tr>
+              <tr><td>Галузева вертикаль на OCA (елеватор, лабораторія, вагова)</td><td>сторонні модулі недоступні</td><td>важкий контур</td></tr>
+              <tr><td>Інтеграція з обладнанням: ваги, промислові ТЗД, лічильники</td><td>потрібен драйвер або IoT-шлюз</td><td>важкий контур</td></tr>
+              <tr><td>Друковані форми складніші за можливості Studio</td><td>потрібен QWeb-шаблон у модулі</td><td>важкий контур або спрощення форми</td></tr>
+              <tr><td>Міграція з системи без нормального експорту</td><td>вартість непередбачувана, ламає фікс</td><td>окрема угода на T&amp;M</td></tr>
+              <tr><td>Гарантія доступності з SLA і штрафами</td><td>доступність забезпечує Odoo, не ми</td><td>перенаправляємо умови Odoo</td></tr>
+              <tr><td>Понад 3 юрособи зі складною консолідацією</td><td>виходить за межі шаблонного налаштування</td><td>важкий контур</td></tr>
+              <tr><td>Права доступу на конкретний склад</td><td>у Odoo такого механізму немає — тільки через окремі юрособи</td><td>або мультикомпанійність, або відмова</td></tr>
+              <tr><td>Обчислювані поля на моделі (computed)</td><td>Studio не має «Compute» — це введення Python-виразу</td><td>важкий контур; у нас — показники формулами в дашборді</td></tr>
+              <tr><td>Умовна логіка всередині друкованого бланка</td><td>умови правляться лише в XML-джерелі звіту</td><td>окремі бланки під тип документа</td></tr>
+              <tr><td>Автозавантаження курсів НБУ</td><td>НБУ немає серед провайдерів Odoo</td><td>імпорт курсів або зовнішня автоматизація</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Стоп-лист — живий документ. Після кожного проєкту з ескалацією до нього додається рядок. Порожній стоп-лист через півроку означає, що кваліфікація не працює.</p>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Чек-лист кваліфікації</h2>
+        <p>Проходиться за 30 хвилин до будь-якої демонстрації. Одна червона відповідь — не автоматична відмова, але привід ескалувати рішення на керівника департаменту.</p>
+        <div class="tw">
+          <table>
+            <thead>
+              <tr><th>Питання</th><th class="w-sm">Червона відповідь</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Де ведеться бухгалтерія і хто за неї відповідає?</td><td>«хочемо все в Odoo, включно зі звітністю»</td></tr>
+              <tr><td>Скільки користувачів на старті й через рік?</td><td>понад 50, або невизначено</td></tr>
+              <tr><td>Скільки юросіб і чи потрібна консолідація?</td><td>4+, або складна внутрішньогрупова</td></tr>
+              <tr><td>Що переносимо з поточної системи?</td><td>історія операцій, а не тільки довідники</td></tr>
+              <tr><td>Які інтеграції обов'язкові для запуску?</td><td>обладнання, банк-клієнт, держреєстри</td></tr>
+              <tr><td>Хто з боку клієнта веде проєкт і скільки часу дає?</td><td>немає виділеної людини</td></tr>
+              <tr><td>Чи готові прийняти стандартний процес Odoo?</td><td>«у нас усе інакше, треба під нас»</td></tr>
+              <tr><td>Чи готовий клієнт до підписки Custom і чи порахував її на рік?</td><td>рахував за Standard або не рахував</td></tr>
+              <tr><td>Скільки документів на день ходитиме між Odoo і BAS?</td><td>сотні — ручний обмін не тягне</td></tr>
+              <tr><td>Є виробництво?</td><td>так, зі складнішим за просту збірку</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============ 03 ПРОДУКТ ============ -->
+    <div class="panel" role="tabpanel" id="p3" aria-labelledby="t3" hidden>
+      <h2>Прайс</h2>
+      <p class="lede">Продукт департаменту — не «впровадження Odoo» і не пакети під галузь, а <strong>прайс-лист модулів із фіксованою ціною в євро</strong>. Обов'язкова база плюс те, що клієнт вибрав. Він бачить рядки, складає сам і розуміє, за що платить.</p>
+
+      <section class="blk">
+        <h3>Експрес-діагностика</h3>
+        <div class="card" style="margin-bottom:22px">
+          <div class="meta"><span>0,5–2 дні</span><span>€500</span><span>зараховується в проєкт</span></div>
+          <p>Вхід у воронку і водночас фільтр. Проходимо чек-лист кваліфікації, дивимося процеси, фіксуємо межі — і на виході називаємо <strong>конкретний набір рядків прайсу</strong> з підсумковою ціною і строком.</p>
+          <p>Платність тут принципова з двох причин: вона відсіює тих, хто збирає комерційні пропозиції, і дає нам право сказати «ні» без відчуття втраченої угоди.</p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>База і модулі</h2>
+        <p>Ціни в євро, від ставки <b>€50 за годину</b>: кожен рядок — це оцінені години ручної роботи, помножені на ставку і округлені. Це <em>орієнтир для калібрування</em>, а не затверджений прайс: остаточні цифри ставляться після трьох-п'яти реальних замірів.</p>
+
+        <div class="tw">
+          <table class="calc">
+            <thead>
+              <tr><th>Позиція</th><th>Що входить</th><th class="num">Ціна</th></tr>
+            </thead>
+            <tbody>
+              <tr class="total"><td><b>База</b><br><span style="font-size:12px;color:var(--muted)">обов'язкова</span></td><td>Компанія, користувачі, права, довідники контрагентів і номенклатури, базові налаштування, навчання основам роботи в системі</td><td class="num">€800</td></tr>
+              <tr><td>CRM</td><td>Воронка, картка клієнта, активності, джерела лідів, звіти з продажів</td><td class="num">€700</td></tr>
+              <tr><td>Продажі</td><td>Комерційні пропозиції, шаблони, електронний підпис, прайс-листи, замовлення</td><td class="num">€1 100</td></tr>
+              <tr><td>Закупівлі</td><td>Постачальники, заявки, узгодження, приймання, контроль цін</td><td class="num">€800</td></tr>
+              <tr><td>Склад</td><td>Локації, типи операцій, резерви, комплектація, інвентаризація, повернення</td><td class="num">€1 600</td></tr>
+              <tr><td>Проєкти й таймшити</td><td>Проєкти, задачі, стадії, списання годин, рентабельність, рахунки за часом</td><td class="num">€1 400</td></tr>
+              <tr><td>Планування</td><td>Завантаження команди, зміни, календарі доступності</td><td class="num">€700</td></tr>
+              <tr><td>Сервісні заявки</td><td>Черги, категорії, SLA, портал клієнта, база знань</td><td class="num">€1 000</td></tr>
+              <tr><td>Виїзні роботи</td><td>Наряди, маршрути, мобільний доступ, звіти виконавців</td><td class="num">€1 200</td></tr>
+              <tr><td>Підписки</td><td>Абонентські договори, регулярні нарахування, продовження</td><td class="num">€900</td></tr>
+              <tr><td>Управлінський облік</td><td>Кешфлоу, P&amp;L за напрямами, взаєморозрахунки. Без регламентної звітності</td><td class="num">€1 500</td></tr>
+              <tr><td>Міграція довідників</td><td>Перенесення контрагентів, номенклатури, залишків зі старої системи</td><td class="num">€700</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <h4>Чому модулі складаються лінійно</h4>
+          <p>Спільна частина роботи — створення бази, компанія, користувачі, права, довідники — винесена в <b>Базу</b> і оплачується один раз. Тому ціна модуля покриває тільки його власне налаштування, і рядки прайсу можна просто додавати.</p>
+          <p>Це не бухгалтерська хитрість, а те, що робить фікс можливим: без окремої Бази ціна першого модуля мусила б містити всю спільну роботу, і клієнт з одним модулем платив би за неї повністю, а клієнт з шістьма — шість разів.</p>
+        </div>
+
+        <div class="warn">
+          <h4>Три правила, без яких фікс розсиплеться</h4>
+          <p><strong>Ціна модуля — це стандартне налаштування модуля.</strong> Не «усе, що клієнт захоче в цьому розділі». Нестандартна логіка — або стоп-лист, або окрема оцінка поза прайсом.</p>
+          <p><strong>Від шести позицій підсумок дивимо окремо.</strong> На великих наборах з'являється робота, якої немає в ціні жодного модуля: узгодження процесів між ділянками, наскрізна аналітика, порядок впровадження. Механічна сума тут занижує.</p>
+          <p><strong>Прайс не торгується рядками.</strong> Знижка можлива тільки прибиранням позиції, ніколи зменшенням ціни. Інакше через півроку прайсу не існує.</p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Як це складається</h2>
+        <p>Приклади наборів — не пакети, а типові конфігурації, які легко назвати на зустрічі. Строк рахований від шести продуктивних годин на день.</p>
+        <div class="tw">
+          <table class="calc">
+            <thead>
+              <tr><th>Профіль клієнта</th><th>Набір</th><th class="num">Ціна</th><th class="num">Строк</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Продажі під ключ</td><td>База, CRM, Продажі</td><td class="num">€2 600</td><td class="num">~2 тижні</td></tr>
+              <tr><td>Сервісна компанія</td><td>База, Сервісні заявки, Виїзні роботи, Підписки</td><td class="num">€3 900</td><td class="num">~2,5 тижня</td></tr>
+              <tr><td>Проєктний бізнес</td><td>База, Проєкти й таймшити, Планування, Управлінський облік</td><td class="num">€4 400</td><td class="num">~3 тижні</td></tr>
+              <tr><td>Торгівля</td><td>База, Продажі, Закупівлі, Склад, Міграція</td><td class="num">€5 000</td><td class="num">~3,5 тижня</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>Проєкти й таймшити</strong> — найсильніша позиція на старті: це процес, який Todo щодня веде в себе. Продавати його можна власним досвідом, а не презентацією, і саме з нього варто починати наповнювати бібліотеку процедур.</p>
+        <p>Чого в прайсі немає навмисно: <strong>обміну з BAS.</strong> Він потрібен майже кожному клієнту цього сегмента, але це не наша послуга — див. розділ <b>Межі</b>. У наборі «Торгівля» його немає, і клієнт має про це знати до підписання, а не після.</p>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Модуль до живої бази</h2>
+        <p>Тут модульний прайс дає головну перевагу над пакетами: <strong>апселл не потребує окремого продукту.</strong> Клієнт додає рядок з того самого прайсу за тією самою ціною — без переговорів, без нової оцінки, без відчуття, що з нього щось витягують.</p>
+        <p>Практично це означає, що після запуску розмова з клієнтом завжди має природне продовження: він уже бачив прайс і знає, що там є ще. Це основний спосіб зростання виручки з наявного клієнта і головна причина тримати з ним контакт.</p>
+        <div class="open">
+          <h4>Одна поправка до ціни</h4>
+          <p>Модуль у живу базу трохи дорожчий за собівартістю, ніж той самий модуль на старті: база вже з даними, вікно безпеки закрите, потрібна перевірка на копії. У прайсі це можна не показувати, але в собівартості треба враховувати — інакше апселли поїдуть по маржі.</p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Що після запуску</h2>
+        <p>Поки на прайсі тільки впровадження: пакет робіт із чітким кінцем. Абонементу, підтримки і регулярних платежів у поточному скоупі немає — це свідоме рішення, щоб не продавати те, під що ще немає ні процесів, ні людей.</p>
+        <div class="warn">
+          <h4>Наслідок, який треба знати до першого клієнта</h4>
+          <p>Odoo Online оновлює версію примусово, за власним графіком, і Studio-налаштування при цьому іноді ламаються. Без абонемента клієнт залишається з цим сам: ми дізнаємось про проблему тільки тоді, коли він напише — якщо напише.</p>
+          <p>Другий наслідок економічний: <strong>уся виручка департаменту стає разовою.</strong> Кожен місяць починається з нуля, накопиченої бази немає, і потік нових клієнтів мусить бути постійним. Що це означає в цифрах — у розділі <b>Розрахунки</b>.</p>
+        </div>
+        <p>Що лишається способом повернутись до клієнта: <strong>новий модуль з того самого прайсу.</strong> Це не регулярний дохід, але привід для розмови і природне продовження стосунків.</p>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Апселл нагору</h2>
+        <p>Клієнт, який виріс за межі Online, — не втрата, а найкраща угода року. Він уже працює в Odoo, дані живі, довіра є. <strong>Міграція Online → odoo.sh</strong> має бути окремим іменованим продуктом із власною ціною, і про неї треба говорити з клієнтом заздалегідь, як про нормальний етап зростання, а не як про аварію.</p>
+      </section>
+    </div>
+
+    <!-- ============ 04 ПРОЦЕС ============ -->
+    <div class="panel" role="tabpanel" id="p4" aria-labelledby="t4" hidden>
+      <h2>Легкий контур доставки</h2>
+      <p class="lede">Наявна методологія — від брифу через дискавері до ТР, SPEC і білду — розрахована на місяці. У двотижневий пакет вона не вміщається навіть у стисненому вигляді. Потрібен не скорочений важкий процес, а окремий короткий.</p>
+
+      <section class="blk">
+        <h4>Що прибирається повністю</h4>
+        <div class="perimeter">
+          <div class="zone outside">
+            <h4>Не робимо в легкому контурі</h4>
+            <ul>
+              <li>Цикл дискавері з сесіями і звітом</li>
+              <li>ТР з Use Cases і Acceptance Criteria</li>
+              <li>SPEC, ARCHITECTURE, scaffolding, PR-review</li>
+              <li>Демо-базу, зібрану під конкретного клієнта</li>
+              <li>Акт приймання за AC</li>
+            </ul>
+          </div>
+          <div class="zone inside">
+            <h4>Чим замінюється</h4>
+            <ul>
+              <li>Чек-лист кваліфікації — 30 хв</li>
+              <li>Експрес-діагностика — 0,5–2 дні</li>
+              <li>Карта налаштування — генерується зі стану бази</li>
+              <li>Демо на стандартному Odoo з демо-даними</li>
+              <li>Протокол запуску: клієнт провів свої 10 операцій</li>
+            </ul>
+          </div>
+        </div>
+        <p><strong>Карта налаштування</strong> замінює ТР і за змістом ближча до config runbook: перелік застосунків, довідники, права, автоматизації, шаблони документів, звіти. Вона не погоджується заздалегідь і не пишеться руками — вона знімається зі фактичного стану бази, тому не розходиться з реальністю і не старіє. Клієнт отримує її разом із базою.</p>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Шість кроків</h2>
+
+        <div class="phase">
+          <div class="tag">крок 1</div>
+          <div class="who">сейл · 30 хв</div>
+          <h3>Кваліфікація</h3>
+          <div class="content"><p>Чек-лист меж. Виходом є одна з трьох відповідей: діагностика, передача в важкий контур, відмова. Третя відповідь має звучати вголос принаймні раз на десять лідів — інакше кваліфікація формальна.</p></div>
+        </div>
+
+        <div class="phase">
+          <div class="tag">крок 2</div>
+          <div class="who">аналітик · 1 год</div>
+          <h3>Демо на стандарті</h3>
+          <div class="content"><p>Показуємо стандартний Odoo з демо-даними, а не збірку під клієнта. Це головна економія всього контуру: у важкому процесі підготовка демо коштує кілька днів, тут — нуль.</p><p>Клієнт бачить робочу систему, а не презентацію, і одразу розуміє, що купує стандарт. Побічна користь: те, що він побачив, і є те, що отримає, — обіцяти нічого не доводиться.</p></div>
+        </div>
+
+        <div class="phase">
+          <div class="tag">крок 3</div>
+          <div class="who">аналітик · 0,5–2 дні</div>
+          <h3>Експрес-діагностика і пропозиція</h3>
+          <div class="content"><p>Платна. На виході — набір рядків прайсу, підсумкова ціна, строк, перелік того, чого не буде, і вимоги до участі клієнта.</p></div>
+        </div>
+
+        <div class="phase">
+          <div class="tag">крок 4</div>
+          <div class="who">аналітик · 1–4 тижні</div>
+          <h3>Конфігурація</h3>
+          <div class="content"><p>Налаштування за процедурою під конкретного клієнта, імпорт довідників, автоматизації. Щотижнева демонстрація проміжного стану — не статус-звіт, а показ живої системи.</p></div>
+        </div>
+
+        <div class="phase">
+          <div class="tag">крок 5</div>
+          <div class="who">аналітик · 2–4 год</div>
+          <h3>Навчання</h3>
+          <div class="content"><p>Записані відеокурси за ролями плюс одна жива сесія на запитання. Відео записується один раз і продається багато разів — це найдешевша частина пакета після другого клієнта.</p></div>
+        </div>
+
+        <div class="phase">
+          <div class="tag">крок 6</div>
+          <div class="who">аналітик · 2 тижні</div>
+          <h3>Запуск і гіперкейр</h3>
+          <div class="content"><p>Два тижні підвищеної уваги, потім проєкт закривається. Критерій завершення — не підписаний акт, а те, що клієнт самостійно провів свої десять типових операцій.</p></div>
+        </div>
+
+        <div class="note">
+          <h4>Хто це фізично робить</h4>
+          <p>Строки вище — для середнього набору з чотирьох позицій прайсу, і реалістичні вони тільки тому, що монотонна частина кожного кроку — налаштування за процедурою, розбір даних, документація, звірка — виконується інструментарієм, а не руками. За аналітиком лишаються рішення, приймання і клієнт: розподіл праці розписано покроково в розділі <b>Claude в контурі</b>.</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============ 05 МАРШРУТИ ============ -->
+    <div class="panel" role="tabpanel" id="p9" aria-labelledby="t9" hidden>
+      <h2>Маршрути</h2>
+      <p class="lede">Дві картинки, які не збираються з тексту: куди лід може вийти з контуру і чого кожен вихід нам коштує, — і як досвід кожного проєкту лишається в компанії замість того, щоб осідати в голові одного аналітика.</p>
+
+      <section class="blk">
+        <h4>Шлях ліда</h4>
+        <div class="figwrap">
+          <figure>
+            <svg viewBox="0 0 700 736" role="img" aria-label="Шлях ліда через легкий контур: кваліфікація, демо, діагностика, проєкт, запуск, закриття — з чотирма виходами назовні та двома апселлами" font-family="'IBM Plex Sans', sans-serif">
+              <defs>
+                <marker id="mk-ink" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
+                  <path d="M0,1.2 L8.5,5 L0,8.8 Z" fill="var(--ink-2)"></path>
+                </marker>
+                <marker id="mk-deny" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
+                  <path d="M0,1.2 L8.5,5 L0,8.8 Z" fill="var(--deny)"></path>
+                </marker>
+                <marker id="mk-esc" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
+                  <path d="M0,1.2 L8.5,5 L0,8.8 Z" fill="var(--escalate)"></path>
+                </marker>
+                <marker id="mk-allow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
+                  <path d="M0,1.2 L8.5,5 L0,8.8 Z" fill="var(--allow)"></path>
+                </marker>
+              </defs>
+
+              <!-- main spine -->
+              <g stroke="var(--ink-2)" stroke-width="1.4" marker-end="url(#mk-ink)" fill="none">
+                <line x1="160" y1="52" x2="160" y2="80"></line>
+                <line x1="160" y1="144" x2="160" y2="194"></line>
+                <line x1="160" y1="250" x2="160" y2="300"></line>
+                <line x1="160" y1="364" x2="160" y2="414"></line>
+                <line x1="160" y1="494" x2="160" y2="544"></line>
+                <line x1="160" y1="600" x2="160" y2="650"></line>
+              </g>
+
+              <!-- branch lines -->
+              <g fill="none" stroke-width="1.4">
+                <polyline points="284,98 340,98 340,83 394,83" stroke="var(--deny)" marker-end="url(#mk-deny)"></polyline>
+                <polyline points="284,128 340,128 340,145 394,145" stroke="var(--escalate)" marker-end="url(#mk-esc)"></polyline>
+                <line x1="284" y1="333" x2="394" y2="333" stroke="var(--escalate)" marker-end="url(#mk-esc)"></line>
+                <line x1="284" y1="455" x2="394" y2="455" stroke="var(--deny)" stroke-dasharray="5 4" marker-end="url(#mk-deny)"></line>
+                <polyline points="284,666 340,666 340,647 394,647" stroke="var(--allow)" marker-end="url(#mk-allow)"></polyline>
+                <polyline points="284,694 340,694 340,701 394,701" stroke="var(--allow)" marker-end="url(#mk-allow)"></polyline>
+              </g>
+
+              <!-- branch condition labels -->
+              <g font-family="'IBM Plex Mono', monospace" font-size="10" fill="var(--muted)" text-anchor="middle">
+                <text x="312" y="91">стоп-лист</text>
+                <text x="312" y="121">за межами</text>
+                <text x="339" y="326">на діагностиці</text>
+                <text x="339" y="448">після старту</text>
+              </g>
+
+              <!-- main nodes -->
+              <g stroke="var(--line-strong)" stroke-width="1.2">
+                <rect x="36" y="14" width="248" height="38" rx="19" fill="var(--surface-2)"></rect>
+                <rect x="36" y="82" width="248" height="62" rx="8" fill="var(--surface)"></rect>
+                <rect x="36" y="196" width="248" height="54" rx="8" fill="var(--surface)"></rect>
+                <rect x="36" y="302" width="248" height="62" rx="8" fill="var(--surface)"></rect>
+                <rect x="36" y="416" width="248" height="78" rx="8" fill="var(--surface)"></rect>
+                <rect x="36" y="546" width="248" height="54" rx="8" fill="var(--surface)"></rect>
+              </g>
+              <rect x="36" y="652" width="248" height="54" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"></rect>
+
+              <g text-anchor="middle" fill="var(--ink)" font-size="13.5" font-weight="600">
+                <text x="160" y="38" font-size="12.5" font-weight="500" fill="var(--ink-2)">Лід</text>
+                <text x="160" y="108">Кваліфікація</text>
+                <text x="160" y="221">Демо на стандарті</text>
+                <text x="160" y="328">Експрес-діагностика</text>
+                <text x="160" y="442">Проєкт</text>
+                <text x="160" y="571">Запуск і гіперкейр</text>
+                <text x="160" y="677" fill="var(--accent)">Проєкт закрито</text>
+              </g>
+              <g text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--muted)">
+                <text x="160" y="127">сейл · 30 хв · чек-лист меж</text>
+                <text x="160" y="239">аналітик · 1 год · стандарт</text>
+                <text x="160" y="347">0,5–2 дні · платна</text>
+                <text x="160" y="460">1–4 тижні · конфігурація</text>
+                <text x="160" y="477">дані · навчання</text>
+                <text x="160" y="589">2 тижні · 10 операцій самостійно</text>
+                <text x="160" y="695">далі — тільки нові модулі</text>
+              </g>
+
+              <!-- exits -->
+              <g stroke-width="1.2">
+                <rect x="396" y="62" width="272" height="42" rx="7" fill="var(--deny-soft)" stroke="var(--deny)"></rect>
+                <rect x="396" y="124" width="272" height="42" rx="7" fill="var(--escalate-soft)" stroke="var(--escalate)"></rect>
+                <rect x="396" y="312" width="272" height="42" rx="7" fill="var(--escalate-soft)" stroke="var(--escalate)"></rect>
+                <rect x="396" y="434" width="272" height="42" rx="7" fill="var(--deny-soft)" stroke="var(--deny)" stroke-dasharray="5 4"></rect>
+                <rect x="396" y="628" width="272" height="38" rx="7" fill="var(--allow-soft)" stroke="var(--allow)"></rect>
+                <rect x="396" y="682" width="272" height="38" rx="7" fill="var(--allow-soft)" stroke="var(--allow)"></rect>
+              </g>
+              <g text-anchor="middle" font-size="12.5" font-weight="600">
+                <text x="532" y="82" fill="var(--deny)">Відмова</text>
+                <text x="532" y="144" fill="var(--escalate)">Важкий контур</text>
+                <text x="532" y="332" fill="var(--escalate)">Важкий контур</text>
+                <text x="532" y="454" fill="var(--deny)">Ескалація після старту</text>
+                <text x="532" y="645" fill="var(--allow)">Ще модуль</text>
+                <text x="532" y="699" fill="var(--allow)">Міграція на odoo.sh</text>
+              </g>
+              <g text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10" fill="var(--muted)">
+                <text x="532" y="97">безкоштовно · рядок у стоп-лист</text>
+                <text x="532" y="159">безкоштовно · передача</text>
+                <text x="532" y="347">клієнт заплатив за чесну відповідь</text>
+                <text x="532" y="469">платимо ми · доробляємо в межах</text>
+                <text x="532" y="659">той самий прайс, та сама ціна</text>
+                <text x="532" y="713">окремий продукт · найкраща угода</text>
+              </g>
+            </svg>
+            <figcaption>Чотири виходи назовні, і різниця між ними — не в тому, що клієнт пішов, а в тому, <b>хто за це заплатив.</b> Три верхні виходи нормальні й безкоштовні для нас або оплачені клієнтом. Пунктирний — єдиний, який коштує департаменту грошей, і саме тому кваліфікація стоїть перед демо, а не після.</figcaption>
+          </figure>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--ink-2)"></i>основний шлях</span>
+          <span><i style="background:var(--deny)"></i>вихід із контуру</span>
+          <span><i style="background:var(--escalate)"></i>передача у важкий контур</span>
+          <span><i style="background:var(--allow)"></i>зростання клієнта</span>
+        </div>
+        <p>Найдорожчий рядок на цій картинці — пунктирний. Ескалація після старту означає, що межі перевіряли формально: клієнт уже платить за фікс, а обсяг виявився іншим. Частка таких випадків — прямий показник якості кваліфікації, і саме вона стоїть окремим гейтом у пілоті.</p>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h4>Цикл накопичення</h4>
+        <div class="figwrap">
+          <figure>
+            <svg viewBox="0 0 700 300" role="img" aria-label="Замкнутий цикл: процедура з бібліотеки застосовується до нової бази клієнта через API, після запуску проєкт розбирають і звіряють, і те, що повторилося двічі, повертається в процедуру" font-family="'IBM Plex Sans', sans-serif">
+              <defs>
+                <marker id="mk2-acc" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
+                  <path d="M0,1.2 L8.5,5 L0,8.8 Z" fill="var(--accent)"></path>
+                </marker>
+                <marker id="mk2-ink" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
+                  <path d="M0,1.2 L8.5,5 L0,8.8 Z" fill="var(--ink-2)"></path>
+                </marker>
+                <marker id="mk2-allow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
+                  <path d="M0,1.2 L8.5,5 L0,8.8 Z" fill="var(--allow)"></path>
+                </marker>
+              </defs>
+
+              <g fill="none" stroke-width="1.4">
+                <line x1="256" y1="81" x2="442" y2="81" stroke="var(--accent)" marker-end="url(#mk2-acc)"></line>
+                <line x1="553" y1="120" x2="553" y2="192" stroke="var(--ink-2)" marker-end="url(#mk2-ink)"></line>
+                <polyline points="444,229 147,229 147,122" stroke="var(--allow)" marker-end="url(#mk2-allow)"></polyline>
+              </g>
+
+              <g stroke="var(--line-strong)" stroke-width="1.2">
+                <rect x="40" y="44" width="214" height="76" rx="8" fill="var(--surface)"></rect>
+                <rect x="446" y="44" width="214" height="76" rx="8" fill="var(--surface)"></rect>
+                <rect x="446" y="194" width="214" height="70" rx="8" fill="var(--surface)"></rect>
+              </g>
+
+              <g text-anchor="middle" fill="var(--ink)" font-size="13.5" font-weight="600">
+                <text x="147" y="76">Бібліотека процедур</text>
+                <text x="553" y="76">Проєкт клієнта</text>
+                <text x="553" y="222">Розбір після запуску</text>
+              </g>
+              <g text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--muted)">
+                <text x="147" y="95">опис конфігурації</text>
+                <text x="147" y="110">у репозиторії, з автором</text>
+                <text x="553" y="95">налаштована за процедурою</text>
+                <text x="553" y="110">чиста конфігурація</text>
+                <text x="553" y="241">що спрацювало, що ні</text>
+                <text x="553" y="255">і чого не було в процедурі</text>
+              </g>
+
+              <g font-family="'IBM Plex Mono', monospace" font-size="10.5" text-anchor="middle">
+                <text x="349" y="64" fill="var(--accent)">apply-config</text>
+                <text x="349" y="76" fill="var(--muted)">через API, у нову базу</text>
+                <text x="300" y="219" fill="var(--allow)">те, що повторилось двічі → у процедуру</text>
+              </g>
+              <g font-family="'IBM Plex Mono', monospace" font-size="10.5" fill="var(--muted)" text-anchor="start">
+                <text x="565" y="152">regress-check</text>
+                <text x="565" y="167">і розбір на виході</text>
+              </g>
+            </svg>
+            <figcaption>Дві верхні стрілки виконує інструмент, ліву — тільки людина. Саме ліва замикає цикл: <b>рішення, яке знадобилося вдруге, стає процедурою і дістається всім наступним клієнтам.</b> Кожен проєкт лишає після себе не тільки виручку, а й трохи дешевший наступний проєкт.</figcaption>
+          </figure>
+        </div>
+        <p>Ліва стрілка — найслабша саме тому, що її не можна автоматизувати: вона вимагає, щоб хтось після запуску сів і подумав, коли всі вже зайняті наступним клієнтом. Без неї цикл розривається, бібліотека не наповнюється, і департамент лишається набором одноразових проєктів. Тому розбір після запуску має стояти в плані робіт і в оцінці пакета окремим пунктом, а не «якщо буде час».</p>
+      </section>
+    </div>
+
+    <!-- ============ 06 CLAUDE В КОНТУРІ ============ -->
+    <div class="panel" role="tabpanel" id="p8" aria-labelledby="t8" hidden>
+      <h2>Claude як виробнича лінія</h2>
+      <p class="lede">У важкому контурі Claude пише код і тому дає найбільше саме розробнику. Тут розробника немає — зате є зовнішній API, і саме через нього Claude виконує налаштування і Studio-кастомізацію: створює поля, подання, права, довідники, автоматизації. Розподіл праці тому простий: <em>Claude виконує, людина ставить задачу і приймає результат.</em></p>
+
+      <div class="warn">
+        <h4>Два різні питання про API, які легко злити в одне</h4>
+        <p><strong>API як інструмент впровадження — у скоупі.</strong> Ним користуємось ми, всередині своєї роботи, щоб не клікати руками те, що можна описати один раз. Клієнт цього не бачить і не купує.</p>
+        <p><strong>API як продукт клієнту — поза скоупом.</strong> Вебхуки, подієві інтеграції, конектори до сторонніх систем, шлюз до BAS — не робимо й не обіцяємо. Обмін з BAS лишається ручним.</p>
+        <p>Це розмежування треба тримати в голові на кожній зустрічі: технічна можливість у нас є, а зобов'язання перед клієнтом — немає. Щойно межа розмиється, департамент почне продавати інтеграції, і фікс-пакети посиплються.</p>
+      </div>
+
+      <section class="blk">
+        <h2>Вікно безпеки</h2>
+        <p>Найважливіше в цій схемі — <strong>коли саме</strong> Claude пише в базу. У легкому контурі база нова: її створюють під клієнта, і до завантаження даних у ній нема чого зіпсувати.</p>
+        <p>Уся Studio-кастомізація і майже все налаштування падають саме в це вікно — від створення бази до першого імпорту. Помилка тут коштує кількох хвилин на перестворення бази, а не грошей і довіри. Це не дрібна деталь, а причина, чому програмний запис у цьому контурі взагалі допустимий: у важкому контурі такої розкоші немає, там бази живі.</p>
+
+        <div class="perimeter">
+          <div class="zone inside">
+            <h4>До завантаження даних — Claude пише сам</h4>
+            <ul>
+              <li>Увімкнення застосунків і базові налаштування</li>
+              <li>Studio: поля, подання, меню, обов'язковість, значення за замовчуванням</li>
+              <li>Права доступу, групи, правила видимості</li>
+              <li>Довідники, стадії, типи операцій, журнали, шаблони листів</li>
+              <li>Автоматизації та серверні дії</li>
+            </ul>
+          </div>
+          <div class="zone outside">
+            <h4>Після завантаження даних — тільки з людиною</h4>
+            <ul>
+              <li>Будь-який запис у базу, де вже працює клієнт</li>
+              <li>Масовий імпорт і масове редагування записів</li>
+              <li>Зміни в базі, де вже працює клієнт, — спершу на копії, потім у проді</li>
+              <li>Видалення полів і подань, від яких залежать дані</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Де межа програмного запису</h2>
+        <p>Через API пишеться майже вся конфігурація, і спокуса дійти до кінця буде великою. Межа проходить не по технічній можливості, а по тому, що лишає базу чистою.</p>
+        <div class="tw">
+          <table>
+            <thead>
+              <tr><th>Що робимо через API</th><th class="w-sm">Статус</th><th>Примітка</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Довідники, стадії, типи операцій, журнали, шаблони листів</td><td><span class="pill lo">так</span></td><td>звичайні записи, найбезпечніша частина</td></tr>
+              <tr><td>Поля Studio: типи, обов'язковість, значення за замовчуванням</td><td><span class="pill lo">так</span></td><td>ядро кастомізації в цьому контурі</td></tr>
+              <tr><td>Подання: колонки, групування, вкладки, фільтри</td><td><span class="pill lo">так</span></td><td>описом, а не перетягуванням мишею — швидше за людину</td></tr>
+              <tr><td>Права, групи, правила видимості записів</td><td><span class="pill lo">так</span></td><td>обов'язково окрема перевірка людиною після запису</td></tr>
+              <tr><td>Автоматизації, domain-фільтри, серверні дії</td><td><span class="pill lo">так</span></td><td>спершу на тестовій базі, потім у клієнтській</td></tr>
+              <tr><td>Прості друковані форми в межах редактора звітів</td><td><span class="pill mid">обережно</span></td><td>результат треба дивитись очима, а не приймати за звітом</td></tr>
+              <tr><td>Складні QWeb-шаблони, успадкування моделей, перевизначення методів</td><td><span class="pill hi">ні</span></td><td>це вже розробка — межа периметра, а не питання інструмента</td></tr>
+              <tr><td>Обчислювані поля й серверні дії з Python-кодом</td><td><span class="pill hi">ні</span></td><td>Studio не має «Compute»; поле з формулою заводиться лише через Technical → Fields з Python-виразом — це код і підтримка розробником</td></tr>
+              <tr><td>Рішення «а як правильно для цього клієнта»</td><td><span class="pill hi">ні</span></td><td>це і є робота аналітика, її не автоматизуємо</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Останні два рядки — не технічне обмеження, а те саме правило периметра, що й у розділі <b>Межі</b>. API дає можливість записати в базу що завгодно, зокрема й те, що перетворить чисту конфігурацію на кастомний модуль без модуля. Саме тут дисципліна департаменту перевіряється найжорсткіше.</p>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>По кроках контуру</h2>
+        <p>Розподіл праці всюди однаковий: Claude виконує, людина ставить задачу і приймає результат. Виняток один — розмова з клієнтом, її не делегуємо ніде.</p>
+        <div class="tw">
+          <table>
+            <thead>
+              <tr><th class="w-sm">Крок</th><th>Що бере на себе Claude</th><th>Що лишається людині</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>Кваліфікація</b></td>
+                <td>Читає бриф і транскрипт дзвінка, заповнює чек-лист меж, підсвічує фрази зі стоп-листа, пропонує вердикт із обґрунтуванням</td>
+                <td>Розмова з клієнтом і саме рішення «беремо / нагору / відмова»</td>
+              </tr>
+              <tr>
+                <td><b>Діагностика</b></td>
+                <td>Складає чернетку пропозиції: набір рядків прайсу, строк, перелік того, чого не буде, вимоги до участі клієнта</td>
+                <td>Перевірка меж, ціна, розмова про гроші</td>
+              </tr>
+              <tr>
+                <td><b>Конфігурація</b></td>
+                <td>Виконує налаштування в новій базі за процедурою: застосунки, поля Studio, подання, права, довідники, автоматизації. Звітує переліком того, що створив</td>
+                <td>Постановка задачі, рішення про відхилення від процедури, приймання результату очима в системі</td>
+              </tr>
+              <tr>
+                <td><b>Дані</b></td>
+                <td>Розбирає вивантаження клієнта, чистить, знаходить дублі й биті посилання, завантажує в базу до відкриття доступу користувачам</td>
+                <td>Вивантаження з BAS і рішення, що переносимо, а що лишаємо в старій системі</td>
+              </tr>
+              <tr>
+                <td><b>Автоматизації</b></td>
+                <td>З опису словами будує domain-фільтр і серверну дію, створює її в базі, пояснює логіку, пропонує тест-кейс</td>
+                <td>Перевірити поведінку на тестових даних до передачі клієнту</td>
+              </tr>
+              <tr>
+                <td><b>Документація</b></td>
+                <td>Читає фактичний стан бази і генерує карту налаштування та інструкції за ролями</td>
+                <td>Вичитати результат перед передачею клієнту</td>
+              </tr>
+              <tr>
+                <td><b>Навчання</b></td>
+                <td>Готує сценарії відеокурсів і навчальні кейси на даних клієнта</td>
+                <td>Запис і жива сесія запитань</td>
+              </tr>
+              <tr>
+                <td><b>Гіперкейр</b></td>
+                <td>Перша лінія для аналітика: відповідає на запитання по системі, спираючись на карту налаштування клієнта</td>
+                <td>Спілкування з клієнтом і все, що стосується його процесів</td>
+              </tr>
+              <tr>
+                <td><b>Після запуску</b></td>
+                <td>Звіряє стан бази з процедурою після оновлення версії; готує квартальний огляд використання</td>
+                <td>Розмова з клієнтом за підсумками огляду</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <h4>Два рядки в таблиці варті окремої уваги</h4>
+          <p><strong>Дані.</strong> Розбір кривих вивантажень з BAS і Excel — недооцінений пожирач годин у SMB-проєктах, легко чверть усього пакета. Виграш тут найбільший і найшвидший, бо робота монотонна, а перевірити результат легко.</p>
+          <p><strong>Огляд використання.</strong> Поки абонемента немає, це не послуга, а привід повернутись: Claude дивиться, які застосунки не використовуються і які процеси зупинилися, — і готує чернетку розмови про наступний модуль. Дешевий спосіб не втратити клієнта після закриття проєкту.</p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Що будуємо</h2>
+        <p>Інструментарій департаменту — це плагін Claude Code з набором скілів і бібліотека процедур у репозиторії. Механіка централізованої роздачі плагінів команді в компанії вже відпрацьована.</p>
+
+        <div class="cards two">
+          <div class="card">
+            <h3>Плагін <code>odoo-com-light</code></h3>
+            <div class="meta"><span>10 скілів</span><span>доступ до баз через API</span></div>
+            <ul>
+              <li><b>qualify</b> — транскрипт → чек-лист меж → вердикт</li>
+              <li><b>stoplist-scan</b> — бриф → червоні прапорці</li>
+              <li><b>express-diagnostic</b> — набір модулів і чернетка пропозиції</li>
+              <li><b>setup-runbook</b> — процедура → план під клієнта</li>
+              <li><b>apply-config</b> — виконати план у базі через API</li>
+              <li><b>data-map</b> — вивантаження клієнта → чисті дані в базі</li>
+              <li><b>automation-writer</b> — опис словами → domain і дія</li>
+              <li><b>config-map</b> — стан бази → карта налаштування</li>
+              <li><b>role-guide</b> — карта → інструкції за ролями</li>
+              <li><b>regress-check</b> — звірка бази з процедурою</li>
+            </ul>
+            <p><b>usage-review</b> — огляд використання — пишеться пізніше, після перших закритих проєктів.</p>
+          </div>
+          <div class="card">
+            <h3>Бібліотека процедур</h3>
+            <div class="meta"><span>репозиторій</span><span>наповнюється по ходу</span></div>
+            <p>Одна процедура на рядок прайсу: застосунки, поля, права, автоматизації, довідники — записана так, щоб її виконував не тільки аналітик, а й <b>apply-config</b>. Пишеться не наперед, а з проєктів: після кожного запуску туди повертається те, що знадобилося вдруге.</p>
+            <p>Побічний ефект, дорожчий за саму бібліотеку: досвід перестає жити в голові конкретного аналітика. Новий співробітник входить у роботу через читання процедур, а не через півроку поруч із досвідченим.</p>
+          </div>
+          <div class="card">
+            <h3>Регламентні звірки</h3>
+            <div class="meta"><span>за розкладом</span></div>
+            <p>Автоматична звірка баз клієнтів з процедурами після хвилі оновлень Odoo. Звіт приходить нам раніше, ніж клієнт помітить проблему, — поки що це не оплачується, але рятує репутацію.</p>
+          </div>
+          <div class="card">
+            <h3>Доступи до баз</h3>
+            <div class="meta"><span>профіль на клієнта</span><span>видається на час робіт</span></div>
+            <p>Окремий сервісний користувач у кожній базі з мінімально достатніми правами, підключення заведене в інструментарій. Доступ відкликається після завершення робіт і видається знову на час подальших робіт.</p>
+            <p>Що лишається поза цим переліком назавжди: конектори до сторонніх систем, вебхуки, шлюз до BAS. API — наш інструмент, а не послуга клієнту.</p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Дисципліна застосування</h2>
+        <p>З програмним записом у базу дисципліна перестає бути питанням стилю. Правила прості, але жодне з них не є рекомендацією.</p>
+        <div class="perimeter">
+          <div class="zone inside">
+            <h4>Дозволено</h4>
+            <ul>
+              <li>Читання будь-якої бази в межах виданого доступу</li>
+              <li>Запис у нову базу до відкриття доступу користувачам — вільно</li>
+              <li>Запис у тестову копію — вільно</li>
+              <li>Запис у робочу базу партіями, з переліком змін і людиною, яка приймає</li>
+              <li>Підготовка документів, інструкцій, чернеток листів</li>
+            </ul>
+          </div>
+          <div class="zone outside">
+            <h4>Заборонено</h4>
+            <ul>
+              <li>Запис у робочу базу без резервної копії й переліку змін</li>
+              <li>Видалення полів і подань у базі, де вже є дані</li>
+              <li>Створення того, що робить конфігурацію кастомним модулем</li>
+              <li>Відправлення листів клієнту без вичитування людиною</li>
+              <li>Рішення «беремо / не беремо» без аналітика</li>
+              <li>Передача даних клієнта без узгодженої умови в договорі</li>
+            </ul>
+          </div>
+        </div>
+        <div class="warn">
+          <h4>Правило відповідальності</h4>
+          <p>Під результатом підписується аналітик. Claude — виробничий інструмент, а не виконавець: формулювання «так згенерувалося» не є поясненням ні для клієнта, ні всередині команди.</p>
+          <p>Практичний наслідок: у журналі Odoo запис від сервісного користувача виглядає як звичайна зміна конфігурації, і клієнт не побачить різниці. Тому аналітик зобов'язаний <strong>подивитися очима</strong> на те, що з'явилося в базі, а не приймати результат за звітом про виконання.</p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Заради чого це все</h2>
+        <p>Claude тут не прибирає аналітика — він змінює одне число, від якого залежить уся економіка контуру: <strong>скільки проєктів веде один аналітик одночасно.</strong></p>
+        <div class="note">
+          <p>Без інструментарію реалістично півтора-два проєкти паралельно: конфігурація, розбір даних і документація забирають майже весь час. З програмним налаштуванням і документацією з бази робоча гіпотеза — <strong>три-чотири</strong>, бо в аналітика лишаються рішення, приймання і клієнт.</p>
+          <p>Це <em>гіпотеза, а не обіцянка.</em> Вона перевіряється пілотом і стоїть окремим рядком у переліку замірів.</p>
+        </div>
+        <p>Якщо гіпотеза підтвердиться навіть наполовину — фікс сходиться за маржею з першого клієнта, а не з десятого. Якщо ні — департамент усе одно працює, просто повільніше окупається, і рішення про штат відкладається на квартал.</p>
+      </section>
+    </div>
+
+
+    <!-- ============ 06 АКТИВ І ЕКОНОМІКА ============ -->
+    <div class="panel" role="tabpanel" id="p5" aria-labelledby="t5" hidden>
+      <h2>Актив департаменту</h2>
+      <p class="lede">У важкому контурі масштабування — це наймання сильних людей. Тут — накопичення бібліотеки. Якщо через рік роботи бібліотеки немає, департамент просто робив дешеві проєкти дорогими руками.</p>
+
+      <section class="blk">
+        <div class="cards two">
+          <div class="card">
+            <h3>Бібліотека процедур</h3>
+            <div class="meta"><span>ядро активу</span><span>виконуване</span></div>
+            <p>По одній процедурі на рядок прайсу, зібраній з реальних проєктів і записаній так, що її застосовує інструмент, а не тільки читає людина. Не будується наперед — виростає з роботи.</p>
+          </div>
+          <div class="card">
+            <h3>Інструментарій Claude</h3>
+            <div class="meta"><span>плагін Claude Code</span><span>множник до всього іншого</span></div>
+            <p>Плагін зі скілами під кожен крок контуру і підключення до баз клієнтів. Саме він перетворює бібліотеку процедур з довідкових матеріалів на те, що виконується.</p>
+          </div>
+          <div class="card">
+            <h3>Бібліотека автоматизацій</h3>
+            <div class="meta"><span>Studio</span></div>
+            <p>Типові автоматизації, серверні дії, шаблони документів і звітів — з описом, коли застосовувати і чого не робити.</p>
+          </div>
+          <div class="card">
+            <h3>Скрипти розмов</h3>
+            <div class="meta"><span>для сейла і аналітика</span></div>
+            <p>Як говорити про межі: чому немає інтеграцій, чому обмін з BAS на боці клієнта, чому потрібен план Custom. Найдешевший актив у переліку і найчастіше використовуваний.</p>
+          </div>
+          <div class="card">
+            <h3>Відеокурси за ролями</h3>
+            <div class="meta"><span>записується раз</span></div>
+            <p>Менеджер продажів, комірник, керівник проєкту, адміністратор. Замінює більшу частину живого навчання.</p>
+          </div>
+        </div>
+
+        <div class="open">
+          <h4>Головне число фази 0</h4>
+          <p>Департамент не тримає готових баз-донорів: кожен клієнт налаштовується з нуля, просто це роблить інструмент за описом, а не людина мишею. Тому вага лягає на дві цифри, і обидві міряються на власному стенді за кілька днів.</p>
+          <p><em>Скільки годин займає База плюс модуль «Проєкти й таймшити» вручну</em> — це база порівняння. <em>Скільки з них знімає</em> <b>apply-config</b> — це власне окупність інструментарію. Друга цифра визначить ціни в прайсі й момент, коли їх можна фіксувати.</p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Юніт-економіка</h2>
+        <p>Формула проста, і вона вже порахована на допущеннях у розділі <b>Розрахунки</b>. Тут — сама формула і перелік того, що пілот зобов'язаний заміряти, щоб замінити допущення фактом.</p>
+        <div class="note">
+          <p>Маржа рядка прайсу = ціна − (медіана годин × собівартість години) − вартість перевищення scope.<br>
+          Дохід на клієнта = стартовий набір + модулі, додані пізніше.</p>
+        </div>
+        <p>Друга формула важливіша за першу. У цьому сегменті разове впровадження заробляє мало; конструкція сходиться на горизонті, і саме тому втрата клієнта після запуску коштує непропорційно дорого.</p>
+
+        <h4>Що заміряти на пілоті</h4>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Показник</th><th class="w-sm">Навіщо</th></tr></thead>
+            <tbody>
+              <tr><td>Години факт на кожен рядок прайсу: медіана і 80-й перцентиль</td><td>основа фікс-ціни; ставити ціну за P80, не за медіаною</td></tr>
+              <tr><td>Години на модуль: вручну проти <b>apply-config</b></td><td>окупність інструментарію в чистому вигляді</td></tr>
+              <tr><td><b>Години на ручний обмін з BAS</b> у клієнта після запуску</td><td>чи не з'їдає обмін ту цінність, яку дала система</td></tr>
+              <tr><td><b>Проєктів на аналітика одночасно</b></td><td>головне число всієї моделі; ціль — три-чотири замість півтора</td></tr>
+              <tr><td>Частка годин, знята інструментарієм: дані, документація, конфігурація</td><td>окупність плагіна і бібліотеки процедур</td></tr>
+              <tr><td>Частка проєктів, що вийшли за scope</td><td>якість кваліфікації</td></tr>
+              <tr><td>Конверсія діагностика → проєкт, і середня кількість позицій</td><td>адекватність ціни й обіцянки</td></tr>
+              <tr><td>Частка клієнтів, які повернулись за новим модулем</td><td>єдиний спосіб повторного доходу в поточному скоупі</td></tr>
+              <tr><td>Утилізація аналітика</td><td>ціль вища за важкий контур: 75–80%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Метрика, яку варто винести на дашборд керівника окремо: <strong>кількість закритих проєктів за місяць</strong>. Без регулярного доходу це єдине, що тримає департамент, і провал одного місяця нічим не компенсується.</p>
+        <p>Порахований приклад цієї моделі з цифрами по кожному рядку прайсу — у розділі <b>Розрахунки</b>. Там же видно, який параметр ламає економіку першим.</p>
+      </section>
+    </div>
+
+    <!-- ============ 08 РОЗРАХУНКИ ============ -->
+    <div class="panel" role="tabpanel" id="p10" aria-labelledby="t10" hidden>
+      <h2>Розрахунки</h2>
+      <p class="lede">Модель порахована наскрізь, від години аналітика до місячного результату департаменту. Абонемента в ній немає — у поточному скоупі департамент продає тільки впровадження, тож уся економіка тримається на потоці нових проєктів.</p>
+
+      <div class="note">
+        <h4>Калькулятор винесено в окремий інструмент</h4>
+        <p>Складати набір, правити години й дивитися місячний результат тепер зручніше тут: <a href="https://claude.ai/code/artifact/e1126839-5e2c-4f92-ac9b-901c8d7828e8">Калькулятор впровадження</a>. Там пресети наборів, редаговані години по кожному рядку і графік результату за потоком.</p>
+        <p>Таблиці нижче — той самий розрахунок при значеннях за замовчуванням, зафіксований у документі, щоб на нього можна було посилатися в обговоренні.</p>
+      </div>
+
+      <div class="warn">
+        <h4>Головний висновок, і він не про собівартість</h4>
+        <p>Без абонемента департаменту потрібно <strong>чотири проєкти щомісяця</strong>, щоб місяць закрився в плюс, — при завантаженні всього 74%. Вузьке місце тут не продуктивність і не собівартість години, а <strong>кількість клієнтів, яких є кому продати.</strong></p>
+        <p>Практично це означає, що канал лідів важливіший за інструментарій. Інструментарій піднімає маржу з проєкту; канал визначає, чи буде взагалі кому виставляти рахунок. Без регулярного доходу провал одного місяця нічим не компенсується.</p>
+      </div>
+
+      <section class="blk">
+        <h2>Вхідні допущення</h2>
+        <div class="assume">
+          <h4>Замінюється на свої числа</h4>
+          <div class="tw">
+            <table class="calc">
+              <thead><tr><th>Параметр</th><th class="num">Значення</th><th>Звідки</th></tr></thead>
+              <tbody>
+                <tr><td>Повна собівартість години аналітика</td><td class="num">€15</td><td>оклад з податками плюс накладні, поділені на робочі години</td></tr>
+                <tr><td>Ставка для клієнта</td><td class="num">€50</td><td>задана; від неї рахуються всі ціни прайсу</td></tr>
+                <tr><td>Резерв на перевищення обсягу</td><td class="num">20%</td><td>різниця між медіаною і 80-м перцентилем годин</td></tr>
+                <tr><td>Економія годин від інструментарію</td><td class="num">25–40%</td><td>гіпотеза, різна за модулями; міряється у фазі 0</td></tr>
+                <tr><td>Горизонт клієнта</td><td class="num">тривалість робіт</td><td>регулярного доходу в поточному скоупі немає</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p>Усі розрахунки в євро, від заданої ставки €50 за годину. Ліцензій у моделі немає навмисно: підписку клієнт оформлює сам, департамент на ній не заробляє. Тому вся економіка нижче тримається виключно на власній роботі. Це строгіша перевірка: якщо модель сходиться без ліцензійних грошей, вона сходиться.</p>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Модулі</h2>
+        <p>Ціна ставиться від годин <em>вручну</em>, бо це ринковий орієнтир і цінність для клієнта. Собівартість рахується від годин <em>з інструментарієм</em> плюс резерв 20%. Різниця між цими колонками і є джерелом маржі.</p>
+        <div class="tw">
+          <table class="calc">
+            <thead>
+              <tr><th>Позиція</th><th class="num">Год<br>вручну</th><th class="num">Год з<br>інстр.</th><th class="num">Собів.<br>з резерв.</th><th class="num">Ціна</th><th class="num">Маржа</th><th class="num">%</th></tr>
+            </thead>
+            <tbody>
+              <tr class="total"><td>База</td><td class="num">16</td><td class="num">10</td><td class="num">€180</td><td class="num">€800</td><td class="num">€620</td><td class="num">78%</td></tr>
+              <tr><td>CRM</td><td class="num">14</td><td class="num">9</td><td class="num">€162</td><td class="num">€700</td><td class="num pos">€538</td><td class="num">77%</td></tr>
+              <tr><td>Продажі</td><td class="num">22</td><td class="num">14</td><td class="num">€252</td><td class="num">€1 100</td><td class="num pos">€848</td><td class="num">77%</td></tr>
+              <tr><td>Закупівлі</td><td class="num">16</td><td class="num">10</td><td class="num">€180</td><td class="num">€800</td><td class="num pos">€620</td><td class="num">78%</td></tr>
+              <tr><td>Склад</td><td class="num">32</td><td class="num">19</td><td class="num">€342</td><td class="num">€1 600</td><td class="num pos">€1 258</td><td class="num">79%</td></tr>
+              <tr><td>Проєкти й таймшити</td><td class="num">28</td><td class="num">18</td><td class="num">€324</td><td class="num">€1 400</td><td class="num pos">€1 076</td><td class="num">77%</td></tr>
+              <tr><td>Планування</td><td class="num">14</td><td class="num">9</td><td class="num">€162</td><td class="num">€700</td><td class="num pos">€538</td><td class="num">77%</td></tr>
+              <tr><td>Сервісні заявки</td><td class="num">20</td><td class="num">13</td><td class="num">€234</td><td class="num">€1 000</td><td class="num pos">€766</td><td class="num">77%</td></tr>
+              <tr><td>Виїзні роботи</td><td class="num">24</td><td class="num">16</td><td class="num">€288</td><td class="num">€1 200</td><td class="num pos">€912</td><td class="num">76%</td></tr>
+              <tr><td>Підписки</td><td class="num">18</td><td class="num">12</td><td class="num">€216</td><td class="num">€900</td><td class="num pos">€684</td><td class="num">76%</td></tr>
+              <tr><td>Управлінський облік</td><td class="num">30</td><td class="num">23</td><td class="num">€414</td><td class="num">€1 500</td><td class="num pos">€1 086</td><td class="num">72%</td></tr>
+              <tr><td>Міграція довідників</td><td class="num">14</td><td class="num">8</td><td class="num">€144</td><td class="num">€700</td><td class="num pos">€556</td><td class="num">79%</td></tr>
+              <tr><td>Експрес-діагностика</td><td class="num">12</td><td class="num">12</td><td class="num">€216</td><td class="num">€600</td><td class="num">€384</td><td class="num">64%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Маржинальність рівна по всьому прайсу навмисно: <strong>департаменту має бути однаково, що саме вибрав клієнт.</strong> Щойно один модуль стає помітно вигіднішим за інший, аналітик починає вести розмову до нього, а не до того, що клієнту потрібно.</p>
+        <p>Два винятки в таблиці. <em>Управлінський облік</em> — найнижча маржа: він найменше автоматизується, бо там більшість роботи це рішення про структуру аналітики, а не налаштування. <em>Діагностика</em> продається нижче повної ставки навмисно: вона не для заробітку, а фільтр, і її вартість зараховується в проєкт.</p>
+
+        <h3>Типові набори</h3>
+        <div class="tw">
+          <table class="calc">
+            <thead><tr><th>Профіль</th><th class="num">Позицій</th><th class="num">Год вручну</th><th class="num">Ціна</th><th class="num">Собів.</th><th class="num">Маржа</th></tr></thead>
+            <tbody>
+              <tr><td>Продажі під ключ</td><td class="num">3</td><td class="num">52</td><td class="num">€2 600</td><td class="num">€594</td><td class="num pos">€2 006</td></tr>
+              <tr><td>Сервісна компанія</td><td class="num">4</td><td class="num">78</td><td class="num">€3 900</td><td class="num">€918</td><td class="num pos">€2 982</td></tr>
+              <tr><td>Проєктний бізнес</td><td class="num">4</td><td class="num">88</td><td class="num">€4 400</td><td class="num">€1 080</td><td class="num pos">€3 320</td></tr>
+              <tr><td>Торгівля</td><td class="num">5</td><td class="num">100</td><td class="num">€5 000</td><td class="num">€1 098</td><td class="num pos">€3 902</td></tr>
+              <tr class="total"><td>Середній проєкт</td><td class="num">4</td><td class="num">80</td><td class="num">€3 975</td><td class="num">€923</td><td class="num">€3 052</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Середній проєкт виходить на 62 оплачувані години з резервом — це і є одиниця, якою рахується завантаження команди нижче. Ціна такого проєкту — <b>€3 975</b>, маржа <b>€3 052</b>.</p>
+
+        <div class="note">
+          <h4>Чому 77% — це ще не прибуток</h4>
+          <p>У цих таблицях враховані тільки прямі години аналітика. Продажі, керівництво, інструментарій, офіс і час на клієнтів, які не купили, сюди не входять — вони покриваються постійними витратами нижче.</p>
+          <p>Саме тому 77% не мають вводити в оману. При ставці €50 і собівартості €15 валова маржа за прямими годинами й мусить бути високою — уся складність не в ній, а в тому, чи буде чим завантажити команду. Три проєкти на місяць при цих самих 77% усе ще дають мінус.</p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Клієнт за весь час</h2>
+        <p>Без абонемента горизонт клієнта закінчується разом із роботами. Приклад: набір «Торгівля» на старті плюс два модулі, додані пізніше.</p>
+        <div class="tw">
+          <table class="calc">
+            <thead><tr><th>Джерело</th><th class="num">Виручка</th><th class="num">Собівартість</th><th class="num">Частка</th></tr></thead>
+            <tbody>
+              <tr><td>Стартовий набір, 5 позицій</td><td class="num">€5 000</td><td class="num">€1 098</td><td class="num">69%</td></tr>
+              <tr><td>Два модулі додано пізніше</td><td class="num">€2 200</td><td class="num">€576</td><td class="num">31%</td></tr>
+              <tr class="total"><td>Разом</td><td class="num">€7 200</td><td class="num">€1 674</td><td class="num">маржа €5 526</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="warn">
+          <h4>Що зникло разом з абонементом</h4>
+          <p>У попередній версії моделі той самий клієнт давав <b>€25 200</b> виручки за три роки, з яких абонемент складав 70%. Тепер це <b>€7 200</b> — і закінчується разом із роботами.</p>
+          <p>Департамент від цього не стає збитковим — маржинальність навіть вища, 77%. Але він стає <strong>бізнесом постійного потоку:</strong> накопиченої бази немає, кожен місяць починається з нуля, і виживання цілком залежить від того, скільки нових клієнтів прийшло цього місяця.</p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Команда і потрібний потік</h2>
+        <p>Без регулярного доходу точки безбитковості «на N-му місяці» більше не існує. Є простіше питання: <strong>скільки проєктів на місяць потрібно, щоб місяць закрився в плюс.</strong></p>
+
+        <h3>Мінімальна: лід і два аналітики</h3>
+        <p>Постійні витрати <b>€10 000</b> на місяць, потужність 320 продуктивних годин — до 5,2 середнього проєкту.</p>
+        <div class="tw">
+          <table class="calc">
+            <thead><tr><th class="num">Проєктів<br>на місяць</th><th class="num">Маржа<br>за місяць</th><th class="num">Результат<br>місяця</th><th class="num">Заванта-<br>ження</th></tr></thead>
+            <tbody>
+              <tr><td class="num">2</td><td class="num">€6 104</td><td class="num">−€3 896</td><td class="num">39%</td></tr>
+              <tr><td class="num">3</td><td class="num">€9 156</td><td class="num">−€844</td><td class="num">58%</td></tr>
+              <tr><td class="num">4</td><td class="num">€12 208</td><td class="num pos hl">+€2 208</td><td class="num">77%</td></tr>
+              <tr><td class="num">5</td><td class="num">€15 260</td><td class="num pos">+€5 260</td><td class="num">97%</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Повна: лід і три аналітики</h3>
+        <p>Постійні витрати <b>€13 000</b> на місяць, потужність 440 годин — до 7,1 проєкту.</p>
+        <div class="tw">
+          <table class="calc">
+            <thead><tr><th class="num">Проєктів<br>на місяць</th><th class="num">Маржа<br>за місяць</th><th class="num">Результат<br>місяця</th><th class="num">Заванта-<br>ження</th></tr></thead>
+            <tbody>
+              <tr><td class="num">3</td><td class="num">€9 156</td><td class="num">−€3 844</td><td class="num">42%</td></tr>
+              <tr><td class="num">4</td><td class="num">€12 208</td><td class="num">−€792</td><td class="num">56%</td></tr>
+              <tr><td class="num">5</td><td class="num">€15 260</td><td class="num pos hl">+€2 260</td><td class="num">70%</td></tr>
+              <tr><td class="num">6</td><td class="num">€18 312</td><td class="num pos">+€5 312</td><td class="num">85%</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="warn">
+          <h4>Головне число цієї сторінки</h4>
+          <p><strong>Чотири проєкти щомісяця, кожного місяця.</strong> Не в середньому за рік, не «як розженемось» — саме щомісяця, бо провал одного місяця нічим не компенсується.</p>
+          <p>У лідах це приблизно вісім оплачених діагностик і кілька десятків звернень на місяць. Такого потоку в сегменті зараз немає й близько, і саме він, а не собівартість чи інструментарій, вирішує долю департаменту.</p>
+        </div>
+
+        <div class="note">
+          <h4>Що з цього випливає для рішення про штат</h4>
+          <p>Мінімальній команді треба 4 проєкти на місяць, повній — 5. Різниця в одного аналітика коштує цілого додаткового клієнта щомісяця, при тому що потужність недозавантажена в обох випадках.</p>
+          <p>Порядок дій тому той самий, тільки жорсткіше: <strong>спершу потік, потім люди.</strong> Третій аналітик — коли перші два стабільно за 75% завантаження, і не раніше.</p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Чутливість</h2>
+        <p>Що станеться, якщо допущення виявляться гіршими. Перевіряємо по одному, ціна набору «Торгівля» лишається фіксованою на €5 000.</p>
+        <div class="tw">
+          <table class="calc">
+            <thead><tr><th>Сценарій</th><th class="num">Собівартість</th><th class="num">Маржа</th><th class="num">Зміна</th></tr></thead>
+            <tbody>
+              <tr><td>Базовий розрахунок</td><td class="num">€1 098</td><td class="num">€3 902</td><td class="num">78%</td></tr>
+              <tr><td>Інструментарій знімає лише 20%</td><td class="num">€1 440</td><td class="num">€3 560</td><td class="num">71%</td></tr>
+              <tr><td>Годин виявилось на 30% більше за розрахунок</td><td class="num">€1 427</td><td class="num">€3 573</td><td class="num">71%</td></tr>
+              <tr><td>Обидва разом</td><td class="num">€1 872</td><td class="num">€3 128</td><td class="num">63%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>По трудомісткості модель тримає удар: навіть у найгіршому сценарії проєкт лишається прибутковим на 63%.</p>
+        <div class="warn">
+          <h4>А тепер те, що її ламає</h4>
+          <p>Провал потоку. Один місяць з двома проєктами замість чотирьох коштує <b>−€3 896</b>, і ці гроші не повертаються: наступного місяця все починається спочатку.</p>
+          <p>Раніше цю яму закривав портфель абонементів — він давав дохід незалежно від того, скільки клієнтів прийшло. Тепер такої подушки немає, і <strong>рівність потоку стає такою ж важливою, як його обсяг.</strong></p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+
+      <section class="blk">
+        <h2>Чого в цій моделі немає</h2>
+        <p>Перелік чесніший за самі розрахунки, бо показує, де вона зламається при зустрічі з реальністю.</p>
+        <ul>
+          <li><strong>Вартість залучення клієнта.</strong> Головна дірка: каналу лідів для сегмента зараз фактично немає, тож і цифри немає. Без абонемента запас тут різко вужчий: маржа з клієнта — <b>€5 526</b>, а не €13 000+, як було з регулярним доходом. Канал мусить бути вдвічі дешевшим, і це серйозне обмеження для будь-якого платного трафіку.</li>
+          <li><strong>Витрати фази 0 і пілоту.</strong> Це інвестиція до запуску, а не операційні витрати; вона рахується окремо і повертається з перших клієнтів.</li>
+          <li><strong>Абонемент і підтримка.</strong> Виведені зі скоупу, тому в моделі їх немає взагалі. Це найбільша з навмисних дірок: саме вони закривали провали потоку.</li>
+          <li><strong>Сезонність і простої.</strong> Завантаження в моделі рівномірне, у житті — ні.</li>
+          <li><strong>Клієнти, які не купили.</strong> Години на кваліфікацію і демонстрації для тих, хто пішов, у собівартість проєкту не входять — вони в постійних витратах, і при поганій кваліфікації їх стає непристойно багато.</li>
+        </ul>
+        <p>Жодне з цих чисел не з'явиться з обговорення — усі беруться з пілоту. До того моменту модель відповідає на одне питання: <em>за яких умов департамент закриває місяць у плюс.</em> Відповідь — мінімальна команда і стабільні чотири проєкти щомісяця. Якщо такого потоку немає, наступне питання не про собівартість, а про те, чи повертати абонемент у скоуп.</p>
+      </section>
+    </div>
+
+    <!-- ============ 06 СТИК І РИЗИКИ ============ -->
+    <div class="panel" role="tabpanel" id="p6" aria-labelledby="t6" hidden>
+      <h2>Стик двох департаментів</h2>
+      <p class="lede">Місце, де така конструкція найчастіше ламається, — не технології й не ціни, а передача клієнта між командами і питання, чий це план продажів.</p>
+
+      <section class="blk">
+        <h3>Маршрут униз</h3>
+        <p>Лід не проходить за розміром чи бюджетом → передається в легкий контур. Правило одне і жорстке: <strong>важкий контур не «дотискає» дрібного клієнта до свого чека.</strong> Роздутий проєкт для компанії на 15 користувачів шкодить двічі — псує клієнта і забирає ресурс у великої угоди.</p>
+
+        <h3>Маршрут угору</h3>
+        <p>Запит виходить за периметр SaaS → ескалація. Тут критично, <em>коли саме</em> це з'ясувалося:</p>
+        <div class="tw">
+          <table>
+            <thead><tr><th class="w-sm">Момент</th><th>Що це означає</th><th class="w-sm">Хто платить</th></tr></thead>
+            <tbody>
+              <tr><td><b>На кваліфікації</b></td><td>Система працює як треба. Передаємо в важкий контур.</td><td>—</td></tr>
+              <tr><td><b>На діагностиці</b></td><td>Нормально: діагностика для цього й потрібна. Клієнт отримує чесну відповідь і переходить нагору.</td><td>клієнт, за діагностику</td></tr>
+              <tr><td><b>Після старту робіт</b></td><td>Наша помилка кваліфікації. Доробляємо в межах узгодженого набору, міграцію продаємо окремо.</td><td>департамент</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Гроші й план</h3>
+        <p>Два питання, на які потрібна письмова відповідь до першої угоди, інакше вони спливуть у формі конфлікту:</p>
+        <ul>
+          <li>Чий це <strong>план продажів</strong>, якщо клієнт прийшов у важкий контур, а закрився пакетом у легкому?</li>
+          <li>Хто веде клієнта після закриття проєкту і кому дістається наступний модуль, якщо клієнт повернувся?</li>
+        </ul>
+        <div class="note">
+          <p>Пропозиція за замовчуванням: план продажів іде тому департаменту, який <em>веде клієнта зараз</em>, а той, хто передав, отримує фіксовану частку за перший рік. Це прибирає мотив тримати чужого клієнта в себе.</p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Ризики</h2>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Ризик</th><th class="w-sm">Рівень</th><th>Реакція</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><b>Розмивання периметра.</b> Аналітик обіцяє те, чого SaaS не вміє, бо не хоче втратити угоду</td>
+                <td><span class="pill hi">високий</span></td>
+                <td>Стоп-лист у роботі щодня; кожна ескалація розбирається; обіцянка поза межами прирівнюється до помилки, а не до ініціативи</td>
+              </tr>
+              <tr>
+                <td><b>Odoo конкурує напряму</b> своїми Success Packs у тому ж сегменті</td>
+                <td><span class="pill hi">високий</span></td>
+                <td>Диференціація на тому, чого вендор не дає: українська мова, знання BAS-стику, локальний контекст, людина поруч</td>
+              </tr>
+              <tr>
+                <td><b>Примусове оновлення версії</b> ламає Studio-налаштування в базі клієнта</td>
+                <td><span class="pill mid">середній</span></td>
+                <td>Регламентна звірка баз після хвилі оновлень; попереджаємо клієнта першими, навіть якщо це не оплачується</td>
+              </tr>
+              <tr>
+                <td><b>Департамент стає звалищем</b> незручних задач основної команди</td>
+                <td><span class="pill hi">високий</span></td>
+                <td>Прописане правило: тільки новий вхідний потік; передача чинного клієнта — окреме рішення керівника</td>
+              </tr>
+              <tr>
+                <td><b>Канібалізація:</b> клієнт, який міг стати великим проєктом, набирає кілька модулів за прайсом</td>
+                <td><span class="pill mid">середній</span></td>
+                <td>Поріг за користувачами і бюджетом у кваліфікації; спірні випадки — рішення двох керівників</td>
+              </tr>
+              <tr>
+                <td><b>Клієнт передумав</b> і хоче регламентний облік в Odoo</td>
+                <td><span class="pill mid">середній</span></td>
+                <td>Обмеження зафіксоване письмово в пропозиції; сценарій відповіді відпрацьований заздалегідь</td>
+              </tr>
+              <tr>
+                <td><b>Налаштування виявилось дорожчим, ніж закладено</b> в ціни прайсу</td>
+                <td><span class="pill hi">високий</span></td>
+                <td>Заміряти на власному стенді у фазі 0, до будь-яких обіцянок клієнту; фікс-ціну ставити тільки після трьох-п'яти реальних замірів</td>
+              </tr>
+              <tr>
+                <td><b>Програмний запис зіпсував базу,</b> у якій уже працює клієнт</td>
+                <td><span class="pill hi">високий</span></td>
+                <td>Основна маса записів іде у вікно до завантаження даних; у робочу базу — партіями, з резервною копією і переліком змін; сервісний користувач з мінімальними правами, доступ відкликається після робіт</td>
+              </tr>
+              <tr>
+                <td><b>Периметр розмивається зсередини:</b> через API в базу потрапляє те, що робить її кастомною</td>
+                <td><span class="pill hi">високий</span></td>
+                <td>Перелік дозволених типів записів зафіксований; регламентна звірка бази з процедурою покаже сторонні об'єкти; складні QWeb і успадкування моделей — стоп-лист, а не питання інструмента</td>
+              </tr>
+              <tr>
+                <td><b>Бібліотека процедур не наповнюється:</b> після запуску всі бігом ідуть на наступний проєкт</td>
+                <td><span class="pill hi">високий</span></td>
+                <td>Розбір після запуску стоїть у плані робіт і в оцінці як окремий пункт; без нього проєкт не вважається закритим</td>
+              </tr>
+              <tr>
+                <td><b>Ручний обмін з BAS не тягне обсяг</b> клієнта і стає постійним болем</td>
+                <td><span class="pill hi">високий</span></td>
+                <td>Обсяг документообігу — питання чек-листа кваліфікації; регламент обміну узгоджується до підписання, а не після запуску</td>
+              </tr>
+              <tr>
+                <td><b>Аналітик приймає результат за звітом,</b> не подивившись у систему</td>
+                <td><span class="pill mid">середній</span></td>
+                <td>Приймання очима в базі — окремий крок процедури; на пілоті це прямий критерій готовності аналітика вести проєкт самостійно</td>
+              </tr>
+              <tr>
+                <td><b>Дані клієнта обробляються без узгодженої підстави</b></td>
+                <td><span class="pill hi">високий</span></td>
+                <td>Умова в договорі як обов'язковий пункт, а не додаток; сценарій розмови для аналітика відпрацьований заздалегідь</td>
+              </tr>
+              <tr>
+                <td><b>Дрейф конфігурації.</b> Налаштування генерується, ніхто не читає, у базах накопичуються дивні рішення</td>
+                <td><span class="pill mid">середній</span></td>
+                <td>Розбір після запуску як обов'язковий пункт плану робіт; зміна процедури проходить рев'ю з автором</td>
+              </tr>
+              <tr>
+                <td><b>Аналітик не розуміє, що зробив інструмент,</b> і не може пояснити клієнту</td>
+                <td><span class="pill mid">середній</span></td>
+                <td>Приймання кожної партії змін людиною; карта налаштування вичитується перед передачею</td>
+              </tr>
+              <tr>
+                <td><b>Немає потоку лідів</b> у сегменті</td>
+                <td><span class="pill lo">керований</span></td>
+                <td>Перевіряється пілотом раніше за всі інші гіпотези — на це не потрібен департамент</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============ 07 ЗАПУСК ============ -->
+    <div class="panel" role="tabpanel" id="p7" aria-labelledby="t7" hidden>
+      <h2>План запуску</h2>
+      <p class="lede">Обрано розумний порядок: спочатку пілот на виділених людях, і лише потім рішення про департамент. Тоді структура створюється під підтверджені цифри, а не під гіпотезу.</p>
+
+      <section class="blk">
+        <div class="phase">
+          <div class="tag">фаза 0</div>
+          <div class="who">≈4 тижні · без штату</div>
+          <h3>Проєктування і перевірка гіпотез</h3>
+          <div class="content">
+            <p>Стоп-лист, чек-лист кваліфікації, чернетка прайсу і дві перші процедури — <b>База</b> і <b>Проєкти й таймшити</b>, бо це процес, який ми знаємо найкраще. Процедури пишуться не з голови: аналітик збирає їх на власному стенді з порожньої бази, записує кроки і години, а потім те саме повторює <b>apply-config</b> на другій порожній базі.</p>
+            <p>З інструментарію у цій фазі будуються тільки три скіли — <b>setup-runbook</b>, <b>apply-config</b> і <b>config-map</b>. Решта пишеться в пілоті, під реальні задачі, а не наперед.</p>
+            <div class="gate"><b>Гейт</b>Дві бази, налаштовані вручну і програмно, дають однаковий результат. Години по обох процедурах на руках — з них рахується перша ціна прайсу.</div>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="tag">фаза 1</div>
+          <div class="who">2–3 місяці · 2 виділені людини частково</div>
+          <h3>Пілот на T&amp;M</h3>
+          <div class="content">
+            <p>Три клієнти, повний замір годин, ціна за часом. Мета фази — не заробити, а отримати статистику трудомісткості й перевірити кваліфікацію на реальних людях. Кожен вихід за периметр записується. Години діляться на дві категорії: зняті інструментарієм і людські — інакше нема на чому будувати фікс-ціну.</p>
+            <p>Скіли дописуються по ходу: кожна задача, яка повторилася двічі, стає скілом до третього разу.</p>
+            <div class="gate"><b>Гейт</b>Медіана годин по кожному відпрацьованому рядку прайсу в межах цільової. Жодної ескалації через помилку кваліфікації. Хоча б один клієнт повернувся за новим модулем. Виміряно, скільки проєктів аналітик тягне паралельно.</div>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="tag">фаза 2</div>
+          <div class="who">2–3 місяці · та ж команда</div>
+          <h3>Фіксація прайсу</h3>
+          <div class="content">
+            <p>Ціни ставляться за P80 замірів — спершу по тих рядках прайсу, які вже двічі проходили в роботі, решта лишається під оцінку. Ще 5–8 клієнтів уже за фіксом. Наповнюються процедури за рештою модулів. Записуються відеокурси.</p>
+            <div class="gate"><b>Гейт</b>Юніт-економіка підтверджена на фіксі. Потік лідів існує без разових зусиль. Є людина, готова очолити департамент.</div>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="tag">фаза 3</div>
+          <div class="who">за рішенням гейту</div>
+          <h3>Департамент</h3>
+          <div class="content">
+            <p>Штат, окремий P&amp;L, власна воронка й маркетинг, найм аналітиків під наставництво лідера. Тільки тепер — і тільки якщо попередній гейт пройдено цифрами, а не бажанням.</p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <section class="blk">
+        <h2>Найближчі два тижні</h2>
+        <ol>
+          <li>Зібрати Базу і модуль «Проєкти й таймшити» на власному стенді вручну і заміряти години — це база порівняння для всього решти.</li>
+          <li>Звірити з чинним прайсом Odoo, що саме входить у план Custom — Studio, багатокомпанійність, зовнішній API — і скільки він коштує клієнту на рік.</li>
+          <li>Записати пункт 1 як дві процедури і повторити їх через <b>apply-config</b> на другій порожній базі — це і перші рядки бібліотеки, і замір окупності інструментарію.</li>
+          <li>Написати стоп-лист і чек-лист кваліфікації — по одній сторінці кожен, у робочому вигляді.</li>
+          <li>Погодити з юристом умову про доступ до бази клієнта і обробку її даних, вшити в шаблон договору пакета.</li>
+          <li>Сформулювати, як на зустрічі говоримо про обмін з BAS: що це відповідальність клієнта, і за якого обсягу документообігу ми відмовляємось.</li>
+          <li>Домовитися письмово про правило плану продажів між контурами.</li>
+          <li>Назвати трьох кандидатів у пілотні клієнти з наявного потоку лідів.</li>
+        </ol>
+        <div class="open">
+          <h4>Що лишилося недорозв'язаним</h4>
+          <ul>
+            <li>Чи входить управлінський облік в Odoo у межі сегмента.</li>
+            <li>Хто персонально веде пілот і скільки часу на нього виділяється.</li>
+            <li>За якого обсягу документообігу ручний обмін з BAS перестає бути прийнятним — потрібна цифра для чек-листа.</li>
+            <li>Канал лідів для сегмента — його зараз фактично немає, і це окрема тема.</li>
+            <li>Чи стає інструментарій департаменту частиною пропозиції клієнту — тобто чи говоримо вголос, що матеріали готує Claude. Аргументи є в обидва боки, і це рішення про позиціювання, а не про технології.</li>
+            <li>Хто веде перелік дозволених типів записів через API і як часто його переглядають — без цього периметр розмивається тихо.</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+
+    </main>
+  </div>
+
+  <div class="foot">Чернетка v1 · робочий документ для обговорення · оновлюється за підсумками фази 0</div>
+</div>
+
+<script>
+(function(){
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  var panels = tabs.map(function(t){ return document.getElementById(t.getAttribute('aria-controls')); });
+
+  function select(i){
+    tabs.forEach(function(t, j){
+      t.setAttribute('aria-selected', j === i ? 'true' : 'false');
+      panels[j].hidden = j !== i;
+    });
+    try { localStorage.setItem('odoo-com-dept-tab-v4', String(i)); } catch(e){}
+    window.scrollTo({ top: 0, behavior: 'instant' in document.documentElement.style ? 'instant' : 'auto' });
+  }
+
+  tabs.forEach(function(t, i){
+    t.addEventListener('click', function(){ select(i); });
+    t.addEventListener('keydown', function(e){
+      var d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1
+            : e.key === 'ArrowLeft'  || e.key === 'ArrowUp'   ? -1 : 0;
+      if(!d) return;
+      e.preventDefault();
+      var n = (i + d + tabs.length) % tabs.length;
+      tabs[n].focus();
+      select(n);
+    });
+  });
+
+  var saved = null;
+  try { saved = localStorage.getItem('odoo-com-dept-tab-v4'); } catch(e){}
+  var idx = saved !== null ? parseInt(saved, 10) : 0;
+  if(!(idx >= 0 && idx < tabs.length)) idx = 0;
+  tabs.forEach(function(t, j){
+    t.setAttribute('aria-selected', j === idx ? 'true' : 'false');
+    panels[j].hidden = j !== idx;
+  });
+})();
+</script>

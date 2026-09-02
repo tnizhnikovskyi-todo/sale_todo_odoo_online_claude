@@ -1,0 +1,6 @@
+.odoo_key
+*.key
+_preview*.html
+/tmp/
+.DS_Store
+__pycache__/
