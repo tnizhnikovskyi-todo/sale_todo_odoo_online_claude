@@ -81,6 +81,8 @@ PY
 
 - концепція — https://claude.ai/code/artifact/2b237e58-956c-4833-b6a2-8f93119af5ac
 - калькулятор — https://claude.ai/code/artifact/e1126839-5e2c-4f92-ac9b-901c8d7828e8
+- аналіз прайсу — https://claude.ai/code/artifact/e52a1dd0-f461-43ed-bec7-4811f83f8a44
+  (збирається з `docs/аналіз-прайсу.md` через `python3 tools/build_analysis.py`)
 
 ## Стенд Odoo для перевірок
 
