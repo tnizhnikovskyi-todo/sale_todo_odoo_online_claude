@@ -146,6 +146,31 @@ def check_qual(blocks, known):
                 warns.append('%s: немає відповіді без наслідків — питання не розділяє лідів' % qid)
     return errs, warns
 
+def check_probes(probes, group_names):
+    """Перевіряє питання на глибину: ключ = назва групи прайсу, 5-7 питань, є «що слухати»."""
+    errs, warns = [], []
+    for grp, items in (probes or {}).items():
+        if grp not in group_names:
+            errs.append('глибина: невідома група «%s» (ключ мусить збігатися з назвою групи в прайсі)' % grp)
+            continue
+        if not isinstance(items, list) or not items:
+            errs.append('глибина/%s: порожній список питань' % grp); continue
+        if not (5 <= len(items) <= 7):
+            warns.append('глибина/%s: %d питань, а треба 5-7' % (grp, len(items)))
+        ids = set()
+        for it in items:
+            pid = '%s/%s' % (grp, it.get('id'))
+            if not it.get('id'): errs.append('глибина/%s: питання без id' % grp)
+            elif it['id'] in ids: errs.append('глибина: дубль id %s' % pid)
+            else: ids.add(it['id'])
+            if not it.get('q'): errs.append('глибина/%s: питання без формулювання' % pid)
+            elif has_stop(it['q']): errs.append('глибина/%s: питання обіцяє те, що поза периметром' % pid)
+            if not it.get('hear'): errs.append('глибина/%s: немає «що слухати» (hear)' % pid)
+            elif has_stop(it['hear']): errs.append('глибина/%s: «що слухати» обіцяє те, що поза периметром' % pid)
+    missing = [g for g in group_names if g not in (probes or {})]
+    for g in missing: warns.append('глибина: для групи «%s» питань немає' % g)
+    return errs, warns
+
 def inject(html, name, value):
     """Замінює тіло `var NAME = …;` у HTML на value, зберігаючи відступ рядка."""
     a = html.index('var ' + name + ' = ')
@@ -170,9 +195,13 @@ def main():
     groups = payload['групи']
     errs, warns = check(groups)
     known = set(it.get('id') for gr in groups for it in gr.get('items', []))
-    qual = json.load(io.open(QUAL, encoding='utf-8'))['блоки']
+    qpayload = json.load(io.open(QUAL, encoding='utf-8'))
+    qual = qpayload['блоки']
+    probes = qpayload.get('глибина') or {}
     qe, qw = check_qual(qual, known)
     errs += qe; warns += qw
+    pe, pw = check_probes(probes, [g['g'] for g in groups])
+    errs += pe; warns += pw
     for w in warns: print('  ⚠', w)
     if errs:
         print('СТРУКТУРА ЗЛАМАНА, збірку скасовано:')
@@ -182,6 +211,7 @@ def main():
     html = io.open(HTML, encoding='utf-8').read()
     html = inject(html, 'GROUPS', groups)
     html = inject(html, 'QUAL', qual)
+    html = inject(html, 'PROBES', probes)
     io.open(HTML, 'w', encoding='utf-8').write(html)
 
     pos = sum(len(g['items']) for g in groups)
@@ -192,7 +222,8 @@ def main():
     qq = sum(len(b.get('питання', [])) for b in qual)
     qp = sum(len(b.get('пункти', [])) for b in qual)
     print('OK: %d груп, %d позицій, %d пунктів складу, %d рядків «не входить», %d залежностей вшито в calculator.html' % (len(groups), pos, pts, bnd, dps))
-    print('    чек-лист кваліфікації: %d блоків, %d питань скринінгу, %d пунктів готовності' % (len(qual), qq, qp))
+    pr = sum(len(v) for v in probes.values())
+    print('    чек-лист кваліфікації: %d блоків, %d питань скринінгу, %d пунктів готовності, %d питань на глибину' % (len(qual), qq, qp, pr))
     return 0
 
 if __name__ == '__main__':
