@@ -155,8 +155,8 @@ def check_probes(probes, group_names):
             continue
         if not isinstance(items, list) or not items:
             errs.append('глибина/%s: порожній список питань' % grp); continue
-        if not (5 <= len(items) <= 7):
-            warns.append('глибина/%s: %d питань, а треба 5-7' % (grp, len(items)))
+        if not (8 <= len(items) <= 14):
+            warns.append('глибина/%s: %d питань, а треба 8-14' % (grp, len(items)))
         ids = set()
         for it in items:
             pid = '%s/%s' % (grp, it.get('id'))
