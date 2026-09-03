@@ -63,11 +63,14 @@ def main():
         return 1
 
     html = io.open(HTML, encoding='utf-8').read()
-    marker = '  var GROUPS = '
-    a = html.index(marker)
-    b = html.index(';\n\n  var MODS = [];')
-    block = marker + json.dumps(groups, ensure_ascii=False, indent=2).replace('\n', '\n  ')
-    html = html[:a] + block + html[b:]
+    # межі блоку даних шукаємо стійко: від 'var GROUPS = ' до ';' перед 'var MODS'
+    a = html.index('var GROUPS = ')
+    m = html.index('var MODS', a)
+    end = html.rindex(';', a, m)          # ';' що закриває масив
+    indent = html[html.rindex('\n', 0, a) + 1:a]
+    block = indent + 'var GROUPS = ' + json.dumps(
+        groups, ensure_ascii=False, indent=2).replace('\n', '\n' + indent)
+    html = html[:html.rindex('\n', 0, a) + 1] + block + html[end:]
     io.open(HTML, 'w', encoding='utf-8').write(html)
 
     pos = sum(len(g['items']) for g in groups)
