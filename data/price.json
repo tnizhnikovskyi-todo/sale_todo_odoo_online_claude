@@ -82,7 +82,7 @@
               "web_studio"
             ],
             "2": [
-              "spreadsheet_dashboard"
+              "board"
             ],
             "3": []
           },
@@ -90,7 +90,8 @@
             "base",
             "contacts",
             "mail",
-            "web_studio"
+            "web_studio",
+            "board"
           ],
           "dep": []
         },
