@@ -17,7 +17,7 @@
 без застереження); у чек-листі — вид блоку, наслідки r, посилання need на
 відомі позиції прайсу, пояснення при r=warn/stop.
 """
-import io, json, os, sys
+import io, json, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, 'data', 'price.json')
@@ -146,7 +146,27 @@ def check_qual(blocks, known):
                 warns.append('%s: немає відповіді без наслідків — питання не розділяє лідів' % qid)
     return errs, warns
 
-def check_probes(probes, group_names):
+REF = re.compile(r'«([^»]+)»\s*рівня\s*(\d)')
+
+def check_refs(text, where, pos_names, errs, warns):
+    """Посилання «Назва» рівня N у «що слухати» мусить вести на живу позицію прайсу.
+    Позиції перейменовують — без цієї перевірки чек-лист тихо починає називати те,
+    чого в прайсі вже немає."""
+    for m in REF.finditer(text or ''):
+        nm, lv = m.group(1), int(m.group(2))
+        if not 1 <= lv <= 3:
+            errs.append('%s: посилання на рівень %d — рівнів три' % (where, lv))
+        if nm in pos_names:
+            continue
+        hit = [n for n in pos_names if n.startswith(nm)]
+        if len(hit) == 1:
+            warns.append('%s: «%s» — скорочена назва позиції «%s»' % (where, nm, hit[0]))
+        elif hit:
+            errs.append('%s: «%s» підходить кільком позиціям: %s' % (where, nm, ', '.join(hit)))
+        else:
+            errs.append('%s: посилання на позицію «%s», якої в прайсі немає' % (where, nm))
+
+def check_probes(probes, group_names, pos_names=()):
     """Перевіряє питання на глибину: ключ = назва групи прайсу, 5-7 питань, є «що слухати»."""
     errs, warns = [], []
     for grp, items in (probes or {}).items():
@@ -167,6 +187,7 @@ def check_probes(probes, group_names):
             elif has_stop(it['q']): errs.append('глибина/%s: питання обіцяє те, що поза периметром' % pid)
             if not it.get('hear'): errs.append('глибина/%s: немає «що слухати» (hear)' % pid)
             elif has_stop(it['hear']): errs.append('глибина/%s: «що слухати» обіцяє те, що поза периметром' % pid)
+            else: check_refs(it['hear'], 'глибина/%s' % pid, pos_names, errs, warns)
     missing = [g for g in group_names if g not in (probes or {})]
     for g in missing: warns.append('глибина: для групи «%s» питань немає' % g)
     return errs, warns
@@ -200,7 +221,8 @@ def main():
     probes = qpayload.get('глибина') or {}
     qe, qw = check_qual(qual, known)
     errs += qe; warns += qw
-    pe, pw = check_probes(probes, [g['g'] for g in groups])
+    pe, pw = check_probes(probes, [g['g'] for g in groups],
+                          [it['n'] for g in groups for it in g['items']])
     errs += pe; warns += pw
     for w in warns: print('  ⚠', w)
     if errs:
