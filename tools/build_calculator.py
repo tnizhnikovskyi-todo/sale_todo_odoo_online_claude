@@ -22,6 +22,7 @@ import io, json, os, re, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, 'data', 'price.json')
 QUAL = os.path.join(ROOT, 'data', 'qualification.json')
+FORM = os.path.join(ROOT, 'data', 'client-form.json')
 HTML = os.path.join(ROOT, 'artifacts', 'calculator.html')
 
 STOP = ['доопрацюван', 'доробк', 'лише в XML', 'умовні блоки', 'обчислювані поля']
@@ -192,6 +193,57 @@ def check_probes(probes, group_names, pos_names=()):
     for g in missing: warns.append('глибина: для групи «%s» питань немає' % g)
     return errs, warns
 
+def check_form(form, known):
+    """Перевіряє анкету клієнта: типи полів, унікальність id, посилання на позиції прайсу.
+
+    Аудиторія анкети — клієнт, тому окремо ловимо внутрішню лексику: рівнів, цін,
+    «стопів» і слова «контур» у питаннях до клієнта бути не має.
+    """
+    errs, warns = [], []
+    INNER = ['рівень', 'рівня', 'стоп-', 'наш контур', 'прайс', 'маржа', '€', 'дискваліф']
+    TYPES = ('текст', 'абзац', 'вибір')
+    seen = set()
+    if not form.get('вступ'): warns.append('анкета: немає вступу для клієнта')
+
+    def fields(where, items):
+        for f in items:
+            fid = '%s/%s' % (where, f.get('id'))
+            if not f.get('id'): errs.append('%s: поле без id' % where)
+            elif fid in seen: errs.append('анкета: дубль поля %s' % fid)
+            else: seen.add(fid)
+            if not f.get('q'): errs.append('%s: поле без питання' % fid)
+            elif has_stop(f['q']): errs.append('%s: питання обіцяє те, що поза периметром' % fid)
+            else:
+                low = f['q'].lower()
+                for w in INNER:
+                    if w in low: errs.append('%s: у питанні до клієнта внутрішня лексика «%s»' % (fid, w))
+            if f.get('тип') not in TYPES:
+                errs.append('%s: тип мусить бути %s' % (fid, ' / '.join(TYPES)))
+            if f.get('тип') == 'вибір' and len(f.get('опції') or []) < 2:
+                errs.append('%s: у полі-виборі мусить бути щонайменше дві опції' % fid)
+            if f.get('тип') != 'вибір' and f.get('опції'):
+                errs.append('%s: опції має тільки поле-вибір' % fid)
+
+    secs = (form.get('розділи') or []) + (form.get('розділи2') or [])
+    if not secs: errs.append('анкета: немає постійних розділів')
+    for sec in secs:
+        if not sec.get('id') or not sec.get('назва'):
+            errs.append('анкета: розділ без id або назви'); continue
+        if not sec.get('поля'): errs.append('анкета/%s: розділ без полів' % sec['id'])
+        fields(sec['id'], sec.get('поля') or [])
+    procs = form.get('процеси') or []
+    if not procs: errs.append('анкета: немає блоків процесів')
+    for pr in procs:
+        pid = pr.get('id')
+        if not pid or not pr.get('назва'):
+            errs.append('анкета: процес без id або назви'); continue
+        if not pr.get('питання'): errs.append('анкета/%s: процес без питань' % pid)
+        for t in pr.get('позиції') or []:
+            if t not in known: errs.append('анкета/%s: посилання на невідому позицію прайсу %s' % (pid, t))
+        if not pr.get('позиції'): warns.append('анкета/%s: процес не зіставлений із позиціями прайсу' % pid)
+        fields(pid, pr.get('питання') or [])
+    return errs, warns
+
 def inject(html, name, value):
     """Замінює тіло `var NAME = …;` у HTML на value, зберігаючи відступ рядка."""
     a = html.index('var ' + name + ' = ')
@@ -224,6 +276,9 @@ def main():
     pe, pw = check_probes(probes, [g['g'] for g in groups],
                           [it['n'] for g in groups for it in g['items']])
     errs += pe; warns += pw
+    formdata = json.load(io.open(FORM, encoding='utf-8'))
+    fe, fw = check_form(formdata, known)
+    errs += fe; warns += fw
     for w in warns: print('  ⚠', w)
     if errs:
         print('СТРУКТУРА ЗЛАМАНА, збірку скасовано:')
@@ -234,6 +289,7 @@ def main():
     html = inject(html, 'GROUPS', groups)
     html = inject(html, 'QUAL', qual)
     html = inject(html, 'PROBES', probes)
+    html = inject(html, 'FORM', formdata)
     io.open(HTML, 'w', encoding='utf-8').write(html)
 
     pos = sum(len(g['items']) for g in groups)
@@ -246,6 +302,11 @@ def main():
     print('OK: %d груп, %d позицій, %d пунктів складу, %d рядків «не входить», %d залежностей вшито в calculator.html' % (len(groups), pos, pts, bnd, dps))
     pr = sum(len(v) for v in probes.values())
     print('    чек-лист кваліфікації: %d блоків, %d питань скринінгу, %d пунктів готовності, %d питань на глибину' % (len(qual), qq, qp, pr))
+    fq = (sum(len(x.get('поля') or []) for x in (formdata.get('розділи') or []) + (formdata.get('розділи2') or []))
+          + sum(len(x.get('питання') or []) for x in formdata.get('процеси') or []))
+    print('    анкета клієнта: %d розділів, %d блоків процесів, %d полів' % (
+        len((formdata.get('розділи') or []) + (formdata.get('розділи2') or [])),
+        len(formdata.get('процеси') or []), fq))
     return 0
 
 if __name__ == '__main__':
