@@ -267,24 +267,27 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
 .tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 /* ---------- чек-лист кваліфікації ---------- */
-.qbar{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 16px}
-.qchip{
-  appearance:none;cursor:pointer;font-family:inherit;font-size:12.5px;
-  border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-2);
-  padding:6px 12px;border-radius:999px;display:inline-flex;align-items:baseline;gap:7px;
+.qbar{
+  display:flex;flex-wrap:wrap;gap:4px 12px;margin:0 0 16px;padding:11px 13px;
+  border:1px solid var(--line);border-radius:10px;background:var(--surface);
 }
-.qchip:hover{background:var(--surface-2);color:var(--ink)}
-.qchip[aria-expanded="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
-.qchip .cnt{
+.qcheck{
+  display:inline-flex;align-items:baseline;gap:8px;cursor:pointer;
+  font-size:13px;line-height:1.35;padding:5px 9px;border-radius:7px;
+  border:1px solid transparent;color:var(--ink-2);
+}
+.qcheck:hover{background:var(--surface-2);color:var(--ink)}
+.qcheck.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.qcheck input{accent-color:var(--accent);flex:none;margin:0;position:relative;top:2px}
+.qcheck input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.qcheck .cnt{
   font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--muted);
   font-variant-numeric:tabular-nums;
 }
-.qchip[aria-expanded="true"] .cnt{color:var(--accent)}
-.qchip.full{border-color:var(--allow)}
-.qchip.full .cnt{color:var(--allow)}
-.qchip.hasstop{border-color:var(--deny)}
-.qchip.hasstop .cnt{color:var(--deny)}
-.qchip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.qcheck.on .cnt{color:var(--accent)}
+.qcheck.full .cnt{color:var(--allow)}
+.qcheck.hasstop{border-color:var(--deny);color:var(--deny)}
+.qcheck.hasstop .cnt{color:var(--deny)}
 
 .qsec{
   border:1px solid var(--line);border-radius:10px;background:var(--surface);
@@ -363,7 +366,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
     <div class="eyebrow">Департамент odoo.com · інструмент сейла</div>
     <h1>Калькулятор впровадження</h1>
     <p class="sub" id="sub-calc">Позначте те, що потрібно клієнту, і виберіть рівень по кожній позиції. Під назвою стоїть ознака, за якою рівень визначають, а кнопка «порівняти» розкриває всі три поруч зі складом робіт: видно, що входить у кожен і що додається на наступному. Ціна й строк порахуються самі.</p>
-    <p class="sub" id="sub-qual" hidden>Порядок розмови: спершу скринінг — одинадцять питань, на яких лід або наш, або не наш; далі напрями, де питання ставиться по кожній позиції прайсу, а відповідь клієнта і є ознакою рівня; в кінці готовність — умови, від яких відлічується строк. Розділ розкривається натисканням на його назву. Обрана відповідь по напряму одразу проставляє позицію й рівень у калькуляторі.</p>
+    <p class="sub" id="sub-qual" hidden>Порядок розмови: спершу скринінг — вісім питань, на яких лід або наш, або не наш; далі напрями, де питання ставиться по кожній позиції прайсу, а відповідь клієнта і є ознакою рівня. Розділи відкриваються галочками — на екрані те, про що говорять зараз. Обрана відповідь по напряму одразу проставляє позицію й рівень у калькуляторі.</p>
   </header>
 
   <div class="bar">
@@ -441,7 +444,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
       <div>
         <div class="qbar" id="qbar"></div>
         <div id="qblocks"></div>
-        <p class="tblnote">Чек-лист — не анкета для клієнта, а порядок розмови для сейла. Питання скринінгу ставляться до того, як почалося обговорення модулів: одна відповідь «стоп» означає, що склад робіт обговорювати нема сенсу, і лід іде в основну команду. Відповідь «з обмеженням» не зупиняє угоду, але це обмеження треба сказати вголос до КП, а не після приймання. У напрямах кожна відповідь — це ознака рівня, і рівень визнається за тим, що сейл побачив або почув на діагностиці: файл із даними, чинний бланк рахунка, перелік ролей — а не зі слів «у нас усе просто». Готовність — друга вісь: вона не змінює ціну, вона визначає дату старту.</p>
+        <p class="tblnote">Чек-лист — не анкета для клієнта, а порядок розмови для сейла. Розділи вмикаються галочками: відкрито те, про що говорять зараз. Питання скринінгу ставляться до того, як почалося обговорення модулів: одна відповідь «стоп» означає, що склад робіт обговорювати нема сенсу, і лід іде в основну команду. Відповідь «з обмеженням» не зупиняє угоду, але це обмеження треба сказати вголос до КП, а не після приймання. У напрямах кожна відповідь — це ознака рівня, і рівень визнається за тим, що сейл побачив або почув на діагностиці: файл із даними, чинний бланк рахунка, перелік ролей — а не зі слів «у нас усе просто». </p>
       </div>
 
       <div class="panel">
@@ -452,7 +455,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
           <p class="vsub" id="q-vsub">Скринінг ще не починався.</p>
           <div class="row"><span>Скринінг</span><b id="q-scr">—</b></div>
           <div class="row"><span>Обмежень до КП</span><b id="q-lim">—</b></div>
-          <div class="row"><span>Готовність</span><b id="q-rdy">—</b></div>
+          <div class="row" id="q-rdy-row"><span>Готовність</span><b id="q-rdy">—</b></div>
           <div class="row"><span>Позицій у наборі</span><b id="q-pos">—</b></div>
           <div class="flag" id="q-flag" hidden></div>
         </div>
@@ -2815,7 +2818,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
       "id": "scr",
       "назва": "Скринінг",
       "вид": "питання",
-      "під": "Одинадцять питань, на яких лід або наш, або не наш. Ставляться до розмови про модулі: відповідь «стоп» означає, що склад робіт обговорювати нема сенсу.",
+      "під": "Вісім питань, на яких лід або наш, або не наш. Ставляться до розмови про модулі: відповідь «стоп» означає, що склад робіт обговорювати нема сенсу.",
       "питання": [
         {
           "id": "cash",
@@ -2939,41 +2942,6 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
           ]
         },
         {
-          "id": "lang",
-          "q": "Чи приймають частково англійський інтерфейс і англійську документацію Odoo?",
-          "a": [
-            {
-              "t": "Приймають",
-              "r": "ok"
-            },
-            {
-              "t": "Потрібна повна українська",
-              "r": "warn",
-              "note": "Меню перекладено на 95–100 %, підписи полів — на 60–90 % (у задачах проєктів 60 %). Переклад рядків інтерфейсу поза периметром; перейменувати можна тільки те, що правиться в Studio."
-            }
-          ]
-        },
-        {
-          "id": "subs",
-          "q": "Чи може клієнт сам оплатити підписку Odoo нерезиденту?",
-          "a": [
-            {
-              "t": "Так, є чим платити",
-              "r": "ok"
-            },
-            {
-              "t": "Не перевіряли",
-              "r": "warn",
-              "note": "Перевірити до старту: підписку на плані Custom клієнт оформлює й оплачує сам, ми на ній не заробляємо."
-            },
-            {
-              "t": "Платити нерезиденту не можуть",
-              "r": "stop",
-              "note": "Зупинка ще до старту: без підписки на плані Custom проєкту немає."
-            }
-          ]
-        },
-        {
           "id": "legal",
           "q": "Скільки юросіб або ФОП у структурі і чи продають вони одна одній?",
           "a": [
@@ -2997,29 +2965,6 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
           ]
         },
         {
-          "id": "sign",
-          "q": "Чи є документи, які клієнт хоче підписувати «в системі», і з ким саме?",
-          "a": [
-            {
-              "t": "Не потрібно",
-              "r": "ok"
-            },
-            {
-              "t": "Усередині компанії й комерційні погодження",
-              "r": "warn",
-              "note": "Odoo Sign годиться: підписання у браузері за посиланням — погодження, комерційні пропозиції, внутрішні документи.",
-              "need": [
-                "doc"
-              ]
-            },
-            {
-              "t": "Підпис має замінити офіційний обмін документами з контрагентами",
-              "r": "stop",
-              "note": "Odoo Sign так не працює: це підписання у браузері за посиланням. Замінити ним офіційний обмін документами не можна — це не наш контур."
-            }
-          ]
-        },
-        {
           "id": "fx",
           "q": "Чи є валютні операції — імпорт, експорт, розрахунки в валюті?",
           "a": [
@@ -3036,39 +2981,6 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
               ]
             }
           ]
-        }
-      ]
-    },
-    {
-      "id": "rdy",
-      "назва": "Готовність",
-      "вид": "чеклист",
-      "під": "Друга вісь після складу робіт: рівень відповідає на «що робимо», готовність — на «коли починаємо». Строк називаємо від дати, коли закрито останній пункт, а не від дати підпису.",
-      "пункти": [
-        {
-          "id": "one",
-          "t": "Названо одну людину з правом рішення — не комітет; відповідь до 2 робочих днів",
-          "note": "Комітет замість однієї людини = ітерації на кожному погодженні. Це головна причина виходу за фікс."
-        },
-        {
-          "id": "dec",
-          "t": "Рішення вже ухвалені: хто що бачить, категорії, статті аналітики, етапи",
-          "note": "«Вирішимо в процесі» означає, що рішення ухвалюємо ми — і переробляємо після демонстрації."
-        },
-        {
-          "id": "data",
-          "t": "Дані є вже сьогодні у файлі, а не «будуть»",
-          "note": "Рівень визнається за файлом, який ми подивилися, а не зі слів клієнта."
-        },
-        {
-          "id": "cont",
-          "t": "Контент — тексти, фото, переклади — є або клієнт визнає, що це його робота",
-          "note": "Контент не входить у жодну позицію. Без цього сайт, магазин і база знань стоять."
-        },
-        {
-          "id": "acc",
-          "t": "Зовнішнє відкрито: база на плані Custom, домен, пошта, доступи",
-          "note": "Затримка на боці клієнта зсуває строк на той самий час — записано в обов'язках клієнта."
         }
       ]
     }
@@ -3519,7 +3431,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
 
   // ---------- сторінки ----------
   var PAGES = { calc:['tab-calc','page-calc','sub-calc'], qual:['tab-qual','page-qual','sub-qual'] };
-  var BARNOTE = { calc:'Набір складається вручну', qual:'Розділ розкривається натисканням' };
+  var BARNOTE = { calc:'Набір складається вручну', qual:'Розділи відкриваються галочками' };
   function showPage(p){
     if(!PAGES[p]) p = 'calc';
     Object.keys(PAGES).forEach(function(k){
@@ -3652,20 +3564,21 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
   (function buildQual(){
     var bar = $('qbar'), wrap = $('qblocks');
     QSECS.forEach(function(sec){
-      var chip = document.createElement('button');
-      chip.type = 'button'; chip.className = 'qchip'; chip.id = 'qc-' + sec.id;
-      chip.setAttribute('aria-expanded', 'false');
-      chip.setAttribute('aria-controls', 'qs-' + sec.id);
+      var lab = document.createElement('label');
+      lab.className = 'qcheck'; lab.id = 'qk-' + sec.id;
+      var cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.id = 'qc-' + sec.id;
+      cb.setAttribute('aria-controls', 'qs-' + sec.id);
       var nm = document.createElement('span');
       nm.textContent = sec.name;
       var cnt = document.createElement('span');
       cnt.className = 'cnt'; cnt.id = 'qcn-' + sec.id;
-      chip.appendChild(nm); chip.appendChild(cnt);
-      chip.addEventListener('click', function(){
-        state.open[sec.id] = !state.open[sec.id];
+      lab.appendChild(cb); lab.appendChild(nm); lab.appendChild(cnt);
+      cb.addEventListener('change', function(){
+        state.open[sec.id] = cb.checked;
         renderQual(); save();
       });
-      bar.appendChild(chip);
+      bar.appendChild(lab);
 
       var s = document.createElement('section');
       s.className = 'qsec'; s.id = 'qs-' + sec.id; s.hidden = true;
@@ -3770,19 +3683,20 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
       prog[sec.id] = { done:done, tot:tot };
       var open = !!state.open[sec.id];
       $('qs-' + sec.id).hidden = !open;
-      var chip = $('qc-' + sec.id);
-      chip.setAttribute('aria-expanded', open ? 'true' : 'false');
-      chip.className = 'qchip' + (hasStop ? ' hasstop' : (done === tot && tot ? ' full' : ''));
+      $('qc-' + sec.id).checked = open;
+      $('qk-' + sec.id).className = 'qcheck' + (open ? ' on' : '')
+        + (hasStop ? ' hasstop' : (done === tot && tot ? ' full' : ''));
       $('qcn-' + sec.id).textContent = done + '/' + tot;
       $('qsn-' + sec.id).textContent = (sec.kind === 'чеклист' ? 'закрито ' : 'відповіли ') + done + ' / ' + tot;
     });
 
     // ---- панель ----
-    var scr = prog.scr || { done:0, tot:0 }, rdy = prog.rdy || { done:0, tot:0 };
+    var scr = prog.scr || { done:0, tot:0 }, rdy = prog.rdy;
     var chosen = MODS.filter(function(m){ return state.sel[m.id] && m.id !== 'diag'; }).length;
     $('q-scr').textContent = scr.done + ' / ' + scr.tot;
     $('q-lim').textContent = String(lims.length);
-    $('q-rdy').textContent = rdy.done + ' / ' + rdy.tot;
+    $('q-rdy-row').hidden = !rdy;
+    if(rdy) $('q-rdy').textContent = rdy.done + ' / ' + rdy.tot;
     $('q-pos').textContent = String(chosen);
 
     var v = $('q-verdict'), vs = $('q-vsub');
@@ -3805,7 +3719,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
     }
 
     var fl = $('q-flag');
-    if(rdy.done < rdy.tot){
+    if(rdy && rdy.done < rdy.tot){
       fl.textContent = 'Готовність закрита не повністю (' + rdy.done + ' з ' + rdy.tot + '): строк називаємо від дати, коли закрито останній пункт, а не від дати підпису.';
       fl.className = 'flag warn'; fl.hidden = false;
     } else fl.hidden = true;
