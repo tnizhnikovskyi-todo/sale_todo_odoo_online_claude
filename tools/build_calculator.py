@@ -1,24 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Вшиває data/price.json у artifacts/calculator.html.
+"""Вшиває data/price.json і data/qualification.json у artifacts/calculator.html.
 
-Джерело правди для прайсу — data/price.json. Калькулятор публікується як
-Artifact і не може підвантажувати зовнішні файли, тому дані вшиваються в HTML.
+Джерело правди для прайсу — data/price.json, для чек-листа кваліфікації
+(друга сторінка калькулятора) — data/qualification.json. Калькулятор публікується
+як Artifact і не може підвантажувати зовнішні файли, тому дані вшиваються в HTML.
 
 Порядок роботи:
-    1. правиш data/price.json
+    1. правиш data/price.json або data/qualification.json
     2. python3 tools/build_calculator.py
     3. публікуєш artifacts/calculator.html через Artifact
 
 Скрипт перевіряє структуру перед записом і падає, якщо вона зламана:
 3 рівні, зростання годин, ознаки, поля q/bounds/dep, стоп-слова периметра
 («доопрацювання», «доробка», «лише в XML», «умовні блоки», «обчислювані поля»
-без застереження).
+без застереження); у чек-листі — вид блоку, наслідки r, посилання need на
+відомі позиції прайсу, пояснення при r=warn/stop.
 """
 import io, json, os, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, 'data', 'price.json')
+QUAL = os.path.join(ROOT, 'data', 'qualification.json')
 HTML = os.path.join(ROOT, 'artifacts', 'calculator.html')
 
 STOP = ['доопрацюван', 'доробк', 'лише в XML', 'умовні блоки', 'обчислювані поля']
@@ -99,10 +102,77 @@ def check(groups):
                         warns.append('%s: тягне %s (власник — %s), але dep на %s немає' % (iid, mod, owner, owner))
     return errs, warns
 
+def check_qual(blocks, known):
+    """Перевіряє чек-лист кваліфікації. known — id позицій прайсу для посилань need."""
+    errs, warns = [], []
+    ids = set()
+    for b in blocks:
+        bid = b.get('id')
+        if not bid: errs.append('блок чек-листа без id'); continue
+        if bid in ids: errs.append('дубль id блоку чек-листа: %s' % bid)
+        ids.add(bid)
+        if not b.get('назва'): errs.append('%s: блок без назви' % bid)
+        if b.get('вид') not in ('питання', 'чеклист'):
+            errs.append('%s: вид блоку мусить бути «питання» або «чеклист»' % bid)
+            continue
+        if not b.get('під'): warns.append('%s: блок без підзаголовка (під)' % bid)
+        if b['вид'] == 'чеклист':
+            if not b.get('пункти'): errs.append('%s: чеклист без пунктів' % bid)
+            for p in b.get('пункти', []):
+                if not p.get('id') or not p.get('t'):
+                    errs.append('%s: пункт чек-листа без id або тексту' % bid)
+                if not p.get('note'):
+                    warns.append('%s/%s: пункт без пояснення, чим загрожує незакритий' % (bid, p.get('id')))
+            continue
+        if not b.get('питання'): errs.append('%s: блок питань без питань' % bid)
+        for q in b.get('питання', []):
+            qid = '%s/%s' % (bid, q.get('id'))
+            if not q.get('id'): errs.append('%s: питання без id' % bid)
+            if not q.get('q'): errs.append('%s: питання без формулювання' % qid)
+            elif has_stop(q['q']): errs.append('%s: питання обіцяє те, що поза периметром' % qid)
+            ans = q.get('a') or []
+            if len(ans) < 2: errs.append('%s: у питання мусить бути щонайменше дві відповіді' % qid)
+            for a in ans:
+                if not a.get('t'): errs.append('%s: відповідь без формулювання' % qid)
+                if a.get('r') not in ('ok', 'warn', 'stop'):
+                    errs.append('%s: наслідок відповіді (r) мусить бути ok, warn або stop' % qid)
+                if a.get('r') in ('warn', 'stop') and not a.get('note'):
+                    errs.append('%s: відповідь «%s» без пояснення note' % (qid, a.get('r')))
+                if a.get('note') and has_stop(a['note']):
+                    errs.append('%s: note обіцяє те, що поза периметром: «%s»' % (qid, a['note']))
+                for t in a.get('need', []) or []:
+                    if t not in known: errs.append('%s: need на невідому позицію %s' % (qid, t))
+            if not any(a.get('r') == 'ok' for a in ans):
+                warns.append('%s: немає відповіді без наслідків — питання не розділяє лідів' % qid)
+    return errs, warns
+
+def inject(html, name, value):
+    """Замінює тіло `var NAME = …;` у HTML на value, зберігаючи відступ рядка."""
+    a = html.index('var ' + name + ' = ')
+    body = a + len('var ' + name + ' = ')
+    depth, i, n = 0, body, len(html)
+    while i < n:                      # шукаємо кінець літерала за балансом дужок
+        c = html[i]
+        if c in '[{': depth += 1
+        elif c in ']}':
+            depth -= 1
+            if depth == 0: i += 1; break
+        i += 1
+    end = html.index(';', i)
+    line = html.rindex('\n', 0, a) + 1
+    indent = html[line:a]
+    block = indent + 'var ' + name + ' = ' + json.dumps(
+        value, ensure_ascii=False, indent=2).replace('\n', '\n' + indent)
+    return html[:line] + block + html[end:]
+
 def main():
     payload = json.load(io.open(DATA, encoding='utf-8'))
     groups = payload['групи']
     errs, warns = check(groups)
+    known = set(it.get('id') for gr in groups for it in gr.get('items', []))
+    qual = json.load(io.open(QUAL, encoding='utf-8'))['блоки']
+    qe, qw = check_qual(qual, known)
+    errs += qe; warns += qw
     for w in warns: print('  ⚠', w)
     if errs:
         print('СТРУКТУРА ЗЛАМАНА, збірку скасовано:')
@@ -110,14 +180,8 @@ def main():
         return 1
 
     html = io.open(HTML, encoding='utf-8').read()
-    # межі блоку даних шукаємо стійко: від 'var GROUPS = ' до ';' перед 'var MODS'
-    a = html.index('var GROUPS = ')
-    m = html.index('var MODS', a)
-    end = html.rindex(';', a, m)          # ';' що закриває масив
-    indent = html[html.rindex('\n', 0, a) + 1:a]
-    block = indent + 'var GROUPS = ' + json.dumps(
-        groups, ensure_ascii=False, indent=2).replace('\n', '\n' + indent)
-    html = html[:html.rindex('\n', 0, a) + 1] + block + html[end:]
+    html = inject(html, 'GROUPS', groups)
+    html = inject(html, 'QUAL', qual)
     io.open(HTML, 'w', encoding='utf-8').write(html)
 
     pos = sum(len(g['items']) for g in groups)
@@ -125,7 +189,10 @@ def main():
               for g in groups for it in g['items'])
     bnd = sum(len(it.get('bounds', [])) for g in groups for it in g['items'])
     dps = sum(len(it.get('dep', [])) for g in groups for it in g['items'])
+    qq = sum(len(b.get('питання', [])) for b in qual)
+    qp = sum(len(b.get('пункти', [])) for b in qual)
     print('OK: %d груп, %d позицій, %d пунктів складу, %d рядків «не входить», %d залежностей вшито в calculator.html' % (len(groups), pos, pts, bnd, dps))
+    print('    чек-лист кваліфікації: %d блоків, %d питань скринінгу, %d пунктів готовності' % (len(qual), qq, qp))
     return 0
 
 if __name__ == '__main__':
