@@ -92,6 +92,13 @@ def check(groups):
                 if d.get('from_lv', 1) not in (1, 2, 3) or d.get('min_lv', 1) not in (1, 2, 3):
                     errs.append('%s: dep.from_lv / min_lv мусять бути 1..3' % iid)
                 if not d.get('why'): errs.append('%s: dep без пояснення why' % iid)
+                # багатоцільова жорстка залежність друкується в КП клієнта («потребує однієї з
+                # позицій»), тому службові назви модулів у її пояснення потрапити не можуть
+                elif d.get('type') == 'hard' and isinstance(d.get('on'), list) and len(d['on']) > 1:
+                    tech = re.findall(r'\b[a-z][a-z_.]{3,}\b', d['why'])
+                    if tech:
+                        errs.append('%s: пояснення багатоцільової залежності друкується в КП — '
+                                    'службові назви %s звідти прибрати' % (iid, tech))
             # тягнеш чужий модуль — мусиш мати dep на його власника (попередження)
             deps_to = set()
             for d in it.get('dep', []) or []:
@@ -142,7 +149,11 @@ def check_qual(blocks, known):
                 if a.get('note') and has_stop(a['note']):
                     errs.append('%s: note обіцяє те, що поза периметром: «%s»' % (qid, a['note']))
                 for t in a.get('need', []) or []:
-                    if t not in known: errs.append('%s: need на невідому позицію %s' % (qid, t))
+                    # need — id позиції або {on, lv}: рівень, не нижче якого її треба поставити
+                    on, lv = (t.get('on'), t.get('lv')) if isinstance(t, dict) else (t, None)
+                    if on not in known: errs.append('%s: need на невідому позицію %s' % (qid, on))
+                    if lv is not None and lv not in (1, 2, 3):
+                        errs.append('%s: need.lv мусить бути 1..3, а не %r' % (qid, lv))
             if not any(a.get('r') == 'ok' for a in ans):
                 warns.append('%s: немає відповіді без наслідків — питання не розділяє лідів' % qid)
     return errs, warns

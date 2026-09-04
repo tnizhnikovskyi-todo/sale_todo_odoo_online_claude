@@ -359,6 +359,17 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
 .probes > h4 .cnt{color:var(--muted);letter-spacing:.05em}
 .probes .qitem:first-of-type{border-top:0;padding-top:9px}
 
+.cli{display:inline-flex;align-items:center;gap:7px}
+.cli input{
+  font-family:inherit;font-size:12.5px;color:var(--ink);
+  background:var(--surface);border:1px solid var(--line-strong);border-radius:14px;
+  padding:5px 11px;width:150px;
+}
+.cli input:focus{outline:2px solid var(--accent);outline-offset:1px}
+select.chip{padding-right:8px}
+.chip:disabled{opacity:.45;cursor:default}
+.chip:disabled:hover{background:var(--surface)}
+
 /* ---------- анкета клієнта (вирізається разом зі сторінкою) ---------- */
 .fintro{
   border-left:3px solid var(--accent);background:var(--accent-soft);
@@ -427,7 +438,10 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
       <button class="tab" type="button" role="tab" id="tab-form" aria-selected="false" aria-controls="page-form">Анкета для клієнта</button>
     </div>
     <span class="spacer"></span>
-    <span class="lbl" id="bar-note">Набір складається вручну</span>
+    <label class="cli" id="cli-wrap"><span class="lbl">Клієнт</span><input type="text" id="cli" placeholder="назва" aria-label="Назва клієнта"></label>
+    <select class="chip" id="cases" aria-label="Збережені набори" hidden></select>
+    <button class="chip" type="button" id="save" title="зберегти набір під назвою клієнта">Зберегти</button>
+    <button class="chip" type="button" id="del" hidden>Видалити</button>
     <button class="chip" type="button" id="reset">Почати заново</button>
   </div>
 
@@ -596,14 +610,14 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
               "Базовий",
               16,
               35,
-              "усі бачать усе; ролі — штатні групи; одна юрособа",
+              "до 10 людей, усі бачать усе; ролі — штатні групи; одна юрособа",
               []
             ],
             [
               "Стандарт",
               20,
               35,
-              "до 5 ролей з різним доступом до застосунків",
+              "10–20 людей або до 5 ролей з різним доступом до застосунків",
               [
                 "права роздільні за ролями",
                 "шаблони листів і підписи",
@@ -615,7 +629,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
               "Розширений",
               28,
               30,
-              "хтось має бачити лише свої записи або записи свого підрозділу; різним ролям — різні форми",
+              "понад 20 людей, або хтось має бачити лише свої записи чи записи свого підрозділу; різним ролям — різні форми",
               [
                 "права за ролями і командами; видимість за підрозділом — правилами записів (там, де в моделі є поле підрозділу або поле Studio)",
                 "кілька офісів або підрозділів у структурі компанії (склади — у позиції «Склад»)",
@@ -626,7 +640,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
             ]
           ],
           "req": true,
-          "q": "Чи є люди, яким не можна бачити частину записів або застосунків?",
+          "q": "Скільком людям потрібен доступ і чи є серед них ті, кому не можна бачити частину записів?",
           "bounds": [
             "DNS-записи домену для пошти вносить клієнт за нашою інструкцією",
             "наповнення довідників даними — позиція «Міграція довідників» або клієнт",
@@ -1899,7 +1913,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
               ],
               "type": "hard",
               "from_lv": 2,
-              "why": "«планування за проєктами» — зв'язок зміни з проєктом (project_forecast); потрібні Проєкти або Виїзні роботи"
+              "why": "щоб планувати зміни під конкретні роботи, зміна має посилатися на проєкт або наряд: потрібна одна з двох позицій"
             }
           ]
         },
@@ -2373,7 +2387,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
               "Розширений",
               46,
               20,
-              "план-факт і бюджети, переоцінка валют або 2+ розрізи аналітики одночасно",
+              "план-факт і бюджети або 2+ розрізи аналітики одночасно",
               [
                 "план-факт до P&L штатно; бюджети за напрямами — модуль Budget Management",
                 "кілька валют у документах і звітах; курс — імпортом, автозавантаження немає",
@@ -2909,7 +2923,13 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
             {
               "t": "20–50",
               "r": "warn",
-              "note": "Понад 20 користувачів — це вже роздільні права й окрема робота з ролями: База рівня 2–3. Сказати вголос до КП."
+              "note": "Понад 20 користувачів — це вже роздільні права й окрема робота з ролями: База рівня 2 або 3. Сказати вголос до КП.",
+              "need": [
+                {
+                  "on": "base",
+                  "lv": 2
+                }
+              ]
             },
             {
               "t": "Понад 50 або поки невідомо",
@@ -3092,7 +3112,10 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
               "r": "warn",
               "note": "Це «Міграція довідників» рівня 3 і окрема дата переходу: переносимо станом на один день, а не «за весь час».",
               "need": [
-                "mig"
+                {
+                  "on": "mig",
+                  "lv": 3
+                }
               ]
             },
             {
@@ -4184,7 +4207,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
   // sel — що позначено; lv — індекс рівня; manual — позначив сам сейл; auto — додано через залежність (ким)
   // qa — відповіді скринінгу; qr — закриті пункти готовності; no — позиції, про які спитали й вони не потрібні
   // open — розкриті розділи чек-листа; page — активна сторінка
-  var state = { sel:{}, lv:{}, manual:{}, auto:{}, qa:{}, qr:{}, no:{}, probe:{}, open:{ scr:true }, page:'calc' };
+  var state = { sel:{}, lv:{}, manual:{}, auto:{}, qa:{}, qr:{}, no:{}, probe:{}, open:{ scr:true }, page:'calc', client:'' };
   function blank(){
     state.manual = {}; state.auto = {}; state.qa = {}; state.qr = {}; state.no = {}; state.probe = {};
     MODS.forEach(function(m){ state.sel[m.id] = !!m.req; state.lv[m.id] = 1; });
@@ -4589,8 +4612,11 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
     lines.push.apply(lines, NOT_INCLUDED);
     var appList = Object.keys(apps).sort();
     if(appList.length){
+      // системні назви модулів — не частина пропозиції: окремий додаток для адміністратора
       lines.push('');
-      lines.push('Застосунки Odoo, які буде встановлено: ' + appList.join(', ') + '.');
+      lines.push('ТЕХНІЧНИЙ ДОДАТОК ДЛЯ ВАШОГО АДМІНІСТРАТОРА');
+      lines.push('Застосунки Odoo, які буде встановлено (системні назви, у переліку немає');
+      lines.push('  нічого, крім штатних застосунків Odoo): ' + appList.join(', ') + '.');
     }
     return lines.join('\n');
   }
@@ -4598,6 +4624,85 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
   function save(){
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){}
   }
+
+  // ---------- набори по клієнтах ----------
+  // Поточний стан лежить у KEY, а названі набори — окремо: сейл веде кількох клієнтів
+  // одночасно й перемикається між ними, не втрачаючи попереднього.
+  var CASEKEY = 'odoo-com-calc-cases-v1';
+  var CASEFIELDS = ['sel', 'lv', 'manual', 'auto', 'no', 'qa', 'probe', 'open'];
+
+  function casesRead(){
+    try {
+      var o = JSON.parse(localStorage.getItem(CASEKEY) || '{}');
+      return (o && typeof o === 'object') ? o : {};
+    } catch(e){ return {}; }
+  }
+  function casesWrite(o){
+    try { localStorage.setItem(CASEKEY, JSON.stringify(o)); } catch(e){}
+  }
+  function caseSnapshot(){
+    var snap = {};
+    CASEFIELDS.forEach(function(k){ snap[k] = JSON.parse(JSON.stringify(state[k])); });
+    return snap;
+  }
+  function caseApply(snap){
+    CASEFIELDS.forEach(function(k){
+      if(snap[k] && typeof snap[k] === 'object') state[k] = JSON.parse(JSON.stringify(snap[k]));
+    });
+    MODS.forEach(function(m){
+      if(typeof state.sel[m.id] !== 'boolean') state.sel[m.id] = !!m.req;
+      if(typeof state.lv[m.id] !== 'number') state.lv[m.id] = 1;
+      if(m.req) state.sel[m.id] = true;
+      $('c-' + m.id).checked = state.sel[m.id];
+      $('l-' + m.id).value = state.lv[m.id];
+    });
+    render();
+  }
+  function casesRender(){
+    var all = casesRead(), names = Object.keys(all).sort();
+    var sel = $('cases'), cur = state.client.trim();
+    sel.innerHTML = '';
+    var first = document.createElement('option');
+    first.value = ''; first.textContent = names.length ? '— набори (' + names.length + ') —' : '— наборів немає —';
+    sel.appendChild(first);
+    names.forEach(function(n){
+      var o = document.createElement('option');
+      o.value = n; o.textContent = n;
+      if(n === cur) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.hidden = !names.length;
+    $('save').disabled = !cur;
+    $('save').textContent = (cur && all[cur]) ? 'Оновити набір' : 'Зберегти';
+    $('del').hidden = !(cur && all[cur]);
+  }
+
+  $('cli').addEventListener('input', function(){
+    state.client = $('cli').value;
+    casesRender(); save();
+  });
+  $('save').addEventListener('click', function(){
+    var name = state.client.trim();
+    if(!name) return;
+    var all = casesRead();
+    all[name] = caseSnapshot();
+    casesWrite(all); casesRender();
+  });
+  $('del').addEventListener('click', function(){
+    var all = casesRead(), name = state.client.trim();
+    delete all[name];
+    casesWrite(all); casesRender();
+  });
+  $('cases').addEventListener('change', function(){
+    var name = $('cases').value;
+    if(!name) return;
+    var all = casesRead();
+    if(!all[name]) return;
+    state.client = name;
+    $('cli').value = name;
+    caseApply(all[name]);
+    casesRender();
+  });
   function load(){
     try {
       var raw = localStorage.getItem(KEY);
@@ -4623,13 +4728,13 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
         state.open = first ? (function(o){ o[first] = true; return o; })({}) : {};
       }
       if(PAGES[st.page]) state.page = st.page;
+      if(typeof st.client === 'string') state.client = st.client;
     } catch(e){}
   }
 
   // ---------- сторінки ----------
   var PAGES = { calc:['tab-calc','page-calc','sub-calc'], qual:['tab-qual','page-qual','sub-qual'],
                 form:['tab-form','page-form','sub-form'] };
-  var BARNOTE = { calc:'Набір складається вручну', qual:'Розділи — по одному', form:'Сторінка для клієнта' };
   var RESETLBL = { calc:'Почати заново', qual:'Почати заново', form:'Очистити анкету' };
   function showPage(p){
     if(!PAGES[p]) p = 'calc';
@@ -4639,8 +4744,13 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
       $(ref[1]).hidden = !on;
       $(ref[2]).hidden = !on;
     });
-    $('bar-note').textContent = BARNOTE[p];
     $('reset').textContent = RESETLBL[p];
+    // анкету заповнює клієнт у себе — набори сейла на ній не потрібні
+    var sales = p !== 'form';
+    $('cli-wrap').hidden = !sales;
+    $('save').hidden = !sales;
+    if(!sales){ $('cases').hidden = true; $('del').hidden = true; }
+    else casesRender();
     state.page = p; save();
   }
   $('tab-calc').addEventListener('click', function(){ showPage('calc'); });
@@ -4841,12 +4951,23 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
     });
   })();
 
-  function addPosBtn(id, label){
+  // need у чек-листі — id позиції або {on, lv}: рівень, не нижче якого її треба поставити
+  function needOn(t){ return (t && typeof t === 'object') ? t.on : t; }
+  function needLv(t){ return (t && typeof t === 'object' && t.lv) ? t.lv : 0; }
+  function needDone(t){
+    var id = needOn(t), lv = needLv(t);
+    if(!BYID[id]) return true;
+    return state.sel[id] && (!lv || state.lv[id] >= lv - 1);
+  }
+  function addPosBtn(t){
+    var id = needOn(t), lv = needLv(t), m = BYID[id];
     var b = document.createElement('button');
     b.type = 'button'; b.className = 'addpos';
-    b.textContent = 'додати «' + label + '»';
+    b.textContent = (state.sel[id] ? 'підняти «' + m.n + '»' : 'додати «' + m.n + '»')
+      + (lv ? ' до рівня ' + lv : '');
     b.addEventListener('click', function(){
       state.sel[id] = true; state.manual[id] = true; delete state.no[id];
+      if(lv && state.lv[id] < lv - 1) state.lv[id] = lv - 1;
       render();
     });
     return b;
@@ -4873,9 +4994,9 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
           n.className = 'qnote ' + a.r;
           n.textContent = a.note || '';
           (a.need || []).forEach(function(t){
-            if(!BYID[t] || state.sel[t]) return;
+            if(needDone(t)) return;
             n.appendChild(document.createTextNode(' '));
-            n.appendChild(addPosBtn(t, BYID[t].n));
+            n.appendChild(addPosBtn(t));
           });
           n.hidden = false;
           if(a.r === 'stop') hasStop = true;
@@ -4987,9 +5108,9 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
       var li = document.createElement('li');
       li.innerHTML = '<b>' + n.a.t + '</b> — ' + n.a.note;
       (n.a.need || []).forEach(function(t){
-        if(!BYID[t] || state.sel[t]) return;
+        if(needDone(t)) return;
         li.appendChild(document.createTextNode(' '));
-        li.appendChild(addPosBtn(t, BYID[t].n));
+        li.appendChild(addPosBtn(t));
       });
       lc.appendChild(li);
     });
@@ -4997,7 +5118,9 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
   }
 
   function qualNotes(){
-    var L = ['Кваліфікація клієнта — нотатки зустрічі', ''];
+    var L = ['Кваліфікація клієнта — нотатки зустрічі'];
+    if(state.client.trim()) L.push('Клієнт: ' + state.client.trim());
+    L.push('');
     QSECS.forEach(function(sec){
       if(sec.kind === 'питання'){
         L.push(sec.name.toUpperCase());
@@ -5009,8 +5132,10 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
           L.push('      ' + (a.r === 'stop' ? 'СТОП: ' : a.r === 'warn' ? 'обмеження: ' : '') + a.t);
           if(a.note) L.push('      → ' + a.note);
           (a.need || []).forEach(function(t){
-            if(!BYID[t]) return;
-            L.push('      → потрібна позиція «' + BYID[t].n + '»' + (state.sel[t] ? ' — у наборі є' : ' — У НАБОРІ НЕМАЄ'));
+            var id = needOn(t), lv = needLv(t);
+            if(!BYID[id]) return;
+            L.push('      → потрібна позиція «' + BYID[id].n + '»' + (lv ? ' рівня ' + lv : '')
+              + (needDone(t) ? ' — у наборі є' : ' — У НАБОРІ НЕМАЄ АБО РІВЕНЬ НИЖЧИЙ'));
           });
         });
         L.push('');
@@ -5347,7 +5472,10 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
     $('copied').hidden = true;
     $('qnote-out').hidden = true;
     $('qcopied').hidden = true;
+    state.client = '';
+    $('cli').value = '';
     render();
+    casesRender();
   });
 
   $('sum-btn').addEventListener('click', function(){
@@ -5355,7 +5483,9 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
   });
 
   load();
+  $('cli').value = state.client;
   showPage(state.page);
   render();
+  casesRender();
 })();
 </script>
