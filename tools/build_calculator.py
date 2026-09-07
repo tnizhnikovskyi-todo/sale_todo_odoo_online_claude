@@ -241,6 +241,8 @@ def check_form(form, known):
         if not sec.get('id') or not sec.get('назва'):
             errs.append('анкета: розділ без id або назви'); continue
         if not sec.get('поля'): errs.append('анкета/%s: розділ без полів' % sec['id'])
+        for t in sec.get('позиції') or []:
+            if t not in known: errs.append('анкета/%s: посилання на невідому позицію прайсу %s' % (sec['id'], t))
         fields(sec['id'], sec.get('поля') or [])
     procs = form.get('процеси') or []
     if not procs: errs.append('анкета: немає блоків процесів')
@@ -249,6 +251,9 @@ def check_form(form, known):
         if not pid or not pr.get('назва'):
             errs.append('анкета: процес без id або назви'); continue
         if not pr.get('питання'): errs.append('анкета/%s: процес без питань' % pid)
+        elif not (4 <= len(pr['питання']) <= 8):
+            warns.append('анкета/%s: %d питань, а треба 4-8: клієнт відповідає сам, довгий блок він покине'
+                         % (pid, len(pr['питання'])))
         for t in pr.get('позиції') or []:
             if t not in known: errs.append('анкета/%s: посилання на невідому позицію прайсу %s' % (pid, t))
         if not pr.get('позиції'): warns.append('анкета/%s: процес не зіставлений із позиціями прайсу' % pid)
