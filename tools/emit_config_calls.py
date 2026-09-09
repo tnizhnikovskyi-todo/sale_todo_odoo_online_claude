@@ -128,7 +128,18 @@ def unroll(st, prof, missing, templates=None):
     out = []
     for i, elem in enumerate(prof[m.group(1)], 1):
         inner = st.get('крок') or {}
-        out.append({k: subst(v, prof, missing, elem, i) for k, v in inner.items()})
+        filled = {k: subst(v, prof, missing, elem, i) for k, v in inner.items()}
+        # Шаблон усередині циклу треба розгорнути, а не віддати виконавцеві сирим
+        # кроком «шаблон». Саме ця пара потрібна позиціям, де артефакт повторюється
+        # під кожну роль: «окремі робочі місця під ролі» — це той самий шаблон
+        # стільки разів, скільки ролей у профілі.
+        #
+        # Рекурсія лише для шаблонів: звичайний крок уже підставлений, і другий
+        # прохід підстановки був би зайвим (а на значенні зі знаком $ ще й шкідливим).
+        if filled.get('дія') == 'шаблон':
+            out += unroll(filled, prof, missing, templates)
+        else:
+            out.append(filled)
     return out
 
 
