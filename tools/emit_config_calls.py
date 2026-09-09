@@ -139,7 +139,13 @@ def main(argv):
     prof_path = argv[1]
     out_json = None
     if '--json' in argv:
-        out_json = argv[argv.index('--json') + 1]
+        i = argv.index('--json') + 1
+        if i >= len(argv):
+            # без цього виходив IndexError із трасуванням — «--json» без шляху
+            # виглядає як помилка інструмента, а це просто забутий аргумент
+            print('після «--json» треба вказати файл, куди писати план')
+            return 2
+        out_json = argv[i]
 
     prof = json.load(io.open(prof_path, encoding='utf-8'))
     rec = json.load(io.open(RECIPES, encoding='utf-8'))
