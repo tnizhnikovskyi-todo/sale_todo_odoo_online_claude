@@ -89,6 +89,9 @@ ALLOW_EXTRA = {'res.country', 'res.partner.category', 'ir.model.data', 'res.curr
 # а наявність моделі, яку приносить застосунок
 
 REF = re.compile(r'^\$([^.]+)$')
+# $ім'я.поле — поле знайденого запису; розвʼязує виконавець. Валідатор мусить бачити
+# базове імʼя, інакше описка в посиланні («$компаня.partner_id») проїде молча.
+DEREF = re.compile(r'^\$([^.$]+)\.([\w]+)$')
 CLIENT = re.compile(r'\$клієнт\.([\wа-яіїєґ_]+)', re.I | re.U)
 
 
@@ -327,6 +330,11 @@ def main():
                                         % where)
                     # посилання
                     for s in walk_values({k: v for k, v in st.items() if k != 'назвати'}):
+                        d = DEREF.match(s.strip()) if isinstance(s, str) else None
+                        if d and not d.group(1).startswith(('клієнт', 'арг', 'елемент')):
+                            if d.group(1) not in bound:
+                                errs.append('%s: посилання «$%s.%s» на невизначений запис'
+                                            % (where, d.group(1), d.group(2)))
                         m = REF.match(s.strip()) if isinstance(s, str) else None
                         if m and m.group(1) not in bound:
                             errs.append('%s: посилання $%s ще не визначене'
