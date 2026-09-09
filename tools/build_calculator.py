@@ -17,12 +17,13 @@
 без застереження); у чек-листі — вид блоку, наслідки r, посилання need на
 відомі позиції прайсу, пояснення при r=warn/stop.
 """
-import io, json, os, re, sys
+import collections, io, json, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, 'data', 'price.json')
 QUAL = os.path.join(ROOT, 'data', 'qualification.json')
 FORM = os.path.join(ROOT, 'data', 'client-form.json')
+VRFY = os.path.join(ROOT, 'data', 'verify.json')
 HTML = os.path.join(ROOT, 'artifacts', 'calculator.html')
 
 STOP = ['доопрацюван', 'доробк', 'лише в XML', 'умовні блоки', 'обчислювані поля']
@@ -260,6 +261,48 @@ def check_form(form, known):
         fields(pid, pr.get('питання') or [])
     return errs, warns
 
+VSTAT = ('ok', 'fail', 'move', 'skip')
+
+def composition(item, lv):
+    """Накопичений склад робіт рівня lv (0-based): inc + додані на 1-му і 2-му."""
+    out = list(item['inc'])
+    for k in range(1, lv + 1):
+        out += list(item['lv'][k][4])
+    return out
+
+def check_verify(vrfy, groups):
+    """Журнал перевірки на базі: id позицій, номери рівнів, тексти пунктів — живі."""
+    errs, warns = [], []
+    byid = dict((it['id'], it) for gr in groups for it in gr['items'])
+    for pid, lvs in (vrfy.get('позиції') or {}).items():
+        if pid not in byid:
+            errs.append('verify: позиції «%s» у прайсі немає' % pid)
+            continue
+        item = byid[pid]
+        for lk, rec in lvs.items():
+            if lk not in ('1', '2', '3'):
+                errs.append('verify %s: рівень «%s» — має бути 1, 2 або 3' % (pid, lk))
+                continue
+            comp = composition(item, int(lk) - 1)
+            if not rec.get('дата'):
+                warns.append('verify %s р.%s: немає дати перевірки' % (pid, lk))
+            for txt, st in (rec.get('пункти') or {}).items():
+                own = item['inc'] if lk == '1' else item['lv'][int(lk) - 1][4]
+                if txt not in comp:
+                    errs.append('verify %s р.%s: пункту «%s» у складі робіт цього рівня '
+                                'немає — прайс перейменували, звірити' % (pid, lk, txt))
+                elif txt not in own:
+                    warns.append('verify %s р.%s: пункт «%s» додається на іншому рівні — '
+                                 'запис тримати там, де пункт з’явився' % (pid, lk, txt))
+                c = st.get('с')
+                if c not in VSTAT:
+                    errs.append('verify %s р.%s «%s»: статус «%s» — можна лише %s'
+                                % (pid, lk, txt, c, '/'.join(VSTAT)))
+                if c in ('fail', 'move', 'skip') and not st.get('нота'):
+                    errs.append('verify %s р.%s «%s»: статус %s без пояснення'
+                                % (pid, lk, txt, c))
+    return errs, warns
+
 def inject(html, name, value):
     """Замінює тіло `var NAME = …;` у HTML на value, зберігаючи відступ рядка."""
     a = html.index('var ' + name + ' = ')
@@ -295,6 +338,9 @@ def main():
     formdata = json.load(io.open(FORM, encoding='utf-8'))
     fe, fw = check_form(formdata, known)
     errs += fe; warns += fw
+    vrfy = json.load(io.open(VRFY, encoding='utf-8'))
+    ve, vw = check_verify(vrfy, groups)
+    errs += ve; warns += vw
     for w in warns: print('  ⚠', w)
     if errs:
         print('СТРУКТУРА ЗЛАМАНА, збірку скасовано:')
@@ -306,6 +352,7 @@ def main():
     html = inject(html, 'QUAL', qual)
     html = inject(html, 'PROBES', probes)
     html = inject(html, 'FORM', formdata)
+    html = inject(html, 'VERIFY', vrfy)
     io.open(HTML, 'w', encoding='utf-8').write(html)
 
     pos = sum(len(g['items']) for g in groups)
@@ -323,6 +370,15 @@ def main():
     print('    анкета клієнта: %d розділів, %d блоків процесів, %d полів' % (
         len((formdata.get('розділи') or []) + (formdata.get('розділи2') or [])),
         len(formdata.get('процеси') or []), fq))
+    vc = collections.Counter()
+    for lvs in (vrfy.get('позиції') or {}).values():
+        for rec in lvs.values():
+            for st in (rec.get('пункти') or {}).values():
+                vc[st.get('с')] += 1
+    vlv = sum(len(x) for x in (vrfy.get('позиції') or {}).values())
+    print('    перевірка на базі %s: %d рівнів, %d пунктів — %d ok, %d fail, %d move, %d skip' % (
+        vrfy.get('база', '?'), vlv, sum(vc.values()),
+        vc['ok'], vc['fail'], vc['move'], vc['skip']))
     return 0
 
 if __name__ == '__main__':

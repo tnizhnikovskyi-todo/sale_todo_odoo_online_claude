@@ -428,6 +428,41 @@ select.chip{padding-right:8px}
 .slv li.plus::before{content:"+";left:3px;font-size:10px;color:var(--accent)}
 .slv li.sig{color:var(--ink);font-weight:500}
 .slv li.sig::before{content:"→";left:2px;font-size:10px;color:var(--accent)}
+
+/* галочки перевірки на базі: що з обіцяного справді налаштовано */
+.slv li.chk::before{content:none}
+.slv li.chk > label{
+  display:flex;gap:7px;align-items:flex-start;cursor:pointer;margin-left:-15px;
+}
+.slv li.chk > label > input{margin:3px 0 0;flex:0 0 auto;accent-color:var(--accent)}
+.slv li.chk.done > label > span.t{color:var(--muted)}
+#spec-body.nochk .slv li.chk::before{content:"·"}
+#spec-body.nochk .slv li.chk.plus::before{content:"+";left:3px;font-size:10px;color:var(--accent)}
+#spec-body.nochk .slv li.chk > label{margin-left:0}
+#spec-body.nochk .slv li.chk > label > input{display:none}
+.slv li .vb{
+  display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:9px;
+  letter-spacing:.06em;text-transform:uppercase;border-radius:3px;
+  padding:1px 5px;margin-left:6px;white-space:nowrap;
+}
+.slv li .vb.ok{background:var(--allow-soft);color:var(--allow)}
+.slv li .vb.fail{background:var(--escalate-soft);color:var(--escalate)}
+.slv li .vb.move{background:var(--accent-soft);color:var(--accent)}
+.slv li .vb.skip{background:var(--surface-2);color:var(--muted)}
+.slv li .vnote{display:block;font-size:11.5px;line-height:1.4;color:var(--muted);margin-top:1px}
+.slv > h4 .vcnt{
+  color:var(--muted);text-transform:none;letter-spacing:.02em;font-size:10px;
+  font-variant-numeric:tabular-nums;
+}
+.spos > h3 .vcnt{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:400;
+  color:var(--muted);font-variant-numeric:tabular-nums;
+}
+.sbar select{
+  font-family:inherit;font-size:12.5px;color:var(--ink);background:var(--surface-2);
+  border:1px solid var(--line-strong);border-radius:14px;padding:6px 9px;
+}
+.sbar .cnt + .cnt{margin-left:14px}
 .slv li mark{background:var(--escalate-soft);color:var(--ink);border-radius:2px;padding:0 1px}
 .sbnd{
   margin:9px 0 0;padding:8px 11px;border-radius:7px;background:var(--surface-2);
@@ -448,6 +483,8 @@ select.chip{padding-right:8px}
   .spos{break-inside:avoid;border-color:#bbb}
   .sgrp{break-after:avoid}
   .slv li{color:#000}
+  .slv li .vnote{color:#444}
+  .slv li .vb{border:1px solid #999;color:#000;background:#fff}
 }
 
 /* ---------- анкета клієнта (вирізається разом зі сторінкою) ---------- */
@@ -635,6 +672,14 @@ select.chip{padding-right:8px}
       <input type="search" id="s-find" placeholder="пошук по складу робіт" aria-label="Пошук по складу робіт">
       <label class="swi"><input type="checkbox" id="s-cum"><span>накопичено</span></label>
       <label class="swi"><input type="checkbox" id="s-bnd" checked><span>«не входить»</span></label>
+      <label class="swi"><input type="checkbox" id="s-chk" checked><span>галочки</span></label>
+      <select id="s-only" aria-label="Що показувати">
+        <option value="all">усі пункти</option>
+        <option value="todo">не позначені</option>
+        <option value="done">позначені</option>
+        <option value="prob">проблемні</option>
+      </select>
+      <span class="cnt" id="s-prog">—</span>
       <span class="cnt" id="s-count">—</span>
     </div>
     <div id="spec-body"></div>
@@ -680,6 +725,73 @@ select.chip{padding-right:8px}
   var $ = function(id){ return document.getElementById(id); };
 
   // рівні: [назва, години, економія %, ознака, додані на цьому рівні пункти]
+  // журнал перевірки прайсу на живій базі — data/verify.json
+  var VERIFY = {
+    "_схема": {
+      "що це": "журнал перевірки прайсу на живій базі: що з обіцяного справді налаштовано штатними засобами",
+      "база": "адреса бази, на якій перевіряємо",
+      "позиції": "id позиції прайсу → номер рівня «1»|«2»|«3» → {дата, пункти}",
+      "пункти": "текст пункту складу робіт, слово в слово як у price.json → {с, нота, де}",
+      "с": "ok — налаштовано й перевірено в базі; fail — не вийшло або припущення хибне; move — насправді належить іншій позиції; skip — цим рівнем не перевіряється (потрібен застосунок з іншої позиції)",
+      "нота": "що саме зроблено або чому не вийшло; обов’язкова для fail, move і skip",
+      "де": "де це в базі: модель.поле, шлях меню або ключ параметра — рядок бази знань"
+    },
+    "база": "edu-online-todo.odoo.com",
+    "позиції": {
+      "base": {
+        "1": {
+          "дата": "2026-09-09",
+          "пункти": {
+            "компанія з реквізитами": {
+              "с": "ok",
+              "нота": "заповнено назву, адресу, телефон, пошту, сайт; ЄДРПОУ — у «Company ID», ПДВ-код — у «Tax ID», формат жодне з полів не перевіряє",
+              "де": "res.company · Налаштування → Користувачі та компанії → Компанії"
+            },
+            "українська мова інтерфейсу, часовий пояс і валюта UAH": {
+              "с": "ok",
+              "нота": "uk_UA — єдина активна мова; разом із нею дата 31.12.2026, кома в дробах, тиждень з понеділка. Часовий пояс стоїть у користувача, не в компанії",
+              "де": "res.lang uk_UA · res.users.tz = Europe/Kiev · res.company.currency_id = UAH"
+            },
+            "користувачі та групи доступу": {
+              "с": "ok",
+              "нота": "створено користувача з роллю «Role / User» і привілеєм «Sales / User: Own Documents Only». «Бачити лише свої записи» — штатна група, правил записів для цього не треба",
+              "де": "res.users.group_ids · групи згруповані res.groups.privilege (у 19 замінив category_id)"
+            },
+            "довідник контрагентів": {
+              "с": "ok",
+              "нота": "створено теги «Клієнт» і «Постачальник»; контрагент із навмисно нецифровим ЄДРПОУ зберігся без помилки — перевірки формату немає",
+              "де": "res.partner: category_id теги, industry_id галузь, ref код, vat і company_registry реквізити"
+            },
+            "довідник номенклатури": {
+              "с": "move",
+              "нота": "у Базі цього бути не може: product — не застосунок, тайла в Apps не має і приходить лише з Продажами, Закупівлями, Складом, Рахунками або Точкою продажу. Пункт переносити в першу позицію, що приносить номенклатуру",
+              "де": "ir.module.module product, uom — не встановлені; застосунки Бази номенклатури не дають"
+            },
+            "налаштування пошти й повідомлень": {
+              "с": "ok",
+              "нота": "на Odoo Online вихідна пошта працює без налаштування — власного SMTP-сервера в базі немає й не потрібно; службові адреси bounce, catchall, notifications уже стоять",
+              "де": "mail.alias.domain = edu-online-todo.odoo.com · res.users.notification_type"
+            },
+            "нумерація документів: префікс, рік, лічильник": {
+              "с": "ok",
+              "нота": "перевірено на тимчасовій послідовності: префікс із %(range_year)s і діапазонами дав ЗМ-2026-0001 і сам створив діапазон на рік — з 1 січня лічильник почнеться з одиниці; %(year)s без діапазонів дав 2026/ЗМ/001. Самі номери документів з’являються разом із застосунками, що ці документи мають",
+              "де": "ir.sequence · Налаштування → Технічні → Послідовності"
+            },
+            "двофакторна автентифікація для адміністраторів": {
+              "с": "fail",
+              "нота": "політику 2FA увімкнено, але «тільки для адміністраторів» Odoo не вміє: значень лише два — усі внутрішні користувачі або ще й портальні. Формулювання прайсу правити на «для всіх працівників»",
+              "де": "ir.config_parameter auth_totp.policy = employee_required"
+            },
+            "оглядова сесія 1 година із записом": {
+              "с": "skip",
+              "нота": "це послуга, а не налаштування: у базі перевіряти нічого"
+            }
+          }
+        }
+      }
+    }
+  };
+
   var GROUPS = [
     {
       "g": "Основа",
@@ -3654,7 +3766,7 @@ select.chip{padding-right:8px}
       {
         "id": "mismatch",
         "q": "Чи є цифри, які у вас у двох місцях не збігаються?",
-        "hear": "розбіжність означає дані з різних систем; у дашборді буде тільке те, що є в Odoo"
+        "hear": "розбіжність означає дані з різних систем; у дашборді буде тільки те, що є в Odoo"
       },
       {
         "id": "logo",
@@ -5668,9 +5780,45 @@ select.chip{padding-right:8px}
 
   // ===================== ПОВНИЙ ПЕРЕЛІК (сторінка 4) =====================
   // Проєкція прайсу, а не окремі дані: усе будується з GROUPS. Рівні вкладені, тому
-  // за замовчуванням під рівнем стоїть тільке додане на ньому, а перемикач «накопичено»
+  // за замовчуванням під рівнем стоїть тільки додане на ньому, а перемикач «накопичено»
   // показує повний склад рівня.
   var SPECITEMS = [];   // усі li для швидкого фільтра
+
+  // Журнал перевірки: VERIFY — те, що зафіксувала команда в data/verify.json
+  // (де саме в базі це налаштовується і чи вийшло), галочки — особиста відмітка
+  // в цьому браузері. Ключ галочки без рівня: пункт живе на тому рівні, де його
+  // додали, і в режимі «накопичено» всі його копії позначаються разом.
+  var VKEY = 'odoo-com-calc-verify-v1';
+  var VBADGE = { ok:'у базі', fail:'не вийшло', move:'інша позиція', skip:'не тут' };
+  var VMAP = {};
+  (function(){
+    var P = VERIFY['позиції'] || {};
+    Object.keys(P).forEach(function(pid){
+      Object.keys(P[pid]).forEach(function(lk){
+        var pts = (P[pid][lk] || {})['пункти'] || {};
+        Object.keys(pts).forEach(function(txt){ VMAP[pid + '/' + txt] = pts[txt]; });
+      });
+    });
+  })();
+  var vticks = {};
+  try{ vticks = JSON.parse(localStorage.getItem(VKEY) || '{}') || {}; }catch(e){ vticks = {}; }
+
+  function vrec(pos, txt){ return VMAP[pos + '/' + txt] || null; }
+  function vticked(pos, txt, st){
+    var k = pos + '/' + txt;
+    if(Object.prototype.hasOwnProperty.call(vticks, k)) return !!vticks[k];
+    return !!(st && st['с'] === 'ok');     // зафіксоване в журналі стоїть позначеним
+  }
+  function vtick(pos, txt, on){
+    vticks[pos + '/' + txt] = on ? 1 : 0;
+    try{ localStorage.setItem(VKEY, JSON.stringify(vticks)); }catch(e){}
+    SPECITEMS.forEach(function(it){       // копії того самого пункту на інших рівнях
+      if(it.cb && it.pos === pos && it.raw === txt){
+        it.cb.checked = on;
+        it.el.classList.toggle('done', on);
+      }
+    });
+  }
 
   (function specBuild(){
     var wrap = $('spec-body');
@@ -5693,6 +5841,9 @@ select.chip{padding-right:8px}
         var rng = document.createElement('span');
         rng.className = 'rng'; rng.textContent = rangeOf(m);
         t.appendChild(rng);
+        var vp = document.createElement('span');
+        vp.className = 'vcnt'; vp.id = 'vp-' + m.id;
+        t.appendChild(vp);
         box.appendChild(t);
 
         if(m.q){
@@ -5712,6 +5863,9 @@ select.chip{padding-right:8px}
           var nt = document.createElement('span');
           nt.className = 'note'; nt.id = 'sn-' + m.id + '-' + i;
           hh.appendChild(nt);
+          var vc = document.createElement('span');
+          vc.className = 'vcnt'; vc.id = 'vc-' + m.id + '-' + i;
+          hh.appendChild(vc);
           d.appendChild(hh);
 
           var ul = document.createElement('ul');
@@ -5726,12 +5880,42 @@ select.chip{padding-right:8px}
           // накопичено = inc + додані до цього рівня; інакше — тільки додане на рівні
           composition(m, i).forEach(function(txt){
             var own = (i === 0) ? true : m.lv[i][4].indexOf(txt) > -1;
+            var st = vrec(m.id, txt);
+            var on = vticked(m.id, txt, st);
             var li = document.createElement('li');
-            if(own && i > 0) li.className = 'plus';
-            li.textContent = txt;
+            li.className = 'chk' + (own && i > 0 ? ' plus' : '') + (on ? ' done' : '');
             li.setAttribute('data-own', own ? '1' : '0');
+
+            var lab = document.createElement('label');
+            var cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = on;
+            cb.addEventListener('change', function(){
+              vtick(m.id, txt, cb.checked);
+              specCounts();
+              specFilter();
+            });
+            var t = document.createElement('span');
+            t.className = 't';
+            t.appendChild(document.createTextNode(txt));
+            if(st){
+              var bd = document.createElement('span');
+              bd.className = 'vb ' + st['с'];
+              bd.textContent = VBADGE[st['с']] || st['с'];
+              t.appendChild(bd);
+              var nline = [st['нота'] || '', st['де'] ? '· ' + st['де'] : ''];
+              nline = nline.filter(function(x){ return x; }).join(' ');
+              if(nline){
+                var nt = document.createElement('span');
+                nt.className = 'vnote'; nt.textContent = nline;
+                t.appendChild(nt);
+              }
+            }
+            lab.appendChild(cb); lab.appendChild(t);
+            li.appendChild(lab);
             ul.appendChild(li);
-            SPECITEMS.push({ el:li, txt:txt.toLowerCase(), pos:m.id, lv:i, own:own });
+            SPECITEMS.push({ el:li, txt:(txt + ' ' + ((st && st['нота']) || '')).toLowerCase(),
+                             raw:txt, pos:m.id, lv:i, own:own, cb:cb, st:st ? st['с'] : '' });
           });
           d.appendChild(ul);
           box.appendChild(d);
@@ -5758,15 +5942,46 @@ select.chip{padding-right:8px}
     });
   })();
 
+  // Лічильники вважають кожен пункт один раз — на тому рівні, де його додали,
+  // тому в сумі вони дають рівно склад робіт прайсу, а не накопичені копії.
+  function specCounts(){
+    var tot = 0, done = 0, per = {};
+    SPECITEMS.forEach(function(it){
+      if(!it.cb || !it.own) return;
+      var kl = it.pos + '/' + it.lv, kp = it.pos;
+      per[kl] = per[kl] || [0, 0]; per[kp] = per[kp] || [0, 0];
+      per[kl][1]++; per[kp][1]++; tot++;
+      if(it.cb.checked){ per[kl][0]++; per[kp][0]++; done++; }
+    });
+    MODS.forEach(function(m){
+      m.lv.forEach(function(_, i){
+        var c = $('vc-' + m.id + '-' + i), v = per[m.id + '/' + i];
+        if(c) c.textContent = v && v[1] ? (v[0] + ' / ' + v[1]) : '';
+      });
+      var p = $('vp-' + m.id), pv = per[m.id];
+      if(p) p.textContent = pv ? (pv[0] + ' / ' + pv[1]) : '';
+    });
+    $('s-prog').textContent = 'позначено ' + done + ' / ' + tot;
+  }
+
   function specFilter(){
     var q = ($('s-find').value || '').trim().toLowerCase();
     var cum = $('s-cum').checked, showB = $('s-bnd').checked;
+    var only = $('s-only').value;
     var shown = 0, byPos = {};
+    $('spec-body').classList.toggle('nochk', !$('s-chk').checked);
 
     SPECITEMS.forEach(function(it){
       // у режимі «додане» пункти нижчих рівнів під рівнем не повторюємо
       var vis = it.bnd ? showB : (cum || it.own);
       if(vis && q) vis = it.txt.indexOf(q) > -1;
+      if(vis && only !== 'all'){
+        // фільтр — про склад робіт: ознаки й «не входить» під нього не підпадають
+        if(!it.cb) vis = false;
+        else if(only === 'todo') vis = !it.cb.checked;
+        else if(only === 'done') vis = it.cb.checked;
+        else vis = !!it.st && it.st !== 'ok';
+      }
       it.el.hidden = !vis;
       if(vis){
         shown++;
@@ -5795,6 +6010,9 @@ select.chip{padding-right:8px}
   $('s-find').addEventListener('input', specFilter);
   $('s-cum').addEventListener('change', specFilter);
   $('s-bnd').addEventListener('change', specFilter);
+  $('s-chk').addEventListener('change', specFilter);
+  $('s-only').addEventListener('change', specFilter);
+  specCounts();
   specFilter();
   // =================== кінець блоку повного переліку ===================
 
@@ -6062,7 +6280,10 @@ select.chip{padding-right:8px}
 
   $('reset').addEventListener('click', function(){
     if(state.page === 'form'){ fclear(); return; }
-    if(state.page === 'spec'){ $('s-find').value = ''; specFilter(); return; }
+    if(state.page === 'spec'){
+      // галочки перевірки — записи, а не робочий стан: кнопка їх не чіпає
+      $('s-find').value = ''; $('s-only').value = 'all'; specFilter(); return;
+    }
     blank();
     MODS.forEach(function(m){
       if(!m.req) $('c-' + m.id).checked = false;
