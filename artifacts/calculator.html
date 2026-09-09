@@ -675,6 +675,7 @@ select.chip{padding-right:8px}
       <label class="swi"><input type="checkbox" id="s-bnd"><span>«не входить»</span></label>
       <label class="swi"><input type="checkbox" id="s-chk" checked><span>галочки</span></label>
       <label class="swi"><input type="checkbox" id="s-hide" checked><span>сховати позначені</span></label>
+      <button class="chip" type="button" id="s-mark">Позначити все</button>
       <select id="s-only" aria-label="Що показувати">
         <option value="all">усі пункти</option>
         <option value="todo">не позначені</option>
@@ -7994,7 +7995,7 @@ select.chip{padding-right:8px}
   // (де саме в базі це налаштовується і чи вийшло), галочки — особиста відмітка
   // в цьому браузері. Ключ галочки без рівня: пункт живе на тому рівні, де його
   // додали, і в режимі «накопичено» всі його копії позначаються разом.
-  var VKEY = 'odoo-com-calc-verify-v1';
+  var VKEY = 'odoo-com-calc-verify-v2';   // v2: галочки типово зняті — це відмітка про базу клієнта
   var VBADGE = { ok:'у базі', fail:'не вийшло', move:'інша позиція', skip:'не тут' };
   var VMAP = {};
   (function(){
@@ -8013,7 +8014,16 @@ select.chip{padding-right:8px}
   function vticked(pos, txt, st){
     var k = pos + '/' + txt;
     if(Object.prototype.hasOwnProperty.call(vticks, k)) return !!vticks[k];
-    return !!(st && st['с'] === 'ok');     // зафіксоване в журналі стоїть позначеним
+    return false;   // типово зняті: галочка — про базу клієнта, а не про журнал
+  }
+  function vtickAll(on){                   // «Позначити все» / «Зняти всі» — одним записом
+    SPECITEMS.forEach(function(it){
+      if(!it.cb) return;
+      vticks[it.pos + '/' + it.raw] = on ? 1 : 0;
+      it.cb.checked = on;
+      it.el.classList.toggle('done', on);
+    });
+    try{ localStorage.setItem(VKEY, JSON.stringify(vticks)); }catch(e){}
   }
   function vtick(pos, txt, on){
     vticks[pos + '/' + txt] = on ? 1 : 0;
@@ -8169,6 +8179,12 @@ select.chip{padding-right:8px}
       if(p) p.textContent = pv ? (pv[0] + ' / ' + pv[1]) : '';
     });
     $('s-prog').textContent = 'позначено ' + done + ' / ' + tot;
+    var mk = $('s-mark');
+    if(mk){
+      mk.textContent = done ? 'Зняти всі' : 'Позначити все';
+      mk.title = done ? 'зняти всі мої відмітки на цій сторінці'
+                      : 'позначити все — якщо база вже налаштована за прайсом';
+    }
   }
 
   function specFilter(){
@@ -8246,6 +8262,12 @@ select.chip{padding-right:8px}
   });
   $('s-only').addEventListener('change', function(){
     if($('s-only').value === 'done') $('s-hide').checked = false;
+    specFilter();
+  });
+  $('s-mark').addEventListener('click', function(){
+    var done = SPECITEMS.some(function(it){ return it.cb && it.own && it.cb.checked; });
+    vtickAll(!done);
+    specCounts();
     specFilter();
   });
   specCounts();
