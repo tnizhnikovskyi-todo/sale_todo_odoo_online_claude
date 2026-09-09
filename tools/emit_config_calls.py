@@ -118,15 +118,27 @@ def unroll(st, prof, missing, templates=None):
     if st.get('дія') != 'для_кожного':
         return [{k: subst(v, prof, missing) for k, v in st.items()}]
     src = st.get('перелік', '')
-    m = CLIENT.fullmatch(src.strip()) if isinstance(src, str) else None
-    if not m:
-        missing.append('для_кожного: «перелік» має бути $клієнт.поле, а не «%s»' % src)
-        return []
-    if m.group(1) not in prof:
-        missing.append(m.group(1))
-        return []
+    # «перелік» буває двох видів:
+    #  • $клієнт.поле — звичайний випадок, значення беремо з профілю;
+    #  • готовий список — так виходить, коли цикл стоїть УСЕРЕДИНІ шаблону й перелік
+    #    прийшов його аргументом: до моменту розгортання аргумент уже підставлено.
+    # Другий випадок спершу не приймався, і шаблон «власне_поле» з порожніми «опції»
+    # валив емітер. Приймати його правильніше, ніж вимагати, щоб цикл у шаблоні
+    # звертався до профілю навпростець: тоді шаблон перестав би бути шаблоном.
+    if isinstance(src, list):
+        items_src = src
+    else:
+        m = CLIENT.fullmatch(src.strip()) if isinstance(src, str) else None
+        if not m:
+            missing.append('для_кожного: «перелік» має бути $клієнт.поле або список, '
+                           'а не «%s»' % src)
+            return []
+        if m.group(1) not in prof:
+            missing.append(m.group(1))
+            return []
+        items_src = prof[m.group(1)]
     out = []
-    for i, elem in enumerate(prof[m.group(1)], 1):
+    for i, elem in enumerate(items_src, 1):
         inner = st.get('крок') or {}
         filled = {k: subst(v, prof, missing, elem, i) for k, v in inner.items()}
         # Шаблон усередині циклу треба розгорнути, а не віддати виконавцеві сирим
