@@ -76,6 +76,7 @@ tools/check_all.py           одна перевірка на весь репо�
 tools/test_calculator_ui.js  перевірка калькулятора в справжньому браузері (сторінки 1–3)
 tools/check_artifact.py      звіряє опублікований артефакт із джерелами правди й кодом
 tools/test_integrity.py      негативні тести перевірок цілісності прайсу
+tools/probe_audit.py         готує пробу для переперевірки звірки: адреси записів із тексту
 tools/build_config_map.py    збирає data/config-map.json: пункт → моделі Odoo, поля, шлях у меню
 tools/build_runbook.py       збирає docs/setup-runbook.md: порядок збірки за залежностями
 data/config-map.json         карта налаштування (генерується): 314 із 360 пунктів мають адресу

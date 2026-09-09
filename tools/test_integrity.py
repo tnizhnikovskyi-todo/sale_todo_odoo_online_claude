@@ -84,6 +84,41 @@ def check_kind():
     return out
 
 
+# ── Розбір адрес у пробі переперевірки ───────────────────────────────────────
+# Проба (`tools/probe_audit.py`) двічі тихо брехала, і обидва рази однаково: слово
+# збігалося з назвою моделі, запис із таким id у базі був, і проба «підтверджувала»
+# твердження, якого не перевіряла. Хибне підтвердження гірше за відсутність перевірки,
+# бо закриває питання. Тут закріплені саме ті дві фрази.
+
+def check_probe():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('pa', 'tools/probe_audit.py')
+    pa = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pa)
+    out = []
+
+    site = 'вкладеність: «Кава та чай» (меню 12) під «Про компанію» (меню 7) у меню сайту 4'
+    got = set(m for _, m, _ in pa.pairs(site) if 'menu' in m)
+    out.append((got == {'website.menu'},
+                'меню сайту: %s — у записі про сайт голі «меню N» це website.menu, '
+                'а ir.ui.menu 7 і 12 існують («General Settings», «Automation») і дали б '
+                'хибне підтвердження' % (','.join(got) or '—')))
+
+    seq = 'у сьогоднішніх нарядів послідовність 1 і 2'
+    got2 = [m for _, m, _ in pa.pairs(seq)]
+    out.append(('ir.sequence' not in got2,
+                'послідовність як значення поля: адрес %d — це поле sequence, а не записи '
+                'ir.sequence; запис 1 у базі є («Lead Mining Request») і проба підтвердила б '
+                'порядок нарядів, якого не дивилась' % len(got2)))
+
+    amb = 'бланк — шаблон 4897, дія 1355, роль 39'
+    got3 = [w for w, _, _ in pa.pairs(amb) if w in pa.AMBIGUOUS]
+    out.append((len(got3) == 3,
+                'неоднозначні слова відсіяні: %s — «шаблон», «дія», «роль» означають різні '
+                'моделі, тому в пробу не йдуть' % ','.join(got3)))
+    return out
+
+
 good = bc.check_integrity(copy.deepcopy(P['групи']), copy.deepcopy(V))
 print('  ok     чисті дані: %d помилок, %d попереджень' % (len(good[0]), len(good[1])))
 res = [not good[0] and not good[1]]
@@ -116,6 +151,10 @@ res.append(run('6. цикл у жорстких залежностях', cycle, 
 
 for okk, note in check_kind():
     print(('  ok     ' if okk else '  ПРОВАЛ ') + 'вид роботи: ' + note)
+    res.append(okk)
+
+for okk, note in check_probe():
+    print(('  ok     ' if okk else '  ПРОВАЛ ') + 'проба: ' + note)
     res.append(okk)
 
 print()
