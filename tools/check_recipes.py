@@ -76,6 +76,13 @@ def main():
     templates = rec.get('шаблони') or {}
     errs_early = []
 
+    known_models = set(ALLOW_EXTRA)
+    for blk in cmap['позиції'].values():
+        for rows in blk.get('рівні', {}).values():
+            for r in rows:
+                known_models.update(r['моделі'])
+
+
     # Апостроф в імені аргумента чи поля профілю ламає підстановку молча:
     # регулярка збирає ім'я з літер і підкреслень і обірветься на апострофі.
     apos = [c for c in ("'", '\u2019')]
@@ -86,16 +93,42 @@ def main():
     for tname, tpl in templates.items():
         if tname.startswith('_') or not isinstance(tpl, dict):
             continue          # службові ключі розділу, як «_нащо»
-        for a in (tpl.get('аргументи') or []):
+        declared = set(tpl.get('аргументи') or [])
+        for a in declared:
             if any(x in a for x in apos):
                 errs_early.append('шаблон «%s»: аргумент «%s» містить апостроф'
                                   % (tname, a))
-
-    known_models = set(ALLOW_EXTRA)
-    for blk in cmap['позиції'].values():
-        for rows in blk.get('рівні', {}).values():
-            for r in rows:
-                known_models.update(r['моделі'])
+        # Кроки шаблону — такі самі кроки, і перевіряти їх треба так само.
+        # Без цього зламаний шаблон проїжджає: перевірка аргументів нічого не каже
+        # про те, що всередині.
+        bound_t = set()
+        for i, st in enumerate(tpl.get('кроки') or [], 1):
+            where = 'шаблон «%s» крок %d' % (tname, i)
+            act = st.get('дія')
+            if act not in ACTIONS:
+                errs_early.append('%s: невідома дія «%s»' % (where, act))
+                continue
+            mdl = st.get('модель')
+            if isinstance(mdl, str) and mdl.startswith('$арг.'):
+                if mdl[5:] not in declared:
+                    errs_early.append('%s: модель узята з аргумента «%s», якого немає '
+                                      'в переліку аргументів' % (where, mdl[5:]))
+            elif mdl and mdl not in known_models:
+                errs_early.append('%s: моделі «%s» немає в карті налаштування'
+                                  % (where, mdl))
+            for v in walk_values({k: x for k, x in st.items() if k != 'назвати'}):
+                if not isinstance(v, str):
+                    continue
+                for mm in re.finditer(r'\$арг\.([\wа-яіїєґ_]+)', v, re.I | re.U):
+                    if mm.group(1) not in declared:
+                        errs_early.append('%s: аргумент «%s» не оголошений'
+                                          % (where, mm.group(1)))
+                m = REF.match(v.strip())
+                if m and m.group(1) not in bound_t:
+                    errs_early.append('%s: посилання $%s ще не визначене'
+                                      % (where, m.group(1)))
+            if st.get('назвати'):
+                bound_t.add(st['назвати'])
 
     price_items = {}
     names = {}
