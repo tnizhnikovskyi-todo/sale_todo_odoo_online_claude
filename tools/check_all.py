@@ -30,6 +30,7 @@ GENERATORS = [
     ('tools/build_audit.py', ['docs/звірка-бази-2026-09-09.md']),
     ('tools/build_config_map.py', ['data/config-map.json']),
     ('tools/build_runbook.py', ['docs/setup-runbook.md']),
+    ('tools/report_recipe_gaps.py', ['docs/рецепти-що-лишилось.md']),
 ]
 VALIDATORS = ['tools/check_recipes.py']
 # Зразок плану збирається з профілю-прикладу окремою командою.
