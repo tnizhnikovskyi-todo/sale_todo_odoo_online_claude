@@ -370,6 +370,86 @@ select.chip{padding-right:8px}
 .chip:disabled{opacity:.45;cursor:default}
 .chip:disabled:hover{background:var(--surface)}
 
+/* ---------- повний перелік (сторінка 4) ---------- */
+.sbar{
+  display:flex;flex-wrap:wrap;gap:9px 14px;align-items:center;
+  padding:11px 13px;margin:0 0 16px;
+  border:1px solid var(--line);border-radius:10px;background:var(--surface);
+}
+.sbar input[type="search"]{
+  flex:1 1 220px;min-width:0;font-family:inherit;font-size:13px;color:var(--ink);
+  background:var(--surface-2);border:1px solid var(--line-strong);border-radius:14px;padding:7px 12px;
+}
+.sbar input[type="search"]:focus{outline:2px solid var(--accent);outline-offset:1px;background:var(--surface)}
+.sbar .swi{display:inline-flex;align-items:baseline;gap:7px;cursor:pointer;font-size:12.5px;color:var(--ink-2)}
+.sbar .swi input{accent-color:var(--accent);margin:0;position:relative;top:2px}
+.sbar .cnt{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);margin-left:auto;
+}
+.sgrp{
+  font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--muted);margin:22px 0 9px;padding-bottom:5px;border-bottom:1px solid var(--line-strong);
+}
+.sgrp:first-child{margin-top:0}
+.spos{
+  border:1px solid var(--line);border-radius:10px;background:var(--surface);
+  padding:14px 16px 10px;margin:0 0 11px;
+}
+.spos[hidden]{display:none!important}
+.spos > h3{
+  font-family:Literata,Georgia,serif;font-size:16.5px;font-weight:600;margin:0 0 3px;
+  display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;
+}
+.spos > h3 .rng{
+  font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:400;
+  color:var(--muted);font-variant-numeric:tabular-nums;
+}
+.spos > h3 .tag{font-size:9px}
+.spos > p.q{margin:0 0 9px}
+.slv{margin:9px 0 0;padding-top:8px;border-top:1px solid var(--line)}
+.slv[hidden]{display:none!important}
+.slv > h4{
+  font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:10.5px;letter-spacing:.09em;
+  text-transform:uppercase;margin:0 0 6px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;
+}
+.slv.l1 > h4{color:var(--allow)}
+.slv.l2 > h4{color:var(--accent)}
+.slv.l3 > h4{color:var(--escalate)}
+.slv > h4 .pr{color:var(--ink-2);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.slv > h4 .note{color:var(--muted);text-transform:none;letter-spacing:.02em;font-size:10px}
+.slv ul{list-style:none;margin:0;padding:0}
+.slv li{
+  font-size:13px;line-height:1.45;color:var(--ink-2);
+  padding:2px 0 2px 15px;position:relative;
+}
+.slv li[hidden]{display:none!important}
+.slv li::before{content:"·";position:absolute;left:4px;color:var(--line-strong)}
+.slv li.plus::before{content:"+";left:3px;font-size:10px;color:var(--accent)}
+.slv li.sig{color:var(--ink);font-weight:500}
+.slv li.sig::before{content:"→";left:2px;font-size:10px;color:var(--accent)}
+.slv li mark{background:var(--escalate-soft);color:var(--ink);border-radius:2px;padding:0 1px}
+.sbnd{
+  margin:9px 0 0;padding:8px 11px;border-radius:7px;background:var(--surface-2);
+  font-size:12px;line-height:1.45;color:var(--muted);
+}
+.sbnd[hidden]{display:none!important}
+.sbnd b{color:var(--ink-2);font-weight:500;display:block;margin-bottom:3px}
+.sbnd ul{list-style:none;margin:0;padding:0}
+.sbnd li{padding:1px 0 1px 13px;position:relative}
+.sbnd li::before{content:"—";position:absolute;left:2px;color:var(--line-strong)}
+.snone{font-size:13px;color:var(--muted);margin:18px 0}
+.snone[hidden]{display:none!important}
+
+@media print{
+  .bar,nav.tabs,.panel,.sbar,header .sub,footer{display:none!important}
+  body{background:#fff;font-size:11pt}
+  .shell{max-width:none;padding:0}
+  .spos{break-inside:avoid;border-color:#bbb}
+  .sgrp{break-after:avoid}
+  .slv li{color:#000}
+}
+
 /* ---------- анкета клієнта (вирізається разом зі сторінкою) ---------- */
 .fintro{
   border-left:3px solid var(--accent);background:var(--accent-soft);
@@ -427,6 +507,7 @@ select.chip{padding-right:8px}
     <div class="eyebrow">Департамент odoo.com · інструмент сейла</div>
     <h1>Калькулятор впровадження</h1>
     <p class="sub" id="sub-calc">Позначте те, що потрібно клієнту, і виберіть рівень по кожній позиції. Під назвою стоїть ознака, за якою рівень визначають, а кнопка «порівняти» розкриває всі три поруч зі складом робіт: видно, що входить у кожен і що додається на наступному. Ціна й строк порахуються самі.</p>
+    <p class="sub" id="sub-spec" hidden>Усе, що є в прайсі, одним списком: позиція → рівень → пункти складу робіт. Рівні вкладені, тому за замовчуванням під рівнем стоїть тільки те, що на ньому додається; перемикач «накопичено» показує повний склад кожного рівня. Пошук фільтрує пункти по всьому переліку — так швидше перевірити, чи обіцяли ми колись конкретну річ. Сторінка зроблена під друк: у друк ідуть тільки позиції.</p>
     <p class="sub" id="sub-form" hidden>Сторінка, яку відкриває клієнт перед зустріччю: ті самі теми, що в чек-листі, але його словами — без рівнів, цін і наших внутрішніх формулювань. Блоки процесів розкриваються тільки після того, як клієнт позначив, що йому потрібно. Відповіді зберігаються в його браузері; кнопка «Скопіювати відповіді» дає текст, який він надсилає нам.</p>
     <p class="sub" id="sub-qual" hidden>Порядок розмови: спершу скринінг — тринадцять питань, на яких лід або наш, або не наш; далі напрями, де питання ставиться по кожній позиції прайсу, а відповідь клієнта і є ознакою рівня. Розділи відкриваються галочками по одному — на екрані те, про що говорять зараз. У кожному напрямі під питаннями по позиціях стоїть блок «Розкрити глибину»: 10–12 питань, відповіді на які показують рівень і те, про що треба попередити. Ставити всі не обовʼязково — це банк питань, галочка означає «спитали». Обрана відповідь по напряму одразу проставляє позицію й рівень у калькуляторі.</p>
   </header>
@@ -434,6 +515,7 @@ select.chip{padding-right:8px}
   <div class="bar">
     <div class="tabs" role="tablist" aria-label="Сторінки інструмента">
       <button class="tab" type="button" role="tab" id="tab-calc" aria-selected="true" aria-controls="page-calc">Склад робіт і ціна</button>
+      <button class="tab" type="button" role="tab" id="tab-spec" aria-selected="false" aria-controls="page-spec">Повний перелік</button>
       <button class="tab" type="button" role="tab" id="tab-qual" aria-selected="false" aria-controls="page-qual">Чек-лист кваліфікації</button>
       <button class="tab" type="button" role="tab" id="tab-form" aria-selected="false" aria-controls="page-form">Анкета для клієнта</button>
     </div>
@@ -546,6 +628,17 @@ select.chip{padding-right:8px}
 
       </div>
     </div>
+  </div>
+
+  <div class="page" id="page-spec" role="tabpanel" aria-labelledby="tab-spec" hidden>
+    <div class="sbar">
+      <input type="search" id="s-find" placeholder="пошук по складу робіт" aria-label="Пошук по складу робіт">
+      <label class="swi"><input type="checkbox" id="s-cum"><span>накопичено</span></label>
+      <label class="swi"><input type="checkbox" id="s-bnd" checked><span>«не входить»</span></label>
+      <span class="cnt" id="s-count">—</span>
+    </div>
+    <div id="spec-body"></div>
+    <p class="snone" id="s-none" hidden>Нічого не знайдено.</p>
   </div>
 
   <div class="page" id="page-form" role="tabpanel" aria-labelledby="tab-form" hidden>
@@ -5084,9 +5177,9 @@ select.chip{padding-right:8px}
   }
 
   // ---------- сторінки ----------
-  var PAGES = { calc:['tab-calc','page-calc','sub-calc'], qual:['tab-qual','page-qual','sub-qual'],
-                form:['tab-form','page-form','sub-form'] };
-  var RESETLBL = { calc:'Почати заново', qual:'Почати заново', form:'Очистити анкету' };
+  var PAGES = { calc:['tab-calc','page-calc','sub-calc'], spec:['tab-spec','page-spec','sub-spec'],
+                qual:['tab-qual','page-qual','sub-qual'], form:['tab-form','page-form','sub-form'] };
+  var RESETLBL = { calc:'Почати заново', spec:'Очистити пошук', qual:'Почати заново', form:'Очистити анкету' };
   function showPage(p){
     if(!PAGES[p]) p = 'calc';
     Object.keys(PAGES).forEach(function(k){
@@ -5096,8 +5189,8 @@ select.chip{padding-right:8px}
       $(ref[2]).hidden = !on;
     });
     $('reset').textContent = RESETLBL[p];
-    // анкету заповнює клієнт у себе — набори сейла на ній не потрібні
-    var sales = p !== 'form';
+    // анкету заповнює клієнт у себе, а перелік — довідник: набори там не потрібні
+    var sales = p === 'calc' || p === 'qual';
     $('cli-wrap').hidden = !sales;
     $('save').hidden = !sales;
     if(!sales){ $('cases').hidden = true; $('del').hidden = true; }
@@ -5105,6 +5198,7 @@ select.chip{padding-right:8px}
     state.page = p; save();
   }
   $('tab-calc').addEventListener('click', function(){ showPage('calc'); });
+  $('tab-spec').addEventListener('click', function(){ showPage('spec'); });
   $('tab-qual').addEventListener('click', function(){ showPage('qual'); });
   $('tab-form').addEventListener('click', function(){ showPage('form'); });
 
@@ -5572,6 +5666,138 @@ select.chip{padding-right:8px}
     copyOut(qualNotes(), $('qnote-out'), $('qcopied'));
   });
 
+  // ===================== ПОВНИЙ ПЕРЕЛІК (сторінка 4) =====================
+  // Проєкція прайсу, а не окремі дані: усе будується з GROUPS. Рівні вкладені, тому
+  // за замовчуванням під рівнем стоїть тільке додане на ньому, а перемикач «накопичено»
+  // показує повний склад рівня.
+  var SPECITEMS = [];   // усі li для швидкого фільтра
+
+  (function specBuild(){
+    var wrap = $('spec-body');
+    GROUPS.forEach(function(gr){
+      var h = document.createElement('div');
+      h.className = 'sgrp'; h.textContent = gr.g;
+      wrap.appendChild(h);
+
+      gr.items.forEach(function(m){
+        var box = document.createElement('div');
+        box.className = 'spos'; box.id = 'sp-' + m.id;
+
+        var t = document.createElement('h3');
+        t.appendChild(document.createTextNode(m.n));
+        if(m.req){
+          var rq = document.createElement('span');
+          rq.className = 'tag'; rq.textContent = 'обов’язкова';
+          t.appendChild(rq);
+        }
+        var rng = document.createElement('span');
+        rng.className = 'rng'; rng.textContent = rangeOf(m);
+        t.appendChild(rng);
+        box.appendChild(t);
+
+        if(m.q){
+          var q = document.createElement('p');
+          q.className = 'q'; q.textContent = m.q;
+          box.appendChild(q);
+        }
+
+        m.lv.forEach(function(l, i){
+          var d = document.createElement('div');
+          d.className = 'slv l' + (i + 1); d.id = 'sl-' + m.id + '-' + i;
+          var hh = document.createElement('h4');
+          hh.appendChild(document.createTextNode(l[0]));
+          var pr = document.createElement('span');
+          pr.className = 'pr'; pr.textContent = money(priceAt(m, i));
+          hh.appendChild(pr);
+          var nt = document.createElement('span');
+          nt.className = 'note'; nt.id = 'sn-' + m.id + '-' + i;
+          hh.appendChild(nt);
+          d.appendChild(hh);
+
+          var ul = document.createElement('ul');
+          // ознака рівня — перший рядок: за нею рівень і вибирають
+          var sig = document.createElement('li');
+          sig.className = 'sig';
+          sig.textContent = 'ознака: ' + l[3];
+          sig.setAttribute('data-sig', '1');
+          ul.appendChild(sig);
+          SPECITEMS.push({ el:sig, txt:('ознака: ' + l[3]).toLowerCase(), pos:m.id, lv:i, own:true });
+
+          // накопичено = inc + додані до цього рівня; інакше — тільки додане на рівні
+          composition(m, i).forEach(function(txt){
+            var own = (i === 0) ? true : m.lv[i][4].indexOf(txt) > -1;
+            var li = document.createElement('li');
+            if(own && i > 0) li.className = 'plus';
+            li.textContent = txt;
+            li.setAttribute('data-own', own ? '1' : '0');
+            ul.appendChild(li);
+            SPECITEMS.push({ el:li, txt:txt.toLowerCase(), pos:m.id, lv:i, own:own });
+          });
+          d.appendChild(ul);
+          box.appendChild(d);
+        });
+
+        if(m.bounds && m.bounds.length){
+          var b = document.createElement('div');
+          b.className = 'sbnd'; b.id = 'sb-' + m.id;
+          var bt = document.createElement('b');
+          bt.textContent = 'не входить';
+          b.appendChild(bt);
+          var bul = document.createElement('ul');
+          m.bounds.forEach(function(txt){
+            var li = document.createElement('li');
+            li.textContent = txt;
+            bul.appendChild(li);
+            SPECITEMS.push({ el:li, txt:txt.toLowerCase(), pos:m.id, lv:-1, own:true, bnd:true });
+          });
+          b.appendChild(bul);
+          box.appendChild(b);
+        }
+        wrap.appendChild(box);
+      });
+    });
+  })();
+
+  function specFilter(){
+    var q = ($('s-find').value || '').trim().toLowerCase();
+    var cum = $('s-cum').checked, showB = $('s-bnd').checked;
+    var shown = 0, byPos = {};
+
+    SPECITEMS.forEach(function(it){
+      // у режимі «додане» пункти нижчих рівнів під рівнем не повторюємо
+      var vis = it.bnd ? showB : (cum || it.own);
+      if(vis && q) vis = it.txt.indexOf(q) > -1;
+      it.el.hidden = !vis;
+      if(vis){
+        shown++;
+        byPos[it.pos] = true;
+        if(!it.bnd) byPos[it.pos + '/' + it.lv] = true;
+      }
+    });
+
+    MODS.forEach(function(m){
+      m.lv.forEach(function(_, i){
+        var d = $('sl-' + m.id + '-' + i);
+        d.hidden = !byPos[m.id + '/' + i];
+        $('sn-' + m.id + '-' + i).textContent = (i === 0 || cum || q) ? '' : 'додається до попереднього';
+      });
+      var b = $('sb-' + m.id);
+      if(b) b.hidden = !(showB && byPos[m.id] && (!q || [].some.call(b.querySelectorAll('li'), function(li){ return !li.hidden; })));
+      $('sp-' + m.id).hidden = !byPos[m.id];
+    });
+
+    $('s-count').textContent = q
+      ? ('знайдено ' + shown + ' ' + plural(shown, 'пункт', 'пункти', 'пунктів'))
+      : (MODS.length + ' позицій · ' + shown + ' ' + plural(shown, 'пункт', 'пункти', 'пунктів'));
+    $('s-none').hidden = shown > 0;
+  }
+
+  $('s-find').addEventListener('input', specFilter);
+  $('s-cum').addEventListener('change', specFilter);
+  $('s-bnd').addEventListener('change', specFilter);
+  specFilter();
+  // =================== кінець блоку повного переліку ===================
+
   // ===================== АНКЕТА КЛІЄНТА (сторінка 3) =====================
   // Самодостатній блок: дані — var FORM (data/client-form.json), стан — власний ключ
   // localStorage, стилі — класи .f*, розмітка — #page-form. Нічого зі сторінок сейла
@@ -5836,6 +6062,7 @@ select.chip{padding-right:8px}
 
   $('reset').addEventListener('click', function(){
     if(state.page === 'form'){ fclear(); return; }
+    if(state.page === 'spec'){ $('s-find').value = ''; specFilter(); return; }
     blank();
     MODS.forEach(function(m){
       if(!m.req) $('c-' + m.id).checked = false;
