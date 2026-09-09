@@ -83,12 +83,16 @@ PROP_TYPES = {'char', 'text', 'boolean', 'integer', 'float', 'date', 'datetime',
 # в полі «де», бо там про них не писали.
 ALLOW_EXTRA = {'res.country', 'res.partner.category', 'ir.model.data', 'res.currency',
                'ir.model', 'properties.base.definition', 'crm.team', 'planning.role',
-               'maintenance.equipment.category', 'stock.picking.type', 'helpdesk.team'}
+               'maintenance.equipment.category', 'stock.picking.type', 'helpdesk.team',
+               'ir.model.fields.selection', 'base.automation'}
 # ir.model потрібен для перевірки «застосунок стоїть»: на свіжій базі документів ще
 # немає, тому «щонайменше одна угода» падало б законно — перевіряємо не документ,
 # а наявність моделі, яку приносить застосунок
 
 REF = re.compile(r'^\$([^.]+)$')
+# Змінні циклу «для_кожного»: вони не «посилання на створений запис», а підстановки
+# емітера. Без цього переліку валідатор вимагав би визначити $індекс кроком «назвати».
+LOOP_VARS = {'елемент', 'індекс'}
 # $ім'я.поле — поле знайденого запису; розвʼязує виконавець. Валідатор мусить бачити
 # базове імʼя, інакше описка в посиланні («$компаня.partner_id») проїде молча.
 DEREF = re.compile(r'^\$([^.$]+)\.([\w]+)$')
@@ -212,6 +216,8 @@ def main():
                         errs_early.append('%s: аргумент «%s» не оголошений'
                                           % (where, mm.group(1)))
                 m = REF.match(v.strip())
+                if m and m.group(1) in LOOP_VARS:
+                    continue
                 if m and m.group(1) not in bound_t:
                     errs_early.append('%s: посилання $%s ще не визначене'
                                       % (where, m.group(1)))
@@ -264,6 +270,19 @@ def main():
                         else:
                             need = set(tpl.get('аргументи') or [])
                             got = set((st.get('аргументи') or {}).keys())
+                            # «опції» потрібні лише полю-переліку. Робити їх
+                            # обовʼязковими завжди означало б писати «опції: []» у
+                            # кожному виклику — шум, який перестають читати. А от
+                            # перелік БЕЗ опцій — справжня тиха поломка: поле є,
+                            # вибрати нічого.
+                            if tname == 'власне_поле':
+                                ttype = (st.get('аргументи') or {}).get('тип')
+                                if ttype != 'selection':
+                                    need.discard('опції')
+                                elif 'опції' not in got:
+                                    errs.append('%s: поле-перелік без «опції» — воно '
+                                                'створиться порожнім' % where)
+                                    need.discard('опції')   # не казати те саме двічі
                             for miss in sorted(need - got):
                                 errs.append('%s: шаблон «%s» вимагає аргумент «%s»'
                                             % (where, tname, miss))
@@ -336,6 +355,8 @@ def main():
                                 errs.append('%s: посилання «$%s.%s» на невизначений запис'
                                             % (where, d.group(1), d.group(2)))
                         m = REF.match(s.strip()) if isinstance(s, str) else None
+                        if m and m.group(1) in LOOP_VARS:
+                            continue
                         if m and m.group(1) not in bound:
                             errs.append('%s: посилання $%s ще не визначене'
                                         % (where, m.group(1)))
