@@ -301,6 +301,15 @@ def check_verify(vrfy, groups):
                 if c in ('fail', 'move', 'skip') and not st.get('нота'):
                     errs.append('verify %s р.%s «%s»: статус %s без пояснення'
                                 % (pid, lk, txt, c))
+                z = st.get('звірка')
+                if z is not None:
+                    for k in ('дата', 'дивились', 'знайшли'):
+                        if not z.get(k):
+                            errs.append('verify %s р.%s «%s»: у звірці немає «%s»'
+                                        % (pid, lk, txt, k))
+                    if not isinstance(z.get('є'), bool):
+                        errs.append('verify %s р.%s «%s»: у звірці «є» має бути так або ні'
+                                    % (pid, lk, txt))
     return errs, warns
 
 def inject(html, name, value):
@@ -379,6 +388,18 @@ def main():
     print('    перевірка на базі %s: %d рівнів, %d пунктів — %d ok, %d fail, %d move, %d skip' % (
         vrfy.get('база', '?'), vlv, sum(vc.values()),
         vc['ok'], vc['fail'], vc['move'], vc['skip']))
+    zt = zy = 0
+    for lvs in (vrfy.get('позиції') or {}).values():
+        for rec in lvs.values():
+            for st in (rec.get('пункти') or {}).values():
+                z = st.get('звірка')
+                if z:
+                    zt += 1
+                    if z.get('є'):
+                        yy = 1
+                        zy += yy
+    print('    звірка з базою: %d пунктів звірено — %d знайдено в базі, %d немає'
+          % (zt, zy, zt - zy))
     return 0
 
 if __name__ == '__main__':
