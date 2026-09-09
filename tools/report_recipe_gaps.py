@@ -74,7 +74,7 @@ DOCS = {
 NOT_IN_BASE = {'diag'}
 
 
-def kind(models, audit_has, pid=None):
+def kind(models, audit_has, pid=None, modules=None):
     """Вид роботи за пунктом: послуга / штатна поведінка / конфігурація / без адреси.
 
     Перша версія цього правила вважала послугою будь-який пункт без моделей — і на
@@ -91,6 +91,13 @@ def kind(models, audit_has, pid=None):
     if audit_has is False:
         return 'послуга'
     if not models:
+        # Пункт, у якого адреса — МОДУЛЬ, а не модель: «застосунок data_cleaning»,
+        # «worksheet + industry_fsm_report», «spreadsheet_dashboard_edition —
+        # установлений». Такий пункт не «без адреси»: адреса в нього найконкретніша —
+        # щоб він працював, модуль має бути в базі. Робота ж тут конфігураційна:
+        # переконатися, що застосунок стоїть, і налаштувати те, що він приносить.
+        if modules:
+            return 'конфігурація'
         return 'без адреси в карті'
     if all(m in DOCS for m in models):
         return 'штатна поведінка'
@@ -152,7 +159,7 @@ def main():
                 key = (pid, lk, r['пункт'])
                 st = ((vrfy['позиції'].get(pid) or {}).get(lk) or {}).get('пункти') or {}
                 z = (st.get(r['пункт']) or {}).get('звірка') or {}
-                kd = kind(r['моделі'], z.get('є'), pid)
+                kd = kind(r['моделі'], z.get('є'), pid, r.get('модулі'))
                 if key in have:
                     done += 1
                     kind_done[kd] += 1

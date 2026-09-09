@@ -84,6 +84,31 @@ product.produce_delay
 """.split())
 
 
+# ── Модулі Odoo, згадані в нотатках ──────────────────────────────────────────
+# У полі «де» трапляються не тільки моделі, а й **модулі**: «worksheet +
+# industry_fsm_report», «застосунок data_cleaning», «spreadsheet_dashboard_edition —
+# установлений». Раніше такі пункти виглядали як «без адреси в карті», хоча адреса в
+# них найконкретніша з можливих: щоб пункт працював, модуль має бути в базі.
+#
+# Перелік звірений із `ir.module.module` живої бази (372 встановлені модулі), бо
+# відрізнити модуль від назви поля за виглядом неможливо: `partner_id`, `date_start`,
+# `allocated_hours` — теж snake_case. Тому тут лише ті, що справді згадані в журналі.
+#
+# AUTO — модулі з `auto_install = true`: вони приходять самі разом із залежностями й
+# у `apps` позиції їх не має бути. Це не дрібниця: без цього поділу перевірка
+# «модуль згаданий, а в apps його немає» дала б шість хибних тривог із шести.
+MODULES = set("""
+account_bank_statement_import account_budget auth_totp base_import data_cleaning
+documents_hr hr_skills industry_fsm_report industry_fsm_stock mail_mobile mrp_workorder
+point_of_sale pos_hr pos_loyalty product_expiry project_enterprise
+sale_purchase_inter_company_rules spreadsheet_dashboard_edition timesheet_grid web_map
+web_mobile website_helpdesk website_sale_collect website_sale_stock worksheet
+""".split())
+AUTO = set("""
+account_bank_statement_import auth_totp data_cleaning mail_mobile web_map web_mobile
+""".split())
+
+
 def split_de(de):
     """Розкладає поле «де» на моделі, поля й шлях у меню."""
     models, fields, unknown = [], [], []
@@ -143,6 +168,13 @@ def main():
     model_use = collections.Counter()
     unknown_all = collections.Counter()
     no_addr = []
+    module_use = collections.Counter()
+    app_gaps = []
+    own_apps = {}
+    for g in price['групи']:
+        for it in g['items']:
+            own_apps[it['id']] = set(
+                m for mm in (it.get('apps') or {}).values() for m in mm)
 
     for g in price['групи']:
         for it in g['items']:
@@ -157,6 +189,15 @@ def main():
                     stat['пунктів'] += 1
                     de = st.get('де', '') or ''
                     models, fields, path, unknown = split_de(de)
+                    mods = sorted(set(re.findall(
+                        r'\b([a-z][a-z0-9]+(?:_[a-z0-9]+)+)\b', de)) & MODULES)
+                    for mo in mods:
+                        module_use[mo] += 1
+                        # Модуль, який не ставиться сам, мусить бути в apps позиції —
+                        # інакше пункт продано, а застосунку в базі клієнта не буде.
+                        if mo not in AUTO and mo not in own_apps.get(pid, set()):
+                            app_gaps.append('%s р.%s «%s»: модуль %s згаданий у нотатці, '
+                                            'але його немає в apps позиції' % (pid, lk, txt, mo))
                     for mm in models:
                         model_use[mm] += 1
                     for uu in unknown:
@@ -170,6 +211,7 @@ def main():
                     rows.append(collections.OrderedDict([
                         ('пункт', txt),
                         ('моделі', models),
+                        ('модулі', mods),
                         ('поля', fields),
                         ('шлях', path),
                     ]))
@@ -183,9 +225,16 @@ def main():
         ('без машинної адреси', stat['пунктів'] - stat['з моделями']),
         ('зі шляхом у меню', stat['зі шляхом у меню']),
         ('різних моделей', len(model_use)),
+        ('пунктів із модулями', sum(1 for pid in out['позиції']
+                                    for lk in out['позиції'][pid]['рівні']
+                                    for r in out['позиції'][pid]['рівні'][lk]
+                                    if r['модулі'])),
+        ('різних модулів', len(module_use)),
         ('топ моделей', collections.OrderedDict(model_use.most_common(15))),
     ])
     out['без машинної адреси'] = no_addr
+    out['модулі в нотатках'] = collections.OrderedDict(
+        sorted(module_use.items(), key=lambda x: (-x[1], x[0])))
 
     io.open(OUT, 'w', encoding='utf-8').write(
         json.dumps(out, ensure_ascii=False, indent=1) + '\n')
@@ -204,3 +253,8 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
+    if app_gaps:
+        print('  ⚠ модуль згаданий у нотатці, але його немає в apps позиції:')
+        for g_ in app_gaps:
+            print('     %s' % g_)
+        print('     (модулі з auto_install у цю перевірку не входять — вони ставляться самі)')
