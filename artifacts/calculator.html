@@ -392,6 +392,7 @@ select.chip{padding-right:8px}
   color:var(--muted);margin:22px 0 9px;padding-bottom:5px;border-bottom:1px solid var(--line-strong);
 }
 .sgrp:first-child{margin-top:0}
+.sgrp[hidden]{display:none!important}
 .spos{
   border:1px solid var(--line);border-radius:10px;background:var(--surface);
   padding:14px 16px 10px;margin:0 0 11px;
@@ -671,9 +672,9 @@ select.chip{padding-right:8px}
     <div class="sbar">
       <input type="search" id="s-find" placeholder="пошук по складу робіт" aria-label="Пошук по складу робіт">
       <label class="swi"><input type="checkbox" id="s-cum"><span>накопичено</span></label>
-      <label class="swi"><input type="checkbox" id="s-bnd" checked><span>«не входить»</span></label>
+      <label class="swi"><input type="checkbox" id="s-bnd"><span>«не входить»</span></label>
       <label class="swi"><input type="checkbox" id="s-chk" checked><span>галочки</span></label>
-      <label class="swi"><input type="checkbox" id="s-hide"><span>сховати позначені</span></label>
+      <label class="swi"><input type="checkbox" id="s-hide" checked><span>сховати позначені</span></label>
       <select id="s-only" aria-label="Що показувати">
         <option value="all">усі пункти</option>
         <option value="todo">не позначені</option>
@@ -1203,9 +1204,9 @@ select.chip{padding-right:8px}
               "де": "crm.team: assignment_domain, assignment_max · crm.team.member"
             },
             "ціль команди на місяць (штатно); особисті плани — у дашборді Spreadsheet": {
-              "с": "fail",
-              "нота": "припущення хибне: поля цілі в команді продажів у Odoo 19 немає — його прибрали, у моделі не лишилося жодного поля з цим змістом. Отже і ціль команди, і особисті плани лишаються тільки дашбордом Spreadsheet. Формулювання «штатно» з прайсу треба зняти",
-              "де": "crm.team — поля цілі немає"
+              "с": "ok",
+              "нота": "мій попередній запис був хибний: поле цілі в команді продажів у Odoo 19 **є** — «Invoicing Target» на команді, редаговане, і поряд лежить обчислене «виставлено цього місяця», з якого команда й малює прогрес. Поставив цілі двом командам по 50 000 і перевірив, що прогрес живий. Головне, що треба знати: прогрес рахується по **оплачених** рахунках місяця, не по виставлених — у базі за вересень виставлено 22 280, а в ціль зайшло 5 130, тобто рівно той рахунок, у якого пройшла оплата. Це ціль по грошах, а не по продажах, і в «не входить» це сказано. Особистих цілей по сумі на менеджері справді немає (у члена команди є тільки місткість по лідах), тому особисті плани лишаються дашбордом Spreadsheet — як у прайсі й написано",
+              "де": "crm.team.invoiced_target (ціль) і crm.team.invoiced (виставлено цього місяця, по оплачених) · crm.team.member: тільки assignment_max, цілі по сумі немає · особисті плани — spreadsheet.dashboard"
             },
             "пріоритезація та скоринг лідів": {
               "с": "ok",
@@ -3494,6 +3495,7 @@ select.chip{padding-right:8px}
           "bounds": [
             "IP-телефонія, запис дзвінків, Telegram/Viber/Instagram, email-розсилки — інтеграції поза периметром",
             "імпорт історії листування — немає",
+            "ціль команди Odoo рахує по оплачених рахунках місяця, а не по виставлених: поки оплату не проведено, прогрес не росте",
             "особисті квоти менеджерів — лише в дашборді Spreadsheet"
           ],
           "apps": {
@@ -8028,6 +8030,7 @@ select.chip{padding-right:8px}
     GROUPS.forEach(function(gr){
       var h = document.createElement('div');
       h.className = 'sgrp'; h.textContent = gr.g;
+      h.id = 'sg-' + GROUPS.indexOf(gr);
       wrap.appendChild(h);
 
       gr.items.forEach(function(m){
@@ -8204,7 +8207,14 @@ select.chip{padding-right:8px}
       }
     });
 
+    var posShown = 0;
+    GROUPS.forEach(function(gr, gi){
+      var alive = gr.items.some(function(m){ return byPos[m.id]; });
+      var gh = $('sg-' + gi);
+      if(gh) gh.hidden = !alive;
+    });
     MODS.forEach(function(m){
+      if(byPos[m.id]) posShown++;
       m.lv.forEach(function(_, i){
         var d = $('sl-' + m.id + '-' + i);
         d.hidden = !byPos[m.id + '/' + i];
@@ -8217,7 +8227,7 @@ select.chip{padding-right:8px}
 
     $('s-count').textContent = q
       ? ('знайдено ' + shown + ' ' + plural(shown, 'пункт', 'пункти', 'пунктів'))
-      : (MODS.length + ' позицій · ' + shown + ' ' + plural(shown, 'пункт', 'пункти', 'пунктів')
+      : (posShown + ' ' + plural(posShown, 'позиція', 'позиції', 'позицій') + ' · ' + shown + ' ' + plural(shown, 'пункт', 'пункти', 'пунктів')
          + (hid ? ' · сховано ' + hid : ''));
     var empty = shown === 0;
     $('s-none').hidden = !(empty && (q || only !== 'all'));
@@ -8507,8 +8517,11 @@ select.chip{padding-right:8px}
     if(state.page === 'form'){ fclear(); return; }
     if(state.page === 'spec'){
       // галочки перевірки — записи, а не робочий стан: кнопка їх не чіпає
+      // типовий вигляд: сховані позначені, галочки видно, «не входить» і «накопичено» — ні
       $('s-find').value = ''; $('s-only').value = 'all';
-      $('s-hide').checked = false; specFilter(); return;
+      $('s-hide').checked = true; $('s-chk').checked = true;
+      $('s-cum').checked = false; $('s-bnd').checked = false;
+      specFilter(); return;
     }
     blank();
     MODS.forEach(function(m){
