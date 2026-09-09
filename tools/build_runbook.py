@@ -210,6 +210,21 @@ def main():
       'окупність інструментарію у фазі 0.' % s['з моделями'])
     w('')
 
+    # самоперевірка: жодна позиція не стоїть раніше за свою жорстку залежність
+    pos = {pid: i for i, pid in enumerate(order)}
+    broken = []
+    for pid in order:
+        for grp in hard.get(pid, []):
+            known = [x for x in grp if x in pos]
+            if known and min(pos[x] for x in known) > pos[pid]:
+                broken.append('%s раніше за %s' % (names[pid], fmt_dep(grp, names)))
+    if broken:
+        print('ПОМИЛКА порядку: ' + '; '.join(broken))
+        return 1
+    if len(order) != len(items):
+        print('ПОМИЛКА: у порядку %d позицій, у прайсі %d' % (len(order), len(items)))
+        return 1
+
     io.open(OUT, 'w', encoding='utf-8').write('\n'.join(L) + '\n')
     print('OK: %s — %d позицій у порядку залежностей, %d пунктів, %d без адреси'
           % (OUT, len(order), s['пунктів'], len(no_addr)))
