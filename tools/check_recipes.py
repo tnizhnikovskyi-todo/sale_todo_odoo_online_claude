@@ -38,14 +38,52 @@ ACTIONS = {
     'послуга': ['опис'],
     'для_кожного': ['перелік', 'крок'],
     'шаблон': ['назва', 'аргументи'],
+    'властивість': ['модель', 'батько_модель', 'батько_поле', 'батько_домен',
+                    'назва', 'підпис', 'тип'],
 }
+# Дії, після яких потрібен окремий крок «перевірити»: конектор повідомляє помилку й
+# тоді, коли дія відбулася, тому вірити його відмові не можна.
+#
+# «властивість» тут НАВМИСНО відсутня, і це не послаблення правила. Дія за своїм
+# контрактом — читання-зміна-**читання назад**: виконавець перечитує перелік визначень
+# і переконується, що рядок у ньому є. Окремий «перевірити» після неї перевіряв би те
+# саме вдруге — тобто був би театром, а не перевіркою. Правило лишається там, де воно
+# має сенс: після дій, які лише пишуть.
 CHANGING = ('створити', 'записати', 'параметр')
+
+# Де лежить ВИЗНАЧЕННЯ властивостей для кожної моделі. Пара не вгадується: у
+# контрагента це спільний запис, у решти — різні батьки (угода → команда продажів,
+# задача → проєкт, товар → категорія). Звірено з ir.model.fields живої бази
+# 09.09.2026 по ttype properties / properties_definition. Валідатор порівнює з
+# цією таблицею, бо помилка тут тиха: властивість ляже не туди, де її шукає Odoo,
+# і в картці не зʼявиться.
+PROP_PARENT = {
+    'res.partner': ('properties.base.definition', 'properties_definition'),
+    'res.users': ('properties.base.definition', 'properties_definition'),
+    'helpdesk.ticket': ('helpdesk.team', 'ticket_properties'),
+    'crm.lead': ('crm.team', 'lead_properties_definition'),
+    'project.task': ('project.project', 'task_properties_definition'),
+    'product.template': ('product.category', 'product_properties_definition'),
+    'product.product': ('product.category', 'product_properties_definition'),
+    'stock.lot': ('product.product', 'lot_properties_definition'),
+    'stock.quant': ('product.product', 'lot_properties_definition'),
+    'stock.move.line': ('product.product', 'lot_properties_definition'),
+    'stock.picking': ('stock.picking.type', 'picking_properties_definition'),
+    'maintenance.equipment': ('maintenance.equipment.category',
+                              'equipment_properties_definition'),
+    'hr.employee': ('res.company', 'employee_properties_definition'),
+    'approval.request': ('approval.category', 'approval_properties_definition'),
+    'planning.slot': ('planning.role', 'slot_properties_definition'),
+}
+PROP_TYPES = {'char', 'text', 'boolean', 'integer', 'float', 'date', 'datetime',
+              'selection', 'tags', 'many2one', 'many2many', 'separator'}
 
 # Моделі, потрібні рецептам, але відсутні в полі «де» журналу.
 # Усі три звірені з ir.model живої бази 09.09.2026 — просто не трапляються
 # в полі «де», бо там про них не писали.
 ALLOW_EXTRA = {'res.country', 'res.partner.category', 'ir.model.data', 'res.currency',
-               'ir.model'}
+               'ir.model', 'properties.base.definition', 'crm.team', 'planning.role',
+               'maintenance.equipment.category', 'stock.picking.type', 'helpdesk.team'}
 # ir.model потрібен для перевірки «застосунок стоїть»: на свіжій базі документів ще
 # немає, тому «щонайменше одна угода» падало б законно — перевіряємо не документ,
 # а наявність моделі, яку приносить застосунок
@@ -261,6 +299,32 @@ def main():
                     mdl = st.get('модель')
                     if mdl and mdl not in known_models:
                         errs.append('%s: моделі «%s» немає в карті налаштування' % (where, mdl))
+                    if act == 'властивість':
+                        # Найтихіша помилка властивостей: визначення записане не на той
+                        # батьківський запис. Odoo просто не покаже властивість у картці,
+                        # помилки не буде. Тому пара звіряється з таблицею, знятою з бази.
+                        want = PROP_PARENT.get(mdl)
+                        if not want:
+                            errs.append('%s: для моделі «%s» невідомо, де лежить визначення '
+                                        'властивостей — доповнити PROP_PARENT із живої бази'
+                                        % (where, mdl))
+                        else:
+                            got = (st.get('батько_модель'), st.get('батько_поле'))
+                            if got != want:
+                                errs.append('%s: властивості «%s» визначаються в %s.%s, а в '
+                                            'рецепті стоїть %s.%s — Odoo шукає визначення '
+                                            'саме на батькові, тому властивість просто не '
+                                            'зʼявиться' % (where, mdl, want[0], want[1],
+                                                           got[0], got[1]))
+                        if st.get('тип') not in PROP_TYPES:
+                            errs.append('%s: тип властивості «%s» невідомий — можна %s'
+                                        % (where, st.get('тип'), ', '.join(sorted(PROP_TYPES))))
+                        if st.get('тип') == 'selection' and not st.get('опції'):
+                            errs.append('%s: властивість-перелік без «опції»' % where)
+                        if st.get('тип') in ('many2one', 'many2many') \
+                                and not st.get('модель_посилання'):
+                            errs.append('%s: властивість-посилання без «модель_посилання»'
+                                        % where)
                     # посилання
                     for s in walk_values({k: v for k, v in st.items() if k != 'назвати'}):
                         m = REF.match(s.strip()) if isinstance(s, str) else None
