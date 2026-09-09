@@ -50,6 +50,40 @@ def run(name, poison_price, poison_vrfy, want, expect_err=True):
           (': ' + hit[0][:110] if hit else ' НЕ ЗНАЙДЕНО (усього %d/%d)' % (len(errs), len(warns))))
     return bool(hit)
 
+# ── Класифікація залишку за видом роботи ─────────────────────────────────────
+# Правило `kind()` зі звіту рецептів двічі помилялося, і обидва рази це показала
+# вибірка, а не логіка. Тому тут закріплені саме ті випадки, на яких воно ламалося:
+# щоб наступна «оптимізація» правила не повернула стару брехню.
+
+def check_kind():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('rg', 'tools/report_recipe_gaps.py')
+    rg = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(rg)
+    cases = [
+        # (моделі, звірка «є», позиція) → очікуваний вид, чому саме так
+        (([], False, 'trn'), 'послуга',
+         'запис сесії: звірка сказала «в базі немає» — це єдина надійна ознака послуги'),
+        (([], True, 'crm'), 'без адреси в карті',
+         'автоматичні активності за стадіями: правило створене й перевірене ділом, '
+         'просто карта не знає адреси. Перша версія правила звала це послугою — і брехала'),
+        ((['sale.order', 'account.move'], True, 'mig'), 'штатна поведінка',
+         'тільки документні моделі: записувати нічого, перевіряємо застосунок'),
+        ((['res.company'], True, 'rnt'), 'конфігурація',
+         'поле компанії — є що записати'),
+        ((['spreadsheet.dashboard'], True, 'dsh'), 'конфігурація',
+         'дашборд ми створюємо: усе неперелічене в DOCS вважається конфігурацією — '
+         'безпечніший бік помилки'),
+        (([], True, 'diag'), 'не в базі: інструмент сейла',
+         'експрес-діагностика живе в калькуляторі, рецепта для неї не буде ніколи'),
+    ]
+    out = []
+    for (models, has, pid), want, why in cases:
+        got = rg.kind(models, has, pid)
+        out.append((got == want, '%-28s ← %s' % (got, why[:74])))
+    return out
+
+
 good = bc.check_integrity(copy.deepcopy(P['групи']), copy.deepcopy(V))
 print('  ok     чисті дані: %d помилок, %d попереджень' % (len(good[0]), len(good[1])))
 res = [not good[0] and not good[1]]
@@ -79,6 +113,10 @@ def cycle(g):
     find(g, 'sal').setdefault('dep', []).append(
         {'on': 'prj', 'type': 'hard', 'from_lv': 1, 'why': 'навмисний цикл для тесту'})
 res.append(run('6. цикл у жорстких залежностях', cycle, None, 'цикл у жорстких залежностях'))
+
+for okk, note in check_kind():
+    print(('  ok     ' if okk else '  ПРОВАЛ ') + 'вид роботи: ' + note)
+    res.append(okk)
 
 print()
 print('пройшло %d із %d' % (sum(1 for r in res if r), len(res)))
