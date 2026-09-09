@@ -141,8 +141,7 @@
       "1": [
        "base",
        "contacts",
-       "mail",
-       "web_studio"
+       "mail"
       ],
       "2": [
        "board"
@@ -153,7 +152,6 @@
       "base",
       "contacts",
       "mail",
-      "web_studio",
       "board"
      ],
      "dep": []
@@ -1550,8 +1548,7 @@
        "hr_timesheet",
        "hr",
        "industry_fsm_report",
-       "worksheet",
-       "web_studio"
+       "worksheet"
       ],
       "2": [],
       "3": [
@@ -2307,9 +2304,7 @@
       "бланк друкується з даних, які є в Odoo"
      ],
      "apps": {
-      "1": [
-       "web_studio"
-      ],
+      "1": [],
       "2": [],
       "3": []
      },
