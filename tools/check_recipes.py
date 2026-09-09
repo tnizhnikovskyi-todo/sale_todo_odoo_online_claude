@@ -68,6 +68,53 @@ def walk_values(v):
                 yield y
 
 
+
+def base_facts(rec):
+    """Значення, які валідатор перевірити НЕ МОЖЕ, — їх звіряють на базі.
+
+    Навіщо це друкувати. Валідатор бачить структуру: посилання, поля профілю, тексти
+    пунктів. Але «подання_батько: hr.expense.form» він прийме, хоча в базі подання
+    зветься `hr.expense.view.form`, — і рецепт упаде на прогоні, а не тут. За цю
+    помилку я платив двічі: спершу вписав xmlid-и замість імен подань
+    (`base.view_partner_form` проти `res.partner.form`), потім вигадав
+    `hr.expense.form`.
+
+    Тому валідатор тепер друкує перелік того, чого не знає: імена батьківських
+    подань, зовнішні id меню й ролей, назви стадій і типів активності. Це не
+    попередження — це список на одну звірку з базою, після якої він більше не
+    потрібен. Мовчати про такі значення гірше: тоді «OK» валідатора виглядає як
+    «рецепт правильний», а він означає лише «рецепт цілий».
+    """
+    views, xmlids, others = set(), set(), set()
+
+    def walk(o):
+        if isinstance(o, dict):
+            a = o.get('аргументи') or {}
+            if isinstance(a, dict):
+                v = a.get('подання_батько')
+                if isinstance(v, str) and not v.startswith('$'):
+                    views.add(v)
+                for mod, nm in (('меню_батько_xmlid_модуль', 'меню_батько_xmlid_назва'),
+                                ('роль_xmlid_модуль', 'роль_xmlid_назва')):
+                    if isinstance(a.get(mod), str) and isinstance(a.get(nm), str) \
+                            and not a[mod].startswith('$'):
+                        xmlids.add('%s.%s' % (a[mod], a[nm]))
+                for k in ('тип_активності', 'модель_стадії'):
+                    if isinstance(a.get(k), str) and not a[k].startswith('$'):
+                        others.add('%s: %s' % (k, a[k]))
+            if o.get('дія') == 'знайти_xmlid' and isinstance(o.get('модуль'), str) \
+                    and not o['модуль'].startswith('$'):
+                xmlids.add('%s.%s' % (o['модуль'], o.get("ім'я")))
+            for v in o.values():
+                walk(v)
+        elif isinstance(o, list):
+            for v in o:
+                walk(v)
+
+    walk(rec)
+    return views, xmlids, others
+
+
 def main():
     rec = json.load(io.open(RECIPES, encoding='utf-8'))
     price = json.load(io.open(PRICE, encoding='utf-8'))
@@ -250,6 +297,15 @@ def main():
         print('ПОМИЛКА: рецепти не проходять перевірку (%d помилок, %d попереджень)'
               % (len(errs), len(warns)))
         return 1
+    views, xmlids, others = base_facts(rec)
+    print('Звірити з базою (валідатор цього не бачить):')
+    print('  батьківські подання (шукаються за ІМЕНЕМ, не за xmlid): %s'
+          % ', '.join(sorted(views)))
+    print('  зовнішні id: %s' % ', '.join(sorted(xmlids)))
+    if others:
+        print('  назви, що приходять штатними (часто англійські): %s'
+              % ', '.join(sorted(others)))
+    print()
     print('OK: рецепти — %d пунктів, %d кроків, %d попереджень' % (n_items, n_steps, len(warns)))
     for c in cov:
         print('    покриття: %s' % c)
