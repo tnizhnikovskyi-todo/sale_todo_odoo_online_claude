@@ -673,6 +673,7 @@ select.chip{padding-right:8px}
       <label class="swi"><input type="checkbox" id="s-cum"><span>накопичено</span></label>
       <label class="swi"><input type="checkbox" id="s-bnd" checked><span>«не входить»</span></label>
       <label class="swi"><input type="checkbox" id="s-chk" checked><span>галочки</span></label>
+      <label class="swi"><input type="checkbox" id="s-hide"><span>сховати позначені</span></label>
       <select id="s-only" aria-label="Що показувати">
         <option value="all">усі пункти</option>
         <option value="todo">не позначені</option>
@@ -684,6 +685,7 @@ select.chip{padding-right:8px}
     </div>
     <div id="spec-body"></div>
     <p class="snone" id="s-none" hidden>Нічого не знайдено.</p>
+    <p class="snone" id="s-alldone" hidden>Усе позначено — нічого не лишилося.</p>
   </div>
 
   <div class="page" id="page-form" role="tabpanel" aria-labelledby="tab-form" hidden>
@@ -8157,14 +8159,20 @@ select.chip{padding-right:8px}
   function specFilter(){
     var q = ($('s-find').value || '').trim().toLowerCase();
     var cum = $('s-cum').checked, showB = $('s-bnd').checked;
-    var only = $('s-only').value;
-    var shown = 0, byPos = {};
+    var only = $('s-only').value, hide = $('s-hide').checked;
+    var shown = 0, hid = 0, byPos = {};
     $('spec-body').classList.toggle('nochk', !$('s-chk').checked);
 
     SPECITEMS.forEach(function(it){
       // у режимі «додане» пункти нижчих рівнів під рівнем не повторюємо
       var vis = it.bnd ? showB : (cum || it.own);
       if(vis && q) vis = it.txt.indexOf(q) > -1;
+      // «сховати позначені» — про самі пункти: ознака рівня лишається на місці,
+      // бо саме за нею рівень і вибирають
+      if(vis && hide && it.cb && it.cb.checked){
+        vis = false;
+        if(it.own) hid++;
+      }
       if(vis && only !== 'all'){
         // фільтр — про склад робіт: ознаки й «не входить» під нього не підпадають
         if(!it.cb) vis = false;
@@ -8175,8 +8183,13 @@ select.chip{padding-right:8px}
       it.el.hidden = !vis;
       if(vis){
         shown++;
-        byPos[it.pos] = true;
-        if(!it.bnd) byPos[it.pos + '/' + it.lv] = true;
+        // коли позначене сховано, рівень і позицію тримають видимими тільки живі
+        // пункти: інакше на екрані лишалися б порожні рівні з однією ознакою
+        var keeps = (q || !hide) ? true : !!it.cb;
+        if(keeps){
+          byPos[it.pos] = true;
+          if(!it.bnd) byPos[it.pos + '/' + it.lv] = true;
+        }
       }
     });
 
@@ -8193,15 +8206,26 @@ select.chip{padding-right:8px}
 
     $('s-count').textContent = q
       ? ('знайдено ' + shown + ' ' + plural(shown, 'пункт', 'пункти', 'пунктів'))
-      : (MODS.length + ' позицій · ' + shown + ' ' + plural(shown, 'пункт', 'пункти', 'пунктів'));
-    $('s-none').hidden = shown > 0;
+      : (MODS.length + ' позицій · ' + shown + ' ' + plural(shown, 'пункт', 'пункти', 'пунктів')
+         + (hid ? ' · сховано ' + hid : ''));
+    var empty = shown === 0;
+    $('s-none').hidden = !(empty && (q || only !== 'all'));
+    $('s-alldone').hidden = !(empty && !q && only === 'all');
   }
 
   $('s-find').addEventListener('input', specFilter);
   $('s-cum').addEventListener('change', specFilter);
   $('s-bnd').addEventListener('change', specFilter);
   $('s-chk').addEventListener('change', specFilter);
-  $('s-only').addEventListener('change', specFilter);
+  $('s-hide').addEventListener('change', function(){
+    // «сховати позначені» і «показати позначені» — взаємно виключні
+    if($('s-hide').checked && $('s-only').value === 'done') $('s-only').value = 'all';
+    specFilter();
+  });
+  $('s-only').addEventListener('change', function(){
+    if($('s-only').value === 'done') $('s-hide').checked = false;
+    specFilter();
+  });
   specCounts();
   specFilter();
   // =================== кінець блоку повного переліку ===================
@@ -8472,7 +8496,8 @@ select.chip{padding-right:8px}
     if(state.page === 'form'){ fclear(); return; }
     if(state.page === 'spec'){
       // галочки перевірки — записи, а не робочий стан: кнопка їх не чіпає
-      $('s-find').value = ''; $('s-only').value = 'all'; specFilter(); return;
+      $('s-find').value = ''; $('s-only').value = 'all';
+      $('s-hide').checked = false; specFilter(); return;
     }
     blank();
     MODS.forEach(function(m){
