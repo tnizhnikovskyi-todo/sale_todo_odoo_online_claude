@@ -30,6 +30,7 @@ PRICE = 'data/price.json'
 CLIENT = re.compile(r'\$клієнт\.([\wа-яіїєґ_]+)', re.I | re.U)
 COUNT = re.compile(r'\$скільки\(\$клієнт\.([\wа-яіїєґ_]+)\)', re.I | re.U)
 ITEM = re.compile(r'\$елемент(?:\.([\wа-яіїєґ_]+))?$', re.I | re.U)
+ARG = re.compile(r'\$арг\.([\wа-яіїєґ_]+)', re.I | re.U)
 
 
 def load_topo():
@@ -39,7 +40,7 @@ def load_topo():
     return rb.topo
 
 
-def subst(v, prof, missing, elem=None, idx=None):
+def subst(v, prof, missing, elem=None, idx=None, args=None):
     """Підставляє $клієнт.поле, $скільки(...), $елемент і $індекс.
 
     $ім'я (посилання на створений запис) лишає виконавцеві — підставити його
@@ -47,6 +48,22 @@ def subst(v, prof, missing, elem=None, idx=None):
     """
     if isinstance(v, str):
         t = v.strip()
+        if args is not None:
+            ma = ARG.fullmatch(t)
+            if ma:
+                if ma.group(1) not in args:
+                    missing.append('арг.' + ma.group(1))
+                    return v
+                return args[ma.group(1)]
+
+            def repa(mm):
+                if mm.group(1) not in args:
+                    missing.append('арг.' + mm.group(1))
+                    return mm.group(0)
+                return str(args[mm.group(1)])
+            t2 = ARG.sub(repa, t)
+            if t2 != t:
+                return subst(t2, prof, missing, elem, idx, None)
         if elem is not None:
             mi = ITEM.fullmatch(t)
             if mi:
@@ -78,15 +95,26 @@ def subst(v, prof, missing, elem=None, idx=None):
             return str(prof[mm.group(1)])
         return CLIENT.sub(rep, v)
     if isinstance(v, dict):
-        return {k: subst(x, prof, missing, elem, idx) for k, x in v.items()}
+        return {k: subst(x, prof, missing, elem, idx, args) for k, x in v.items()}
     if isinstance(v, list):
-        return [subst(x, prof, missing, elem, idx) for x in v]
+        return [subst(x, prof, missing, elem, idx, args) for x in v]
     return v
 
 
-def unroll(st, prof, missing):
+def unroll(st, prof, missing, templates=None):
     """Розгортає «для_кожного» у конкретні кроки: профіль уже відомий, тому цикл
     не потрібен під час виконання — виконавець отримує готовий перелік."""
+    if st.get('дія') == 'шаблон':
+        tpl = (templates or {}).get(st.get('назва'))
+        if not tpl:
+            missing.append('шаблон «%s» не описаний' % st.get('назва'))
+            return []
+        args = st.get('аргументи') or {}
+        out = []
+        for inner in tpl.get('кроки', []):
+            out += unroll({k: subst(v, prof, missing, None, None, args)
+                           for k, v in inner.items()}, prof, missing, templates)
+        return out
     if st.get('дія') != 'для_кожного':
         return [{k: subst(v, prof, missing) for k, v in st.items()}]
     src = st.get('перелік', '')
@@ -145,7 +173,8 @@ def main(argv):
                 continue
             for txt, item in body.items():
                 for st in item.get('кроки', []):
-                    for step in unroll(st, prof, missing):
+                    for step in unroll(st, prof, missing,
+                                       rec.get('шаблони')):
                         step['_позиція'] = names[pid]
                         step['_рівень'] = lk
                         step['_пункт'] = txt

@@ -37,6 +37,7 @@ ACTIONS = {
     'перевірити': [],
     'послуга': ['опис'],
     'для_кожного': ['перелік', 'крок'],
+    'шаблон': ['назва', 'аргументи'],
 }
 CHANGING = ('створити', 'записати', 'параметр')
 
@@ -72,6 +73,23 @@ def main():
     price = json.load(io.open(PRICE, encoding='utf-8'))
     cmap = json.load(io.open(CMAP, encoding='utf-8'))
     prof = json.load(io.open(PROFILE, encoding='utf-8'))
+    templates = rec.get('шаблони') or {}
+    errs_early = []
+
+    # Апостроф в імені аргумента чи поля профілю ламає підстановку молча:
+    # регулярка збирає ім'я з літер і підкреслень і обірветься на апострофі.
+    apos = [c for c in ("'", '\u2019')]
+    for name in prof:
+        if any(a in name for a in apos):
+            errs_early.append('поле профілю «%s» містить апостроф — підстановка обірветься'
+                              % name)
+    for tname, tpl in templates.items():
+        if tname.startswith('_') or not isinstance(tpl, dict):
+            continue          # службові ключі розділу, як «_нащо»
+        for a in (tpl.get('аргументи') or []):
+            if any(x in a for x in apos):
+                errs_early.append('шаблон «%s»: аргумент «%s» містить апостроф'
+                                  % (tname, a))
 
     known_models = set(ALLOW_EXTRA)
     for blk in cmap['позиції'].values():
@@ -92,7 +110,7 @@ def main():
             acc['3'] = set(it['lv'][2][4])
             price_items[it['id']] = acc
 
-    errs, warns = [], []
+    errs, warns = list(errs_early), []
     n_items = n_steps = 0
 
     for pid, levels in rec['позиції'].items():
@@ -115,6 +133,24 @@ def main():
                     act = st.get('дія')
                     if act not in ACTIONS:
                         errs.append('%s: невідома дія «%s»' % (where, act))
+                        continue
+                    if act == 'шаблон':
+                        tname = st.get('назва')
+                        tpl = templates.get(tname)
+                        if not tpl:
+                            errs.append('%s: шаблону «%s» немає в розділі «шаблони»'
+                                        % (where, tname))
+                        else:
+                            need = set(tpl.get('аргументи') or [])
+                            got = set((st.get('аргументи') or {}).keys())
+                            for miss in sorted(need - got):
+                                errs.append('%s: шаблон «%s» вимагає аргумент «%s»'
+                                            % (where, tname, miss))
+                            for extra in sorted(got - need):
+                                errs.append('%s: шаблон «%s» не має аргументу «%s»'
+                                            % (where, tname, extra))
+                        if st.get('назвати'):
+                            bound.add(st['назвати'])
                         continue
                     if act == 'для_кожного':
                         src = st.get('перелік', '')
