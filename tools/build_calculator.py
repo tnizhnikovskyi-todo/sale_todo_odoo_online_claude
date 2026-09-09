@@ -25,6 +25,7 @@ QUAL = os.path.join(ROOT, 'data', 'qualification.json')
 FORM = os.path.join(ROOT, 'data', 'client-form.json')
 VRFY = os.path.join(ROOT, 'data', 'verify.json')
 HTML = os.path.join(ROOT, 'artifacts', 'calculator.html')
+RATE = 50  # €/год — та сама ставка, що в самій сторінці
 
 STOP = ['доопрацюван', 'доробк', 'лише в XML', 'умовні блоки', 'обчислювані поля',
         'studio']  # Studio у прайсі бути не може — рішення 09.09.2026, усі 45
@@ -111,6 +112,105 @@ def check(groups):
                     owner = home.get(mod)
                     if owner and owner != iid and owner != 'base' and owner not in deps_to:
                         warns.append('%s: тягне %s (власник — %s), але dep на %s немає' % (iid, mod, owner, owner))
+    return errs, warns
+
+def check_integrity(groups, vrfy):
+    """Перевірки цілісності, які не належать жодному окремому файлу.
+
+    Кожна тут не тому, що спрацювала, а тому, що її поломка **тиха**: дані лишаються
+    валідними, збірка проходить, а прайс починає обіцяти або показувати неправду.
+    Усі шість відтворені негативними тестами — перевірка, яка нічого не ловить, гірша
+    за відсутність перевірки.
+    """
+    errs, warns = [], []
+    items = [it for gr in groups for it in gr['items']]
+    pos = (vrfy.get('позиції') or {})
+
+    # 1. Прайс → журнал. check_verify стежить за зворотним напрямом (запис журналу
+    # має вести на живий пункт прайсу), а цей бік був відкритий: новий пункт у прайсі
+    # ставав обіцянкою, якої немає в жодному звіті — build_kb таку позицію просто
+    # пропускає. Попередження, а не помилка: чернетку прайсу писати можна.
+    nover = []
+    for it in items:
+        for k in (1, 2, 3):
+            own = it['inc'] if k == 1 else it['lv'][k - 1][4]
+            rec = ((pos.get(it['id']) or {}).get(str(k)) or {}).get('пункти') or {}
+            for t in own:
+                if t not in rec:
+                    nover.append('%s р.%d «%s»' % (it['id'], k, t))
+    if nover:
+        warns.append('пунктів без запису в журналі перевірки: %d — %s%s'
+                     % (len(nover), '; '.join(nover[:3]),
+                        ' …' if len(nover) > 3 else ''))
+
+    for it in items:
+        iid = it['id']
+
+        # 2. Дубль тексту пункту в межах позиції. Журнал перевірки адресує пункт
+        # текстом у межах рівня, тому два однакові тексти роблять запис неоднозначним:
+        # галочка стане не на той пункт, і ніхто цього не побачить.
+        seen = {}
+        for k, src in ((1, it['inc']), (2, it['lv'][1][4]), (3, it['lv'][2][4])):
+            for t in src:
+                if t in seen:
+                    errs.append('%s: пункт «%s» повторюється (р.%d і р.%d) — журнал '
+                                'адресує пункт текстом, дубль робить запис неоднозначним'
+                                % (iid, t, seen[t], k))
+                else:
+                    seen[t] = k
+
+        # 3. Ціна мусить рости за рівнями. Годинам це вже перевірено, але ціна
+        # округляється до 50: 20 і 21 година дають однакову 1000 €, і клієнт бачить
+        # два різні рівні за ті самі гроші.
+        pr = [int(round(l[1] * RATE / 50.0)) * 50 for l in it['lv']]
+        for i in (0, 1):
+            if pr[i] >= pr[i + 1]:
+                errs.append('%s: після округлення р.%d і р.%d коштують %d і %d — '
+                            'два рівні за ті самі гроші; розвести години'
+                            % (iid, i + 1, i + 2, pr[i], pr[i + 1]))
+
+        # 4. Ознаки рівнів мусять різнитися: сейл вибирає рівень саме за ознакою,
+        # однакові тексти роблять вибір неможливим.
+        sigs = [l[3] for l in it['lv']]
+        if len(set(sigs)) != len(sigs):
+            errs.append('%s: ознаки рівнів повторюються — за ознакою вибирають рівень, '
+                        'вона мусить бути різною: %s' % (iid, sigs))
+
+        # 5. home ⊆ apps. `home` каже «цей застосунок наш», і на цьому тримається
+        # попередження «тягнеш чужий модуль без dep». Модуль, названий своїм, але
+        # відсутній у власних apps, робить власника фіктивним.
+        apps = set(m for mods in (it.get('apps') or {}).values() for m in mods)
+        for m in it.get('home') or []:
+            if m not in apps:
+                errs.append('%s: застосунок «%s» названий своїм (home), але його немає '
+                            'в apps цієї позиції — власник фіктивний' % (iid, m))
+
+    # 6. Цикл у жорстких залежностях. Калькулятор додає жорсткі залежності сам, а
+    # процедура збірки шукає порядок топологічним сортуванням — цикл ламає обидва.
+    hard = {}
+    for it in items:
+        tgt = set()
+        for d in it.get('dep') or []:
+            if d.get('type') == 'hard':
+                for t in (d['on'] if isinstance(d['on'], list) else [d['on']]):
+                    tgt.add(t)
+        hard[it['id']] = tgt
+    done, cycles = set(), []
+    def walk_hard(n, stack):
+        if n in stack:
+            cycles.append(' → '.join(stack[stack.index(n):] + [n]))
+            return
+        if n in done:
+            return
+        done.add(n)
+        for m in hard.get(n, ()):
+            walk_hard(m, stack + [n])
+    for it in items:
+        walk_hard(it['id'], [])
+    for c in cycles:
+        errs.append('цикл у жорстких залежностях: %s — калькулятор додає їх сам, '
+                    'а процедура збірки шукає порядок сортуванням; цикл ламає обидва' % c)
+
     return errs, warns
 
 def check_qual(blocks, known):
@@ -352,6 +452,8 @@ def main():
     vrfy = json.load(io.open(VRFY, encoding='utf-8'))
     ve, vw = check_verify(vrfy, groups)
     errs += ve; warns += vw
+    ie, iw = check_integrity(groups, vrfy)
+    errs += ie; warns += iw
     for w in warns: print('  ⚠', w)
     if errs:
         print('СТРУКТУРА ЗЛАМАНА, збірку скасовано:')

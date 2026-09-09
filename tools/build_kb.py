@@ -45,13 +45,18 @@ def main():
     groups = json.load(io.open(DATA, encoding='utf-8'))['групи']
     vrfy = json.load(io.open(VRFY, encoding='utf-8'))
     pos = vrfy.get('позиції') or {}
-    out, rows = [], []
+    out, rows, nojournal = [], [], []
     total = dict((s, 0) for s in WORD)
 
     for gr in groups:
         for item in gr['items']:
             rec = pos.get(item['id'])
             if not rec:
+                # Позиція є в прайсі, а журналу перевірки в неї немає. Раніше цей
+                # пропуск був тихий: обіцянка зникала з бази знань, і числа внизу
+                # («360 налаштовано») її не рахували — тобто звіт виглядав повним.
+                # Тепер позиція називається вголос у кінці збірки.
+                nojournal.append(item['id'])
                 continue
             cnt = dict((s, 0) for s in WORD)
             for lk in ('1', '2', '3'):
@@ -138,6 +143,10 @@ def main():
             out.append('')
 
     io.open(OUT, 'w', encoding='utf-8').write('\n'.join(out).rstrip() + '\n')
+    if nojournal:
+        print('  ⚠ позицій прайсу без журналу перевірки: %d — %s'
+              % (len(nojournal), ', '.join(nojournal)))
+        print('    у базі знань їх немає, і в числа нижче вони не входять')
     print('OK: %s — %d блоків, %d налаштовано, %d відкрито, %d не в базі'
           % (os.path.relpath(OUT, ROOT), len(rows), total['ok'], total['fail'],
              total['skip'] + total['move']))
