@@ -30,6 +30,7 @@ import re
 import sys
 
 VERIFY = 'data/verify.json'
+CMAP = 'data/config-map.json'
 
 # «слово в журналі» → модель Odoo. Порядок важливий: довші назви перші, інакше
 # «меню сайту» впізнається як «меню».
@@ -92,11 +93,79 @@ def pairs(text):
     return out
 
 
+# ── Проба за назвою ───────────────────────────────────────────────────────────
+# Адресних записів лише 9 %. Решта описує знахідку назвою: «папка «Договори з
+# клієнтами»», «роль «Аналітик»», «шаблон «Договір постачання»». Такі теж можна
+# перевірити читанням — але модель тут НЕ витягується з тексту.
+#
+# Причина в тій самій пастці, на якій проба вже двічі збрехала: слово в тексті
+# збігається з назвою моделі рідко й ненадійно. Тому модель береться з **карти
+# налаштування** (`config-map.json`), тобто з поля «де», яке писала людина, а назва —
+# з лапок у тексті звірки. Пара «модель із карти + назва з тексту» не вгадується.
+#
+# Що це не робить: не гарантує, що знайдений запис і є той, про який мова. Запис із
+# такою назвою може існувати з іншої причини, тому проба друкує фразу-джерело, а
+# звіряти треба відповідність, не існування.
+
+QUOTED = re.compile(r'«([^»]{3,60})»')
+# назви, які не є назвами записів: наші ж терміни й значення полів
+NOT_NAMES = {
+    'є', 'немає', 'штатно', 'так', 'ні', 'Studio', 'Властивості', 'не входить',
+    'Клієнт', 'Постачальник',
+}
+# у цих моделях шукати за назвою немає сенсу: назви немає або вона службова
+NO_NAME_SEARCH = {'ir.model.fields', 'ir.rule', 'ir.config_parameter', 'properties.base.definition',
+                  'ir.model.data', 'res.groups.privilege'}
+
+
+def looks_like_name(t):
+    """Чи схоже це на назву запису, а не на фразу зі звірки.
+
+    Перший прогін показав шум: у лапках стоять і назви записів («Воронка керівника»),
+    і значення полів («DAP Київ, склад покупця»), і мої ж фрази («рядки переміщення
+    конектор не пише»). Проба, яка це змішує, дає купу «не знайдено» там, де запис
+    правильний, — і тоді її перестають читати.
+
+    Фільтр грубий і навмисно такий: назви записів у нас короткі. Довга фраза або
+    щось із дієсловом — це опис, а не назва.
+    """
+    w = t.split()
+    if len(w) > 5:
+        return False
+    if re.search(r'\b(не|конектор|пише|немає|через|лишається)\b', t, re.I | re.U):
+        return False
+    return True
+
+
+def by_name(found, models):
+    """Пари (модель, назва) — КАНДИДАТИ на читання за назвою.
+
+    Це кандидати, а не адреси: модель узята з карти (поле «де», яке писала людина),
+    назва — з лапок. Пара не вгадана, але й не доведена: запис із такою назвою може
+    існувати з іншої причини, а може лежати в сусідній моделі. Тому «не знайдено» тут
+    означає «подивитися», а не «поломка».
+    """
+    names = [n for n in QUOTED.findall(found)
+             if n not in NOT_NAMES and looks_like_name(n)]
+    ms = [m for m in models if m not in NO_NAME_SEARCH]
+    if not names or not ms:
+        return []
+    # модель беремо першу з карти: вона й є головною адресою пункту
+    return [(ms[0], n) for n in names[:3]]
+
 def main(argv):
     V = json.load(io.open(VERIFY, encoding='utf-8'))
+    C = json.load(io.open(CMAP, encoding='utf-8'))
+    addr_of = {}
+    for pid, b in C['позиції'].items():
+        for lk, rws in b.get('рівні', {}).items():
+            for r in rws:
+                addr_of[(pid, lk, r['пункт'])] = r['моделі']
     by_model = collections.defaultdict(set)
+    names_by_model = collections.defaultdict(set)
+    named = 0
     amb = collections.Counter()
-    rows, total, addressed = [], 0, 0
+    rows, named_rows, total, addressed = [], [], 0, 0
     for pid, lvs in V['позиції'].items():
         for lk, rec in lvs.items():
             for txt, st in (rec.get('пункти') or {}).items():
@@ -112,6 +181,13 @@ def main(argv):
                     for w, m, i in clean:
                         by_model[m].add(i)
                     rows.append((pid, lk, txt, clean))
+                else:
+                    nm = by_name(found, addr_of.get((pid, lk, txt)) or [])
+                    if nm:
+                        named += 1
+                        for m, n in nm:
+                            names_by_model[m].add(n)
+                        named_rows.append((pid, lk, txt, nm))
                 for w, m, i in got:
                     if w in AMBIGUOUS:
                         amb[w] += 1
@@ -147,10 +223,28 @@ def main(argv):
             addrs = ', '.join('%s %d' % (m, i) for _, m, i in clean)
             print('- **%s р.%s** %s' % (pid, lk, txt[:60]))
             print('  %s' % addrs)
+        print()
+        print('# Проба за назвою: модель із карти налаштування, назва з тексту')
+        print()
+        nplan = collections.defaultdict(set)
+        for pid, lk, txt, nm in named_rows:
+            for m, n in nm:
+                nplan[m].add(n)
+        for m in sorted(nplan, key=lambda x: -len(nplan[x])):
+            print('%s' % m)
+            for n in sorted(nplan[m]):
+                print('    «%s»' % n)
         return 0
 
     print('записів «є в базі»            %d' % total)
     print('з них адресних (модель + id)  %d  (%d %%)' % (addressed, round(100.0 * addressed / total)))
+    print('кандидатів за назвою          %d  (%d %%)' % (named, round(100.0 * named / total)))
+    print('лишається на очі              %d  (%d %%)'
+          % (total - addressed - named, round(100.0 * (total - addressed - named) / total)))
+    print()
+    print('«Адресні» — модель і номер запису: тут «не знайдено» означає поломку.')
+    print('«Кандидати за назвою» — модель із карти, назва з лапок: пара не доведена,')
+    print('тому «не знайдено» означає «подивитися», а не «зламано».')
     print('різних моделей у пробі        %d' % len(by_model))
     print('записів до перечитування      %d' % sum(len(v) for v in by_model.values()))
     print()
