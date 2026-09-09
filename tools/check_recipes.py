@@ -36,6 +36,7 @@ ACTIONS = {
     'параметр': ['ключ', 'значення_параметра'],
     'перевірити': [],
     'послуга': ['опис'],
+    'для_кожного': ['перелік', 'крок'],
 }
 CHANGING = ('створити', 'записати', 'параметр')
 
@@ -110,6 +111,29 @@ def main():
                     act = st.get('дія')
                     if act not in ACTIONS:
                         errs.append('%s: невідома дія «%s»' % (where, act))
+                        continue
+                    if act == 'для_кожного':
+                        src = st.get('перелік', '')
+                        mm = CLIENT.fullmatch(src.strip()) if isinstance(src, str) else None
+                        if not mm:
+                            errs.append('%s: «перелік» має бути $клієнт.поле' % where)
+                        elif mm.group(1) not in prof:
+                            errs.append('%s: у профілі немає переліку «%s»'
+                                        % (where, mm.group(1)))
+                        elif not isinstance(prof[mm.group(1)], list):
+                            errs.append('%s: «%s» у профілі не перелік' % (where, mm.group(1)))
+                        inner = st.get('крок') or {}
+                        if inner.get('дія') not in ACTIONS or inner.get('дія') == 'для_кожного':
+                            errs.append('%s: вкладений крок має звичайну дію' % where)
+                        imdl = inner.get('модель')
+                        if imdl and imdl not in known_models:
+                            errs.append('%s: моделі «%s» немає в карті налаштування'
+                                        % (where, imdl))
+                        if inner.get('назвати'):
+                            errs.append('%s: у вкладеному кроці «назвати» не має сенсу — '
+                                        'записів буде кілька' % where)
+                        if st.get('назвати'):
+                            bound.add(st['назвати'])
                         continue
                     for f in ACTIONS[act]:
                         if f not in st:

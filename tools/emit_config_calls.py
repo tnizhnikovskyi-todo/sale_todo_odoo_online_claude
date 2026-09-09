@@ -28,6 +28,8 @@ import sys
 RECIPES = 'data/recipes.json'
 PRICE = 'data/price.json'
 CLIENT = re.compile(r'\$клієнт\.([\wа-яіїєґ_]+)', re.I | re.U)
+COUNT = re.compile(r'\$скільки\(\$клієнт\.([\wа-яіїєґ_]+)\)', re.I | re.U)
+ITEM = re.compile(r'\$елемент(?:\.([\wа-яіїєґ_]+))?$', re.I | re.U)
 
 
 def load_topo():
@@ -37,10 +39,32 @@ def load_topo():
     return rb.topo
 
 
-def subst(v, prof, missing):
-    """Підставляє $клієнт.поле; $ім'я лишає виконавцеві."""
+def subst(v, prof, missing, elem=None, idx=None):
+    """Підставляє $клієнт.поле, $скільки(...), $елемент і $індекс.
+
+    $ім'я (посилання на створений запис) лишає виконавцеві — підставити його
+    можна тільки під час виконання.
+    """
     if isinstance(v, str):
-        m = CLIENT.fullmatch(v.strip())
+        t = v.strip()
+        if elem is not None:
+            mi = ITEM.fullmatch(t)
+            if mi:
+                if mi.group(1):
+                    if not isinstance(elem, dict) or mi.group(1) not in elem:
+                        missing.append('елемент.' + mi.group(1))
+                        return v
+                    return elem[mi.group(1)]
+                return elem
+            if t == '$індекс':
+                return idx
+        mc = COUNT.fullmatch(t)
+        if mc:
+            if mc.group(1) not in prof:
+                missing.append(mc.group(1))
+                return v
+            return len(prof[mc.group(1)])
+        m = CLIENT.fullmatch(t)
         if m:
             if m.group(1) not in prof:
                 missing.append(m.group(1))
@@ -54,10 +78,30 @@ def subst(v, prof, missing):
             return str(prof[mm.group(1)])
         return CLIENT.sub(rep, v)
     if isinstance(v, dict):
-        return {k: subst(x, prof, missing) for k, x in v.items()}
+        return {k: subst(x, prof, missing, elem, idx) for k, x in v.items()}
     if isinstance(v, list):
-        return [subst(x, prof, missing) for x in v]
+        return [subst(x, prof, missing, elem, idx) for x in v]
     return v
+
+
+def unroll(st, prof, missing):
+    """Розгортає «для_кожного» у конкретні кроки: профіль уже відомий, тому цикл
+    не потрібен під час виконання — виконавець отримує готовий перелік."""
+    if st.get('дія') != 'для_кожного':
+        return [{k: subst(v, prof, missing) for k, v in st.items()}]
+    src = st.get('перелік', '')
+    m = CLIENT.fullmatch(src.strip()) if isinstance(src, str) else None
+    if not m:
+        missing.append('для_кожного: «перелік» має бути $клієнт.поле, а не «%s»' % src)
+        return []
+    if m.group(1) not in prof:
+        missing.append(m.group(1))
+        return []
+    out = []
+    for i, elem in enumerate(prof[m.group(1)], 1):
+        inner = st.get('крок') or {}
+        out.append({k: subst(v, prof, missing, elem, i) for k, v in inner.items()})
+    return out
 
 
 def main(argv):
@@ -101,14 +145,14 @@ def main(argv):
                 continue
             for txt, item in body.items():
                 for st in item.get('кроки', []):
-                    step = {k: subst(v, prof, missing) for k, v in st.items()}
-                    step['_позиція'] = names[pid]
-                    step['_рівень'] = lk
-                    step['_пункт'] = txt
-                    if step.get('дія') == 'послуга':
-                        services.append('%s р.%s · %s' % (names[pid], lk, txt))
-                        continue
-                    plan.append(step)
+                    for step in unroll(st, prof, missing):
+                        step['_позиція'] = names[pid]
+                        step['_рівень'] = lk
+                        step['_пункт'] = txt
+                        if step.get('дія') == 'послуга':
+                            services.append('%s р.%s · %s' % (names[pid], lk, txt))
+                            continue
+                        plan.append(step)
 
     if missing:
         print('ПОМИЛКА: у профілі бракує полів: %s' % ', '.join(sorted(set(missing))))
