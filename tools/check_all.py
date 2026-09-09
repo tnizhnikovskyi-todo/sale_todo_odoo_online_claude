@@ -13,6 +13,9 @@
 2. Порівнює те, що вийшло, з тим, що лежить у git: якщо генератор змінив файл,
    значить у коміті лежала стара версія. Це помилка, і вона називається вголос.
 3. Прогоняє валідатор рецептів.
+4. Прогоняє перевірку калькулятора в браузері, якщо в системі є playwright-core
+   і Chromium. Немає — крок позначається «не перевірено» і не валить збірку:
+   «зламано» і «не перевірено» — різні відповіді, і плутати їх не можна.
 
 Запуск: python3 tools/check_all.py
 Повертає 0, якщо все чисте; 1 — якщо щось не так.
@@ -33,6 +36,8 @@ GENERATORS = [
     ('tools/report_recipe_gaps.py', ['docs/рецепти-що-лишилось.md']),
 ]
 VALIDATORS = ['tools/check_recipes.py']
+# Перевірка в браузері: код 2 означає «немає чим перевіряти», а не «зламано».
+BROWSER = ['node', 'tools/test_calculator_ui.js']
 # Зразок плану збирається з профілю-прикладу окремою командою.
 PLAN = ('tools/emit_config_calls.py', 'data/client-profile-example.json',
         'docs/план-збірки-приклад.md')
@@ -84,6 +89,7 @@ def verdict(gen, outs, dirty_before):
 
 def main():
     bad = []
+    skipped = []
 
     # Стан ДО перезбору. Похідний файл, змінений до перевірки, — це або правка
     # руками, або забутий перезбір. Обидва випадки треба назвати, а не затерти.
@@ -109,6 +115,18 @@ def main():
         bad += verdict(gen, [out_path], dirty_before)
         print('  ok  %-30s %d рядків плану' % (gen, len(out.splitlines())))
 
+    # Перевірка в браузері — після генераторів: вона читає щойно перезібраний
+    # artifacts/calculator.html, тобто перевіряє те, що зараз у репозиторії.
+    code, out = run(BROWSER)
+    if code == 2:
+        skipped.append('перевірка калькулятора в браузері не запускалась: %s'
+                       % (out.splitlines()[0] if out else 'немає playwright-core або Chromium'))
+    elif code != 0:
+        bad.append('перевірка калькулятора в браузері не пройшла:\n%s' % out)
+    else:
+        last = [l for l in out.splitlines() if l.strip()]
+        print('  ok  %-30s %s' % ('tools/test_calculator_ui.js', last[-1] if last else ''))
+
     for v in VALIDATORS:
         code, out = run(['python3', v])
         if code != 0:
@@ -117,6 +135,10 @@ def main():
             print('  ok  %-30s %s' % (v, out.splitlines()[0] if out else ''))
 
     print()
+    for s_ in skipped:
+        print('  НЕ ПЕРЕВІРЕНО: %s' % s_)
+    if skipped:
+        print()
     if bad:
         print('НЕ ЧИСТО:')
         for b in bad:
