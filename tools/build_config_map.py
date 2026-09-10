@@ -34,6 +34,8 @@ TOKEN = re.compile(r'\b[a-z][a-z0-9_]*(?:\.[a-z0-9_]+)+\b')
 NOT_MODEL_SUFFIX = ('.py', '.md', '.json', '.html', '.csv', '.odoo', '.com')
 
 # Звірено з ir.model на живій базі 09.09.2026 — див. docstring.
+# Три моделі data_merge.* додано 10.09.2026 тим самим запитом: застосунок
+# «Чищення даних» ставиться окремо, у стандартній базі його немає.
 MODELS = set("""
 account.analytic.account account.analytic.line account.analytic.plan
 account.bank.statement account.bank.statement.line account.invoice.report
@@ -41,7 +43,8 @@ account.journal account.move account.payment account.payment.register
 account.payment.term account.report
 approval.approver approval.category approval.product.line approval.request
 base.automation blog.blog blog.post budget.analytic budget.line calendar.event
-crm.lead crm.stage crm.tag crm.team crm.team.member delivery.carrier
+crm.lead crm.stage crm.tag crm.team crm.team.member data_merge.group
+data_merge.model data_merge.rule delivery.carrier
 digest.digest documents.access documents.document documents.sharing documents.tag
 helpdesk.sla helpdesk.sla.status helpdesk.stage helpdesk.tag helpdesk.team
 helpdesk.ticket hr.department hr.employee hr.expense hr.leave
