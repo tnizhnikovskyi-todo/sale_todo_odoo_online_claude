@@ -1900,7 +1900,7 @@ select.chip{padding-right:8px}
             "форма звернення в CRM": {
               "с": "ok",
               "нота": "прогнано по-справжньому: у сторінку записано штатний блок форми з моделлю crm.lead, після чого форма надіслана як це робить відвідувач (POST з csrf-токеном) — у базі створився лід «Запит із сайту: налаштувати склад і рахунки» з іменем, поштою й текстом, і став у стадію воронки. Тобто форма створює лід, а не лист, і перемикати її в конструкторі не обовʼязково",
-              "де": "блок s_website_form з data-model_name=\"crm.lead\" у arch сторінки · POST /website/form/crm.lead · crm.lead id 2",
+              "де": "ir.ui.view.arch сторінки — блок s_website_form з data-model_name=\"crm.lead\" · website.page · POST /website/form/crm.lead · crm.lead id 2",
               "звірка": {
                 "дата": "2026-09-09",
                 "дивились": "розмітка сторінки + POST /website/form/crm.lead",

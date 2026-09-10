@@ -393,5 +393,7 @@
   }
  ],
  "правило_компаній_назва": "Власний довідник: бачити лише свої компанії (перевірка)",
- "правило_компаній_домен": "[('company_id', 'in', company_ids + [False])]"
+ "правило_компаній_домен": "[('company_id', 'in', company_ids + [False])]",
+ "сторінка_форми_url": "/pro-kompaniyu",
+ "сторінка_форми_розмітка": "<t name=\"Про компанію\"><t t-call=\"website.layout\"><div id=\"wrap\" class=\"oe_structure\"><section class=\"s_text_block\"><div class=\"container\"><h1>Про компанію</h1><form action=\"/website/form/\" method=\"post\" data-model_name=\"crm.lead\" class=\"s_website_form\"><input type=\"hidden\" name=\"csrf_token\"/><input type=\"text\" name=\"contact_name\" required=\"1\"/><input type=\"email\" name=\"email_from\" required=\"1\"/><textarea name=\"description\"/><button type=\"submit\">Надіслати</button></form></div></section></div></t></t>"
 }

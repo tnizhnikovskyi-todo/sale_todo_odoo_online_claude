@@ -400,7 +400,7 @@
 |---|---|---|
 | головна сторінка | `ir.ui.view`, `website.page`<br>поля: `ir.ui.view.arch` | ir.ui.view.arch сторінки (website.page → view_id): розмітка штатних блоків s_banner, s_three_columns |
 | сторінка про компанію та контакти | `ir.ui.view`, `website.page`<br>поля: `ir.ui.view.copy` |  |
-| форма звернення в CRM | `crm.lead` |  |
+| форма звернення в CRM | `ir.ui.view`, `crm.lead`, `website.page`<br>поля: `ir.ui.view.arch` |  |
 | базове SEO і метадані | `website.page`, `website`<br>поля: `website.robots_txt` |  |
 | адаптація під мобільні | — |  |
 
