@@ -35,6 +35,10 @@ GENERATORS = [
     ('tools/build_config_map.py', ['data/config-map.json']),
     ('tools/build_runbook.py', ['docs/setup-runbook.md']),
     ('tools/report_recipe_gaps.py', ['docs/рецепти-що-лишилось.md']),
+    # Артефакт аналізу прайсу теж похідний — від docs/аналіз-прайсу.md. У переліку
+    # його не було, тому 10.09.2026 правка документа не потрапила в артефакт і
+    # збірка сказала «чисто». Рівно та поломка, від якої цей скрипт існує.
+    ('tools/build_analysis.py', ['artifacts/price-analysis.html']),
 ]
 # Звіт «кроки проти годин» пише в stdout, як і план — тому збирається окремо,
 # тим самим способом, що PLAN нижче.
