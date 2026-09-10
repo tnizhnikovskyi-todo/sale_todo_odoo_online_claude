@@ -221,6 +221,117 @@ def stale_generated(rec, cmap, vrfy):
     return bad
 
 
+def named_but_not_created(rec, prof):
+    """Пошук «рівно один» за назвою, яку жоден рецепт не створює.
+
+    Клас помилок, знайдений 10.09.2026 пробою доменів — сім штук за один прохід,
+    усі в щойно написаних рецептах. Форма завжди та сама:
+
+        {"дія": "знайти", "модель": "helpdesk.team",
+         "домен": [["name", "=", "$клієнт.черга_заявок_назва"]], "один": true}
+
+    На демо-базі такий запис Є — ми його заводили руками, і журнал це чесно
+    описує. На базі клієнта його немає, і рецепт зупиниться на першому ж кроці.
+
+    ЯК ЦЕ НЕ ПЕРЕТВОРИТИСЯ НА КРИК. Перша версія правила порівнювала САМІ РЯДКИ
+    «$клієнт.поле» — і дала 20 попереджень, із яких справжніх було два. Причини
+    обидві структурні: більшість записів створюється всередині «для_кожного»
+    (там ім'я — «$елемент.назва», а не «$клієнт.черга»), а половина шуканих —
+    штатні записи Odoo, яких ніхто й не мусить створювати.
+
+    Тому правило працює на ЗНАЧЕННЯХ, а не на іменах полів: профіль відомий,
+    отже і перелік назв, які план створить, і назва, яку він шукає, — конкретні
+    рядки. І звужене двома умовами, кожна з яких прибирає цілий клас шуму:
+
+      • шукана назва мусить містити КИРИЛИЦЮ. Штатні записи Odoo названі
+        латиницею («UA», «kg», «EUR», «Call», «Solved», «Order Confirmation»,
+        «Wire Transfer») — їх ніхто не створює й не мусить;
+      • моделі людей і контрагентів (res.partner, res.users, hr.employee)
+        не перевіряються: ці записи приносить міграція або сам клієнт.
+
+    Лишається попередженням, а не помилкою: рецепт може спиратися на запис,
+    який заводить сусідня позиція поза набором прикладу.
+    """
+    ЛЮДИ = {'res.partner', 'res.users', 'hr.employee'}
+    КИРИЛИЦЯ = re.compile(r'[а-яіїєґА-ЯІЇЄҐ]')
+
+    def значення(v):
+        """Конкретний рядок замість $клієнт.поле — профіль відомий."""
+        if not isinstance(v, str):
+            return None
+        m = re.fullmatch(r'\$клієнт\.([\wа-яіїєґ_]+)', v.strip(), re.I | re.U)
+        if m:
+            з = prof.get(m.group(1))
+            return з if isinstance(з, str) else None
+        return None if v.startswith('$') else v
+
+    створює = set()
+
+    def збір(steps, елемент=None):
+        for st in steps:
+            if not isinstance(st, dict):
+                continue
+            if st.get('дія') == 'для_кожного':
+                перелік = st.get('перелік')
+                m = re.fullmatch(r'\$клієнт\.([\wа-яіїєґ_]+)',
+                                 перелік.strip(), re.I | re.U) if isinstance(перелік, str) else None
+                рядки = prof.get(m.group(1)) if m else None
+                for e in (рядки if isinstance(рядки, list) else [None]):
+                    збір([st.get('крок') or {}], e)
+                continue
+            if st.get('дія') != 'створити':
+                continue
+            for поле in ('name', 'code', 'login'):
+                v = (st.get('значення') or {}).get(поле)
+                if not isinstance(v, str):
+                    continue
+                mi = re.fullmatch(r'\$елемент(?:\.([\wа-яіїєґ_]+))?', v.strip(), re.I | re.U)
+                if mi:
+                    if isinstance(елемент, dict) and mi.group(1):
+                        з = елемент.get(mi.group(1))
+                    elif isinstance(елемент, str) and not mi.group(1):
+                        з = елемент
+                    else:
+                        з = None
+                    if isinstance(з, str):
+                        створює.add(з)
+                    continue
+                з = значення(v)
+                if з:
+                    створює.add(з)
+
+    for pid, lvs in rec['позиції'].items():
+        for lk, items in lvs.items():
+            for txt, body in items.items():
+                збір(body.get('кроки') or [])
+
+    warns = []
+    for pid, lvs in rec['позиції'].items():
+        for lk, items in lvs.items():
+            for txt, body in items.items():
+                for st in body.get('кроки') or []:
+                    if not isinstance(st, dict) or st.get('дія') != 'знайти':
+                        continue
+                    if not st.get('один') or st.get('модель') in ЛЮДИ:
+                        continue
+                    for умова in st.get('домен') or []:
+                        if not (isinstance(умова, list) and len(умова) == 3):
+                            continue
+                        if умова[0] not in ('name', 'code', 'login'):
+                            continue
+                        шукане = значення(умова[2])
+                        if not шукане or not КИРИЛИЦЯ.search(шукане):
+                            continue
+                        if шукане in створює:
+                            continue
+                        warns.append('%s р.%s «%s»: шукає «рівно один» %s з назвою '
+                                     '«%s», але жоден рецепт такого запису не '
+                                     'створює. На демо-базі він є, бо заводили '
+                                     'руками; у клієнта рецепт зупиниться'
+                                     % (pid, lk, txt[:34], st.get('модель'), шукане))
+    return warns
+
+
 def main():
     rec = json.load(io.open(RECIPES, encoding='utf-8'))
     price = json.load(io.open(PRICE, encoding='utf-8'))
@@ -230,6 +341,7 @@ def main():
     errs_early = []
     vrfy = json.load(io.open(VERIFY, encoding='utf-8'))
     errs_early += stale_generated(rec, cmap, vrfy)
+    warns_early = named_but_not_created(rec, prof)
 
     known_models = set(ALLOW_EXTRA)
     for blk in cmap['позиції'].values():
@@ -245,6 +357,41 @@ def main():
         if any(a in name for a in apos):
             errs_early.append('поле профілю «%s» містить апостроф — підстановка обірветься'
                               % name)
+
+    # ДВОЙНИКИ. Цей проєкт уже вп'яте втрачає час на символи, що виглядають однаково:
+    # апостроф U+2019 проти U+02BC (чотири рази) і латинська «i» всередині
+    # «Квалiфiкований» у профілі (знайдено 10.09.2026 — стадія просто ніколи
+    # не збігалася з базою).
+    #
+    # ПЕРША ВЕРСІЯ ПРАВИЛА КРИЧАЛА НА ПРАВИЛЬНІ ДАНІ — 20+ рядків на розмітці
+    # («name="Про», «class="container"><h1>Про») і шляхах («WH/Запаси»), де змішані
+    # алфавіти абсолютно законні. Тому правило звужене двома умовами, і кожна
+    # прибирає цілий клас шуму:
+    #   • слово складається ТІЛЬКИ з літер — розмітка, шляхи й формати відпадають;
+    #   • латинські літери в ньому — ЛИШЕ ДВОЙНИКИ кириличних (i, o, a, c, e, p, x,
+    #     y, T, H, B, M, K…). Слово на кшталт «Odoo19укр» не чіпаємо: там латиниця
+    #     осмислена, а не переплутана.
+    ДВОЙНИКИ = set('iIoOaAcCeEpPxXyYTHBMKlm')
+    СЛОВО = re.compile(r'[^\W\d_]{3,}', re.U)
+
+    def двойники(текст, де):
+        for сл in СЛОВО.findall(текст or ''):
+            кир = [c for c in сл if '\u0400' <= c <= '\u04ff']
+            лат = [c for c in сл if 'a' <= c.lower() <= 'z']
+            if not кир or not лат:
+                continue
+            if not all(c in ДВОЙНИКИ for c in лат):
+                continue
+            errs_early.append('%s: у слові «%s» латинські «%s» серед кирилиці — '
+                              'майже напевно описка (порівняйте «і» U+0456 і «i» '
+                              'U+0069). Пошук за таким рядком мовчки не знаходить '
+                              'нічого' % (де, сл, ''.join(sorted(set(лат)))))
+
+    for name, знач in prof.items():
+        рядки = [знач] if isinstance(знач, str) else (
+            [x for x in знач if isinstance(x, str)] if isinstance(знач, list) else [])
+        for рядок in рядки:
+            двойники(рядок, 'профіль «%s»' % name)
     for tname, tpl in templates.items():
         if tname.startswith('_') or not isinstance(tpl, dict):
             continue          # службові ключі розділу, як «_нащо»
@@ -300,7 +447,7 @@ def main():
             acc['3'] = set(it['lv'][2][4])
             price_items[it['id']] = acc
 
-    errs, warns = list(errs_early), []
+    errs, warns = list(errs_early), list(warns_early)
     n_items = n_steps = 0
 
     for pid, levels in rec['позиції'].items():
