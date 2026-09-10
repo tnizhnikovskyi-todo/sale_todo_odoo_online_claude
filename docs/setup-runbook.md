@@ -544,7 +544,7 @@
 |---|---|---|
 | порівняння пропозицій постачальників | `purchase.order`<br>поля: `purchase.order.alternative_po_ids` |  |
 | багатокрокове узгодження закупки за сумою: ознака кроку й віза ролі | `purchase.order`, `base.automation` |  |
-| рамкові договори; графік — датами приходу в замовленнях за договором | `purchase.requisition`, `purchase.order`<br>поля: `purchase.order.requisition_id` |  |
+| рамкові договори; графік — датами приходу в замовленнях за договором | `purchase.requisition`, `purchase.requisition.line`, `purchase.order`<br>поля: `purchase.order.requisition_id` | Закупівлі → Угоди про закупівлю |
 | подання для контролю цін | `ir.ui.view` |  |
 | кнопки узгодження заявки | `ir.actions.server` |  |
 
@@ -938,7 +938,7 @@
 
 | Пункт | Де в Odoo | Шлях у меню |
 |---|---|---|
-| кілька рівнів узгодження | `approval.category`, `approval.approver`<br>поля: `approval.category.approver_ids` |  |
+| кілька рівнів узгодження | `approval.category`, `approval.category.approver`<br>поля: `approval.category.approver_ids` | approval.category.approver_ids → окремі записи approval.category.approver (user_id, sequence, required) |
 | аванс співробітнику — платежем із зіставленням у позиції «Рахунки та оплати» | `account.payment.register`, `account.bank.statement.line` |  |
 | зіставлення витрат «оплачено компанією» з імпортованою банківською випискою; автосинхронізація з банком UA — не гарантується | `account.bank.statement.line`, `hr.expense`<br>поля: `hr.expense.payment_mode` |  |
 | кнопки узгодження у витраті | `ir.actions.server` |  |

@@ -268,9 +268,44 @@ def check_coverage():
     out.append((чисто == 0, 'на чистих рецептах «--всі» проходить'))
     return out
 
+def check_validator():
+    """Валідатор рецептів: чи ловить він крок «записати» БЕЗ адреси.
+
+    Дірка була така: обовʼязковими для «записати» вважались лише «модель» і
+    «значення». Я написав неіснуюче поле «ціль_домен» замість «ціль», валідатор
+    пропустив, емітер надрукував крок без жодної адреси — і виконавець отримав би
+    «записати res.users нікуди». Крок при цьому виглядає цілком нормально.
+    """
+    import importlib.util, tempfile, os, copy as _copy
+    sp = importlib.util.spec_from_file_location('cr2', 'tools/check_recipes.py')
+    cr = importlib.util.module_from_spec(sp); sp.loader.exec_module(cr)
+    out = []
+    свіжі = json.load(io.open('data/recipes.json', encoding='utf-8'))
+    отруєні = _copy.deepcopy(свіжі)
+    крок = {'дія': 'записати', 'модель': 'res.users',
+            'ціль_домен': [['login', '=', 'x@example.com']],
+            'значення': {'signature': 'x'}}
+    отруєні['позиції']['base']['2']['шаблони листів і підписи']['кроки'].append(крок)
+    d = tempfile.mkdtemp()
+    отрута = os.path.join(d, 'poison.json')
+    json.dump(отруєні, io.open(отрута, 'w', encoding='utf-8'), ensure_ascii=False)
+    справжній = cr.RECIPES
+    try:
+        cr.RECIPES = отрута
+        код_отрути = cr.main()
+    finally:
+        cr.RECIPES = справжній
+    out.append((код_отрути != 0, '«записати» без «ціль» валідатор ловить'))
+    out.append((cr.main() == 0, 'на чистих рецептах валідатор мовчить'))
+    return out
+
 import contextlib
 with contextlib.redirect_stdout(io.StringIO()):
     _cov = check_coverage()
+    _val = check_validator()
+for okk, note in _val:
+    print(('  ok     ' if okk else '  ПРОВАЛ ') + 'валідатор: ' + note)
+    res.append(okk)
 for okk, note in _cov:
     print(('  ok     ' if okk else '  ПРОВАЛ ') + 'покриття: ' + note)
     res.append(okk)

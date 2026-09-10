@@ -41,7 +41,8 @@ account.analytic.account account.analytic.line account.analytic.plan
 account.bank.statement account.bank.statement.line account.invoice.report
 account.journal account.move account.payment account.payment.register
 account.payment.term account.report
-approval.approver approval.category approval.product.line approval.request
+approval.approver approval.category approval.category.approver
+approval.product.line approval.request purchase.requisition purchase.requisition.line
 base.automation blog.blog blog.post budget.analytic budget.line calendar.event
 crm.lead crm.stage crm.tag crm.team crm.team.member data_merge.group
 data_merge.model data_merge.rule delivery.carrier
