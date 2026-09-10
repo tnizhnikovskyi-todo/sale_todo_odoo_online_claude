@@ -1,0 +1,4 @@
+id,name,ref,email,phone,is_company
+mig_test.cust_a,"ТОВ «Кавовий Дім» (тест міграції)",MIGC-001,office@kavovydim.example,+380442000101,1
+mig_test.cust_b,"ФОП Іваненко О. П. (тест міграції)",MIGC-002,ivanenko@example.com,+380672000102,0
+mig_test.supp_a,"ТОВ «Зерно Імпорт» (тест міграції)",MIGS-001,sales@zernoimport.example,+380442000201,1
