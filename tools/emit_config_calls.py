@@ -30,6 +30,13 @@ PRICE = 'data/price.json'
 CLIENT = re.compile(r'\$клієнт\.([\wа-яіїєґ_]+)', re.I | re.U)
 COUNT = re.compile(r'\$скільки\(\$клієнт\.([\wа-яіїєґ_]+)\)', re.I | re.U)
 ITEM = re.compile(r'\$елемент(?:\.([\wа-яіїєґ_]+))?$', re.I | re.U)
+# $елемент УСЕРЕДИНІ рядка. Довго його не було, і це мовчки ламало розмітку:
+# шаблон «робоче_місце» отримує поля списку рядком
+# '<list string="$елемент.назва">…', і без цієї заміни в базу йшло подання
+# з буквальним «$елемент.назва» в заголовку. Помилки при цьому НЕМАЄ —
+# arch валідний, подання створюється, і видно тільки очима на екрані.
+# Знайдено прогоном плану «Дашбордів» по базі 10.09.2026.
+ITEM_IN = re.compile(r'\$елемент(?:\.([\wа-яіїєґ_]+))?', re.I | re.U)
 ARG = re.compile(r'\$арг\.([\wа-яіїєґ_]+)', re.I | re.U)
 
 
@@ -75,6 +82,26 @@ def subst(v, prof, missing, elem=None, idx=None, args=None):
                 return elem
             if t == '$індекс':
                 return idx
+
+            def repi(mm):
+                if mm.group(1):
+                    з = elem.get(mm.group(1)) if isinstance(elem, dict) else None
+                    if з is None:
+                        missing.append('елемент.' + mm.group(1))
+                        return mm.group(0)
+                else:
+                    з = elem
+                if isinstance(з, (dict, list)):
+                    missing.append('елемент%s: складене значення підставляється '
+                                   'в середину рядка «%s»'
+                                   % ('.' + mm.group(1) if mm.group(1) else '', v[:60]))
+                    return mm.group(0)
+                return str(з)
+            t3 = ITEM_IN.sub(repi, t)
+            if t3 != t:
+                return t3
+            if '$індекс' in t:
+                return t.replace('$індекс', str(idx))
         mc = COUNT.fullmatch(t)
         if mc:
             if mc.group(1) not in prof:
