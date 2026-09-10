@@ -252,6 +252,32 @@ function expected(sel) {
   });
   ok('підсумок озвучується читалкою (aria-live)', живе === 'polite', String(живе));
 
+  // Залік діагностики — половина (рішення 10.09.2026). Перевіряємо саме те, що
+  // бачать двоє різних людей: сейл у панелі й клієнт у тексті КП. Число в коді
+  // може бути правильним, а на екран потрапити не те.
+  await p.evaluate(() => {
+    const c = document.getElementById('c-diag');
+    if(c && !c.checked) c.click();
+    const l = document.getElementById('l-diag');
+    if(l){ l.value = '2'; l.dispatchEvent(new Event('change', { bubbles: true })); }
+  });
+  await p.waitForTimeout(400);
+  const діаг = await p.evaluate(() => {
+    const row = document.getElementById('o-diag');
+    return { сховано: row.hidden, текст: document.getElementById('o-diag-v').textContent };
+  });
+  ok('панель показує суму діагностики і залік окремо',
+     !діаг.сховано && /€1\s*000/.test(діаг.текст) && /залік[^\d]*€500/.test(діаг.текст),
+     діаг.текст);
+  await p.click('#sum-btn');
+  await p.waitForTimeout(400);
+  const кпд = await p.evaluate(() => document.getElementById('sum-out').value || '');
+  ok('КП називає половину суми словом і числом',
+     /зараховується\s+половина[^\d]*€500/.test(кпд.replace(/\s+/g, ' ')),
+     (кпд.split('\n').find(l => l.indexOf('Експрес-діагностика') === 0) || '').slice(0, 150));
+  // «Діагностика не входить у підсумок» тут НЕ перевіряється навмисно: це вже
+  // робить перевірка «у КП стоїть та сама сума» вище, і вона рахує очікуване з
+  // data/price.json без діагностики. Другий тест того самого був би заглушкою.
   // --- 6. чек-лист кваліфікації: поріг обмежень й вердикт «стоп» -----------
   await p.getByText('ЧЕК-ЛИСТ КВАЛІФІКАЦІЇ', { exact: false }).first().click();
   await p.waitForTimeout(600);
