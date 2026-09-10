@@ -47,7 +47,8 @@ STEPS = ('tools/report_plan_vs_price.py', 'docs/кроки-проти-годин
 # в репозиторії немає), але мусить лишатися актуальним: рецепт правлять,
 # поле міняється, а перелік для звірки застаріває мовчки.
 FIELDS = ('tools/probe_fields.py', 'docs/поля-плану-для-звірки.md')
-VALIDATORS = ['tools/check_recipes.py', 'tools/test_integrity.py']
+VALIDATORS = ['tools/check_recipes.py', 'tools/check_concept.py',
+              'tools/test_integrity.py']
 # Перевірка в браузері: код 2 означає «немає чим перевіряти», а не «зламано».
 BROWSER = ['node', 'tools/test_calculator_ui.js']
 # Зразок плану збирається з профілю-прикладу окремою командою.

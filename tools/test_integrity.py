@@ -567,6 +567,58 @@ def check_validator():
     out.append((cr.main() == 0, 'на чистих рецептах валідатор мовчить'))
     return out
 
+def check_concept():
+    """Концепція: чи ловиться Studio без заперечення, чужа ціна і стоп-слово.
+
+    Приводом стала не гіпотетична загроза: 10.09.2026 концепція **двадцять разів**
+    називала Studio нашим способом впровадження — через день після рішення від неї
+    відмовитись. Документ правлять руками, рішення лягають в інший файл, і розрив
+    ніхто не бачить, бо жодна збірка концепцію не читала.
+    """
+    import importlib.util, tempfile, os, contextlib as _c
+    sp = importlib.util.spec_from_file_location('cc', 'tools/check_concept.py')
+    cc = importlib.util.module_from_spec(sp); sp.loader.exec_module(cc)
+    out = []
+    чистий = io.open('artifacts/concept.html', encoding='utf-8').read()
+    d = tempfile.mkdtemp()
+    отрути = [
+        (чистий.replace('а не на рівні швидких рук у конфігураторі',
+                        'а не на рівні швидких рук у Studio'),
+         'без заперечення', 'Studio як бажана навичка'),
+        (чистий.replace('<tr><td>CRM</td><td class="num">14</td>',
+                        '<tr><td>CRM</td><td class="num">15</td>', 1),
+         'а в прайсі', 'години позиції, яких немає в прайсі'),
+        (чистий.replace('Бухгалтерського, податкового', 'ПРРО, бухгалтерського, податкового'),
+         'знято з контуру', 'стоп-слово знятої теми'),
+    ]
+    справж = cc.HTML
+    for i, (текст, слово, підпис) in enumerate(отрути):
+        ш = os.path.join(d, 'poison_concept%d.html' % i)
+        io.open(ш, 'w', encoding='utf-8').write(текст)
+        буф = io.StringIO()
+        try:
+            cc.HTML = ш
+            with _c.redirect_stdout(буф):
+                код = cc.main()
+        finally:
+            cc.HTML = справж
+        out.append((код != 0 and слово in буф.getvalue(),
+                    'концепція: %s спіймано' % підпис))
+    буф = io.StringIO()
+    with _c.redirect_stdout(буф):
+        код = cc.main()
+    out.append((код == 0, 'концепція: на чинному документі перевірка мовчить'))
+    # Перевірка мусить БАЧИТИ всі рядки: строгий шаблон мовчки пропускав три
+    # позиції з пʼятнадцяти, і «OK» означало «я подивилась на 12 із 15».
+    out.append(('15 позицій економіки' in буф.getvalue() and '5 наборів' in буф.getvalue(),
+                'концепція: перевірка бачить усі 15 позицій і 5 наборів'))
+    return out
+
+
+for okk, note in check_concept():
+    print(('  ok     ' if okk else '  ПРОВАЛ ') + note)
+    res.append(okk)
+
 import contextlib
 with contextlib.redirect_stdout(io.StringIO()):
     _cov = check_coverage()
