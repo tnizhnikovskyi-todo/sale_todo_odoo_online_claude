@@ -128,6 +128,27 @@ def main():
         last = [l for l in out.splitlines() if l.strip()]
         print('  ok  %-30s %s' % ('tools/test_calculator_ui.js', last[-1] if last else ''))
 
+    # Генератор рецептів «штатної поведінки» ЗАПУСКАТИ ТУТ НЕ ТРЕБА: він пише в
+    # data/recipes.json — джерело правди, а не похідний файл. Автоматично мутувати
+    # джерело означало б, що склад рецептів змінюється сам, без рішення людини.
+    # Тому перевірка лише питає «--dry»: чи зʼявилися нові пункти цього виду.
+    code, out = run(['python3', 'tools/gen_standard_recipes.py', '--dry'])
+    if code != 0:
+        bad.append('генератор «штатної поведінки» упав:\n%s' % out)
+    else:
+        first = out.splitlines()[0] if out else ''
+        n = 0
+        try:
+            n = int(first.split('рецептів:')[1].split('(')[0].strip())
+        except (IndexError, ValueError):
+            pass
+        if n:
+            skipped.append('зʼявилося %d пунктів виду «штатна поведінка» без рецепта — '
+                           'дописати: python3 tools/gen_standard_recipes.py' % n)
+        else:
+            print('  ok  %-30s нових пунктів «штатної поведінки» немає'
+                  % 'gen_standard_recipes.py')
+
     for v in VALIDATORS:
         code, out = run(['python3', v])
         if code != 0:
