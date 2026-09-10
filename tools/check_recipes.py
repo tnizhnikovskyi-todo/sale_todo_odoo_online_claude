@@ -75,7 +75,21 @@ PROP_PARENT = {
     'hr.employee': ('res.company', 'employee_properties_definition'),
     'approval.request': ('approval.category', 'approval_properties_definition'),
     'planning.slot': ('planning.role', 'slot_properties_definition'),
+    # Пʼять пар, дописаних 10.09.2026: таблицю знято ЦІЛКОМ із живої бази
+    # (ir.model.fields, ttype=properties → 20 моделей-носіїв, ttype=properties_definition
+    # → 15 моделей-власників опису), а не доповнено здогадами. Дві з них ламають
+    # інтуїцію «опис живе на батьківському довіднику»: у статті бази знань і в активу
+    # опис лежить на ЗАПИСІ ТОГО САМОГО ТИПУ (батьківська стаття, батьківський актив),
+    # а в позики — на журналі.
+    'knowledge.article': ('knowledge.article', 'article_properties_definition'),
+    'account.asset': ('account.asset', 'asset_properties_definition'),
+    'account.loan': ('account.journal', 'loan_properties_definition'),
+    'hr.resume.line': ('hr.resume.line.type', 'resume_line_type_properties_definition'),
+    'properties.base.definition.mixin': ('properties.base.definition',
+                                         'properties_definition'),
 }
+# Моделей із полем «Властивості» рівно 20; тут 20 ключів. Якщо в базі клієнта
+# застосунків менше — частини моделей просто не буде, і це не помилка таблиці.
 PROP_TYPES = {'char', 'text', 'boolean', 'integer', 'float', 'date', 'datetime',
               'selection', 'tags', 'many2one', 'many2many', 'separator'}
 
@@ -85,10 +99,14 @@ PROP_TYPES = {'char', 'text', 'boolean', 'integer', 'float', 'date', 'datetime',
 ALLOW_EXTRA = {'res.country', 'res.partner.category', 'ir.model.data', 'res.currency',
                'ir.model', 'properties.base.definition', 'crm.team', 'planning.role',
                'maintenance.equipment.category', 'stock.picking.type', 'helpdesk.team',
-               'ir.model.fields.selection', 'base.automation'}
+               'ir.model.fields.selection', 'base.automation', 'res.groups',
+               'ir.module.module', 'res.currency.rate', 'ir.ui.view'}
 # ir.model потрібен для перевірки «застосунок стоїть»: на свіжій базі документів ще
 # немає, тому «щонайменше одна угода» падало б законно — перевіряємо не документ,
-# а наявність моделі, яку приносить застосунок
+# а наявність моделі, яку приносить застосунок.
+# ir.module.module — щоб рецепт зупинявся, коли застосунку позиції ще не поставили:
+# без модуля Inter-Company полів міжкомпанійності на res.company просто не існує,
+# і запис у них упав би незрозумілою помилкою замість зрозумілої зупинки.
 
 REF = re.compile(r'^\$([^.]+)$')
 # Змінні циклу «для_кожного»: вони не «посилання на створений запис», а підстановки

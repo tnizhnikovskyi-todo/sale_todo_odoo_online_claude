@@ -395,5 +395,47 @@
  "правило_компаній_назва": "Власний довідник: бачити лише свої компанії (перевірка)",
  "правило_компаній_домен": "[('company_id', 'in', company_ids + [False])]",
  "сторінка_форми_url": "/pro-kompaniyu",
- "сторінка_форми_розмітка": "<t name=\"Про компанію\"><t t-call=\"website.layout\"><div id=\"wrap\" class=\"oe_structure\"><section class=\"s_text_block\"><div class=\"container\"><h1>Про компанію</h1><form action=\"/website/form/\" method=\"post\" data-model_name=\"crm.lead\" class=\"s_website_form\"><input type=\"hidden\" name=\"csrf_token\"/><input type=\"text\" name=\"contact_name\" required=\"1\"/><input type=\"email\" name=\"email_from\" required=\"1\"/><textarea name=\"description\"/><button type=\"submit\">Надіслати</button></form></div></section></div></t></t>"
+ "сторінка_форми_розмітка": "<t name=\"Про компанію\"><t t-call=\"website.layout\"><div id=\"wrap\" class=\"oe_structure\"><section class=\"s_text_block\"><div class=\"container\"><h1>Про компанію</h1><form action=\"/website/form/\" method=\"post\" data-model_name=\"crm.lead\" class=\"s_website_form\"><input type=\"hidden\" name=\"csrf_token\"/><input type=\"text\" name=\"contact_name\" required=\"1\"/><input type=\"email\" name=\"email_from\" required=\"1\"/><textarea name=\"description\"/><button type=\"submit\">Надіслати</button></form></div></section></div></t></t>",
+ "філії": [
+  {
+   "назва": "Тодо — філія Львів",
+   "місто": "Львів",
+   "адреса": "вул. Прикладна, 2"
+  }
+ ],
+ "юрособи_додаткові": [
+  {
+   "назва": "ТОВ «Приклад-Два»",
+   "єдрпоу": "11111111",
+   "пдв": "UA111111111111",
+   "місто": "Київ",
+   "адреса": "вул. Прикладна, 3"
+  }
+ ],
+ "юрособа_міжкомпанійна": "ТОВ «Приклад-Два»",
+ "міжкомпанійний_користувач_логін": "sales1@example.com",
+ "міжкомпанійний_журнал_код": "ПОСТ",
+ "властивість_юрособи_назва": "nasha_yurosoba",
+ "властивість_юрособи_підпис": "Наша юрособа за договором",
+ "поріг_узгодження_закупівель": 20000,
+ "днів_на_закупівлю": 2,
+ "валюти_додаткові": [
+  "EUR",
+  "USD"
+ ],
+ "курс_валюти": "EUR",
+ "курс_дата": "2026-09-09",
+ "курс_за_одиницю": 48.5,
+ "властивість_співробітника_назва": "tabelnyj_nomer",
+ "властивість_співробітника_підпис": "Табельний номер",
+ "бланк_подання": "external_layout_boxed",
+ "гасло_у_підвалі": "Тодо — впровадження Odoo",
+ "рядок_реквізитів": "ТОВ «Приклад» · ЄДРПОУ 00000000 · вул. Прикладна, 1, Київ · +380000000000",
+ "фірмовий_колір": "#714B67",
+ "фірмовий_колір_другий": "#875A7B",
+ "шрифт_бланка": "Lato",
+ "постачальник_прикладу": "ТОВ «Постачальник Приклад»",
+ "товар_постачальника_код": "TOV-1",
+ "ціна_постачальника": 80,
+ "строк_постачальника_днів": 3
 }

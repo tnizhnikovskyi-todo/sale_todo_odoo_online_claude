@@ -20,14 +20,40 @@ const os = require('os');
 const ROOT = path.resolve(__dirname, '..');
 const RATE = 50;
 
-let chromium;
-try {
-  chromium = require('playwright-core').chromium;
-} catch (e) {
-  console.error('playwright-core не знайдено — перевірка в браузері не запускалась.');
+// Пакет шукається в чотирьох місцях, і це не перестраховка: у цьому образі
+// playwright стоїть ГЛОБАЛЬНО, а node глобальні модулі за замовчуванням не бачить.
+// Через це перевірка одного разу мовчки перейшла в «НЕ ПЕРЕВІРЕНО» на цілком
+// придатному оточенні — тобто найгірший режим: збірка зелена, а сторінку ніхто
+// не натискав.
+function loadChromium() {
+  const ids = ['playwright-core', 'playwright'];
+  const roots = [null];
+  try {
+    const cp = require('child_process');
+    const g = cp.execSync('npm root -g', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    if (g) roots.push(g);
+  } catch (e) { /* npm може бути відсутній — не привід падати */ }
+  roots.push('/opt/node22/lib/node_modules', '/usr/lib/node_modules');
+  for (const root of roots) {
+    for (const id of ids) {
+      try {
+        const mod = require(root ? path.join(root, id) : id);
+        if (mod && mod.chromium) return { chromium: mod.chromium, звідки: (root || 'проєкт') + '/' + id };
+      } catch (e) { /* пробуємо наступне місце */ }
+    }
+  }
+  return null;
+}
+
+const пакет = loadChromium();
+if (!пакет) {
+  console.error('playwright не знайдено — перевірка в браузері не запускалась.');
+  console.error('Шукали playwright-core і playwright у проєкті, у `npm root -g` '
+    + 'і в /opt/node22/lib/node_modules, /usr/lib/node_modules.');
   console.error('Поставити:  npm i playwright-core   (Chromium уже є в образі)');
   process.exit(2);
 }
+const chromium = пакет.chromium;
 
 function findChromium() {
   if (process.env.CHROMIUM_PATH) return process.env.CHROMIUM_PATH;
