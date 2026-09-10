@@ -188,6 +188,7 @@ CLIENT = re.compile(r'\$клієнт\.([\wа-яіїєґ_]+)', re.I | re.U)
     'sign.group_sign_user',
     'sign.menu_document',
     'stock.group_production_lot',
+    'stock.stock_location_stock',
     'stock.group_stock_user',
     'stock.menu_stock_root',
     'website.group_website_restricted_editor',
