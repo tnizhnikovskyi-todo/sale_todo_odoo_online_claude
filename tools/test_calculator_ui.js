@@ -226,6 +226,32 @@ function expected(sel) {
      && /Пропозиція дійсна до: 24\.09\.2026/.test(kp2),
      kp2.split('\n').slice(0, 4).join(' | '));
 
+  // Клавіатура: роль tablist обіцяє читалці, що стрілка перемкне вкладку.
+  // До 10.09 обробника не було — Tab проводив крізь чотири кнопки, стрілки
+  // не робили нічого, і обіцянка ролі була порожньою.
+  await p.focus('#tab-calc');
+  await p.keyboard.press('ArrowRight');
+  await p.waitForTimeout(300);
+  const посл = await p.evaluate(() => ({
+    сторінка: document.getElementById('page-spec').hidden === false,
+    вибрана: document.getElementById('tab-spec').getAttribute('aria-selected'),
+    tabindexАктивної: document.getElementById('tab-spec').tabIndex,
+    tabindexІншої: document.getElementById('tab-calc').tabIndex,
+  }));
+  ok('стрілка вправо перемикає вкладку і переносить фокус',
+     посл.сторінка && посл.вибрана === 'true' && посл.tabindexАктивної === 0
+     && посл.tabindexІншої === -1, JSON.stringify(посл));
+  await p.keyboard.press('Home');
+  await p.waitForTimeout(300);
+  const дім = await p.evaluate(() => document.getElementById('page-calc').hidden === false);
+  ok('Home повертає на першу вкладку', дім);
+  const живе = await p.evaluate(() => {
+    const b = document.getElementById('o-price');
+    const box = b.closest('[aria-live]');
+    return box ? box.getAttribute('aria-live') : null;
+  });
+  ok('підсумок озвучується читалкою (aria-live)', живе === 'polite', String(живе));
+
   // --- 6. чек-лист кваліфікації: поріг обмежень й вердикт «стоп» -----------
   await p.getByText('ЧЕК-ЛИСТ КВАЛІФІКАЦІЇ', { exact: false }).first().click();
   await p.waitForTimeout(600);

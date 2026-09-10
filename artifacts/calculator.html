@@ -481,7 +481,15 @@ select.chip{padding-right:8px}
 .snone[hidden]{display:none!important}
 
 @media print{
-  .bar,nav.tabs,.panel,.sbar,header .sub,footer{display:none!important}
+  /* друкується те, про що говорять із клієнтом: позиції довідника або питання
+     чек-листа. Панель, стрічка й вкладки — інструмент, на папері вони шум.
+     Чек-лист друкують, щоб іти по ньому на зустрічі без екрана. */
+  .bar,nav.tabs,.panel,.sbar,header .sub,footer,.qbar{display:none!important}
+  .qsec{break-inside:avoid;border-color:#bbb;background:#fff}
+  .qitem{break-inside:avoid}
+  .opt{border-color:#999;background:#fff;color:#000}
+  .opt[aria-pressed="true"]{border-width:2px;border-color:#000}
+  .qnote{border-color:#999;color:#000;background:#fff}
   body{background:#fff;font-size:11pt}
   .shell{max-width:none;padding:0}
   .spos{break-inside:avoid;border-color:#bbb}
@@ -597,7 +605,7 @@ select.chip{padding-right:8px}
 
       <div class="card">
         <h2>Проєкт</h2>
-        <div class="big"><b id="o-price">—</b><span id="o-meta">—</span></div>
+        <div class="big" role="status" aria-live="polite" aria-atomic="true"><b id="o-price">—</b><span id="o-meta">—</span></div>
         <div class="row"><span>Строк робіт</span><b id="o-weeks">—</b></div>
         <div class="row" id="o-diag" hidden><span>Експрес-діагностика</span><b id="o-diag-v">—</b></div>
         <ul class="autos" id="autos"></ul>
@@ -9722,6 +9730,11 @@ select.chip{padding-right:8px}
       $(ref[1]).hidden = !on;
       $(ref[2]).hidden = !on;
     });
+    // Роving tabindex: у групу вкладок Tab заходить ОДИН раз, далі стрілки.
+    // Інакше клавіатурний користувач проходить крізь чотири кнопки поспіль.
+    Object.keys(PAGES).forEach(function(k){
+      $(PAGES[k][0]).tabIndex = (k === p) ? 0 : -1;
+    });
     $('reset').textContent = RESETLBL[p];
     // анкету заповнює клієнт у себе, а перелік — довідник: набори там не потрібні
     var sales = p === 'calc' || p === 'qual';
@@ -9737,6 +9750,25 @@ select.chip{padding-right:8px}
   $('tab-spec').addEventListener('click', function(){ showPage('spec'); });
   $('tab-qual').addEventListener('click', function(){ showPage('qual'); });
   $('tab-form').addEventListener('click', function(){ showPage('form'); });
+
+  // Стрілки по вкладках. Роль tablist це не прикраса, а обіцянка: читалка
+  // оголошує «вкладка 2 з 4» і людина чекає, що стрілка перемкне. Без
+  // обробника Tab проводив крізь усі чотири кнопки, а стрілки не робили нічого.
+  // Home і End — до першої й останньої, як у штатних вкладках.
+  var ПОРЯДОК = ['calc', 'spec', 'qual', 'form'];
+  $('tab-calc').parentNode.addEventListener('keydown', function(e){
+    var зараз = ПОРЯДОК.indexOf(state.page);
+    if(зараз < 0) return;
+    var к = null;
+    if(e.key === 'ArrowRight' || e.key === 'ArrowDown') к = (зараз + 1) % ПОРЯДОК.length;
+    else if(e.key === 'ArrowLeft' || e.key === 'ArrowUp') к = (зараз + ПОРЯДОК.length - 1) % ПОРЯДОК.length;
+    else if(e.key === 'Home') к = 0;
+    else if(e.key === 'End') к = ПОРЯДОК.length - 1;
+    if(к === null) return;
+    e.preventDefault();
+    showPage(ПОРЯДОК[к]);
+    $(PAGES[ПОРЯДОК[к]][0]).focus();
+  });
 
   // ---------- чек-лист кваліфікації ----------
   // розділи: блоки з data/qualification.json (скринінг, готовність) + напрями прайсу
