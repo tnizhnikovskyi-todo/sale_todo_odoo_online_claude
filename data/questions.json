@@ -14403,8 +14403,83 @@
    "вид": "довідники",
    "текст": "одна каса з товарами",
    "де": "pos.config — решту створює Odoo сама · product.template.available_in_pos",
-   "стан": "pending",
-   "знайдено": null,
+   "стан": "explored",
+   "знайдено": {
+    "моделі": [
+     {
+      "модель": "pos.config",
+      "поля": [
+       "name — «Point of Sale», char, обовʼязкове",
+       "company_id — «Company», many2one res.company, обовʼязкове",
+       "picking_type_id — «Operation Type», many2one stock.picking.type, ОБОВʼЯЗКОВЕ (каса не існує без складської операції)",
+       "journal_id — «Point of Sale Journal», many2one account.journal",
+       "invoice_journal_id — «Invoice Journal», many2one account.journal",
+       "payment_method_ids — «Payment Methods», many2many pos.payment.method",
+       "pricelist_id — «Default Pricelist», many2one product.pricelist",
+       "available_pricelist_ids — «Available Pricelists», many2many product.pricelist",
+       "use_pricelist — «Use a pricelist.», boolean",
+       "iface_tax_included — «Tax Display», selection ОБОВʼЯЗКОВЕ: subtotal «Tax-Excluded Price» / total «Tax-Included Price»",
+       "limit_categories — «Restrict Categories», boolean",
+       "iface_available_categ_ids — «Available PoS Product Categories», many2many pos.category",
+       "current_session_state — «Current Session State», char (readonly)",
+       "active — «Active», boolean"
+      ]
+     },
+     {
+      "модель": "product.template",
+      "поля": [
+       "available_in_pos — «Available in POS», boolean — головний прапорець «товар є на касі»",
+       "pos_categ_ids — «Point of Sale Category», many2many pos.category (окрема від складської product.category)",
+       "type — «Product Type», selection ОБОВʼЯЗКОВЕ: consu «Goods» / service «Service» / combo «Combo»",
+       "is_storable — «Track Inventory», boolean",
+       "list_price — «Sales Price», float",
+       "to_weight — «To Weigh With Scale», boolean",
+       "taxes_id — «Sales Taxes», many2many account.tax"
+      ]
+     },
+     {
+      "модель": "pos.category",
+      "поля": [
+       "name — «Category Name», char, обовʼязкове",
+       "parent_id — «Parent Category», many2one pos.category",
+       "sequence — «Sequence», integer (порядок вкладок на екрані)",
+       "hour_after — «Availability After», float",
+       "hour_until — «Availability Until», float"
+      ]
+     },
+     {
+      "модель": "product.pricelist / product.pricelist.item",
+      "поля": [
+       "pricelist_id, applied_on (1_product / 2_product_category / 3_global), compute_price (fixed / percentage / formula), percent_price, fixed_price, min_quantity, categ_id, date_start, date_end"
+      ]
+     }
+    ],
+    "рішення": [
+     "Який товар узагалі показувати на касі — прапорець available_in_pos ставиться на КОЖНІЙ картці товару окремо; масово це робиться списком, але це рішення по асортименту, а не одна галочка в налаштуваннях",
+     "Звідки береться ціна на екрані каси: за замовчуванням це list_price картки товару. Прайс-лист вмикається окремим прапорцем use_pricelist — на стенді він false на обох касах, тому 5 наявних прайс-листів каса не бачить",
+     "Ціни на екрані з податком чи без — iface_tax_included, обовʼязкове поле з двома варіантами; на стенді 'total' (ціна з податком) на обох касах",
+     "Групування товарів на екрані — pos.category, окремий довідник від складської категорії. Скільки категорій, яка вкладеність, який порядок (sequence)",
+     "Чи звужувати касу до частини асортименту — limit_categories + iface_available_categ_ids (актуально, коли на одному складі кілька напрямів)"
+    ],
+    "залежності": [
+     "picking_type_id обовʼязкове → каса не створюється без застосунку «Склад» і без складу",
+     "journal_id / invoice_journal_id → застосунок «Рахунки» (позиція inv у прайсі): без журналів каса не проведеться",
+     "Прайс-листи налаштовуються в Продажах — це не робота всередині каси",
+     "Податки на картці товару (taxes_id) — рішення власника позиції inv"
+    ],
+    "пастки": [
+     "На стенді 0 записів pos.category і в жодного товару не заповнені pos_categ_ids → екран каси виходить одним плоским списком без вкладок. Клієнт помічає це в перший день роботи, а не на демонстрації",
+     "pos.category має hour_after / hour_until («доступність з… до…») — категорія мовчки зникає з екрана поза заданими годинами; заповнене випадково значення виглядає як зникнення товару",
+     "available_in_pos сам собою не робить товар складським: type='service' (на стенді «Сервісне обслуговування, год») продається на касі й нічого не списує",
+     "Odoo сама створює службові товари з available_in_pos=true — на стенді це «Gift Card» і «Top-up eWallet» англійською. Вони зʼявляться на екрані каси клієнта, якщо їх не прибрати",
+     "use_pricelist=false робить available_pricelist_ids марним: касир не має чим перемкнути ціну, хоча прайс-листи в базі є"
+    ],
+    "межі": [
+     "Фіскалізація каси, ПРРО/РРО, фіскальний номер товару, реєстрація асортименту — поза контуром. Каса = операційний облік продажів і залишків",
+     "Вагове обладнання (to_weight) і сканери — це обладнання клієнта, у скоуп налаштування не входить"
+    ],
+    "меню": "Точка продажу → Налаштування → Точки продажу (pos.config); товари — Точка продажу → Товари; категорії каси — Точка продажу → Налаштування → Категорії ТП"
+   },
    "питання": []
   },
   "pos-1-2": {
@@ -14416,8 +14491,51 @@
    "вид": "довідники",
    "текст": "продаж за готівку й карту",
    "де": "pos.payment.method: is_cash_count для готівки, journal_id для картки",
-   "стан": "pending",
-   "знайдено": null,
+   "стан": "explored",
+   "знайдено": {
+    "моделі": [
+     {
+      "модель": "pos.payment.method",
+      "поля": [
+       "name — «Method», char, обовʼязкове",
+       "type — «Type», selection: cash «Cash» / bank «Bank» / pay_later «Customer Account» / online «Online» (обчислюється з is_cash_count і журналу)",
+       "is_cash_count — «Cash», boolean — саме воно робить спосіб готівковим і вводить його у звірку зміни",
+       "journal_id — «Journal», many2one account.journal",
+       "receivable_account_id — «Intermediary Account», many2one account.account",
+       "outstanding_account_id — «Outstanding Account», many2one account.account",
+       "split_transactions — «Identify Customer», boolean",
+       "use_payment_terminal — «Use a Payment Terminal», selection з ПОРОЖНІМ списком варіантів",
+       "qr_code_method — «QR Code Format», selection з ПОРОЖНІМ списком варіантів",
+       "payment_method_type — «Integration», selection обовʼязкове, список варіантів порожній",
+       "is_online_payment — «Online Payment», boolean",
+       "config_ids — «Point of Sale», many2many pos.config",
+       "company_id, active, sequence, image, default_qr"
+      ]
+     }
+    ],
+    "рішення": [
+     "Скільки способів оплати на касі й котрі з них рахуються готівкою (is_cash_count). Тільки готівкові враховуються у звірці залишку при закритті зміни",
+     "До якого журналу лягає кожен спосіб. На стенді: «Готівка» → журнал «Готівка», «Картка» → журнал «Банк (основний рахунок)» з проміжним рахунком 311003 «Неузгоджені вхідні платежі»",
+     "Чи потрібен «Клієнтський обліковий запис» (type=pay_later) — продаж у борг постійному клієнту; на стенді він є на першій касі",
+     "Який спосіб доступний на якій касі — config_ids. На стенді «Готівка» і «Клієнтський обліковий запис» тільки на касі 1, «Картка» на обох"
+    ],
+    "залежності": [
+     "Кожен спосіб оплати тягне журнал і рахунок → жорстка залежність від позиції inv (журнали, каса, банк, реєстрація оплат)",
+     "pay_later вимагає заповненої картки контрагента (split_transactions=true)"
+    ],
+    "пастки": [
+     "use_payment_terminal, qr_code_method і payment_method_type мають ПОРОЖНІ списки варіантів: жодного модуля терміналу не встановлено (pos_adyen, pos_stripe — uninstalled). Тобто «оплата карткою» на касі — це касир натиснув кнопку, а не інтеграція з банківським терміналом. Гроші з еквайрингом автоматично не звіряються",
+     "is_cash_count=false у способу, яким реально беруть готівку, вимикає його зі звірки зміни: недостача стає невидимою",
+     "На касі 2 стенда доступна лише «Картка» — готівку на ній прийняти нічим, і закриття зміни проходить без перерахунку грошей",
+     "split_transactions=true у pay_later робить клієнта обовʼязковим — чек без контрагента не проведеться, а касир цього не очікує",
+     "Способи оплати привʼязані до company_id: для другої юрособи потрібні власні способи й власні журнали"
+    ],
+    "межі": [
+     "Серед платіжних провайдерів Odoo немає жодного українського — інтеграції з місцевим еквайрингом не обіцяємо",
+     "Фіскалізація оплати, ПРРО, підпис чека — поза контуром"
+    ],
+    "меню": "Точка продажу → Налаштування → Способи оплати"
+   },
    "питання": []
   },
   "pos-1-3": {
@@ -14429,8 +14547,63 @@
    "вид": "документи",
    "текст": "чек продажу й повернення",
    "де": "pos.order — створюється інтерфейсом каси",
-   "стан": "pending",
-   "знайдено": null,
+   "стан": "explored",
+   "знайдено": {
+    "моделі": [
+     {
+      "модель": "pos.order",
+      "поля": [
+       "name — «Order Ref», char, обовʼязкове",
+       "pos_reference — «Receipt Number», char",
+       "tracking_number — «Order Number», char",
+       "state — «Status», selection: draft «New» / cancel «Cancelled» / paid «Paid» / done «Posted»",
+       "session_id — «Session», many2one pos.session",
+       "partner_id — «Customer», many2one res.partner, НЕ обовʼязкове",
+       "amount_total / amount_paid / amount_return — monetary, усі три обовʼязкові",
+       "refunded_order_id — «Refunded Order», many2one pos.order",
+       "refund_orders_count — «Number of Refund Orders», integer",
+       "picking_ids / picking_count — звʼязок зі складськими рухами",
+       "account_move — «Invoice», many2one account.move",
+       "to_invoice — «To invoice», boolean; is_invoiced — «Is Invoiced», boolean",
+       "employee_id — «Cashier», many2one hr.employee; cashier — «Cashier name», char",
+       "date_order — «Date», datetime",
+       "nb_print — «Number of Print», integer",
+       "ticket_code — «Ticket Code», char",
+       "lines — «Order Lines», one2many pos.order.line",
+       "pricelist_id, fiscal_position_id, shipping_date"
+      ]
+     },
+     {
+      "модель": "res.company",
+      "поля": [
+       "point_of_sale_use_ticket_qr_code — «Self-service invoicing», boolean; на стенді true в усіх трьох компаніях"
+      ]
+     }
+    ],
+    "рішення": [
+     "Повернення в Odoo — це ОКРЕМИЙ pos.order із заповненим refunded_order_id, а не сторно початкового чека. У бекофісі буде два документи; клієнту треба сказати це вголос",
+     "Чи виставляти рахунок просто з каси (to_invoice → account_move) — потрібен контрагент і журнал рахунків",
+     "Чи вмикати self-service invoicing (QR на чеку, за яким клієнт сам витягує рахунок) — на стенді ввімкнено за замовчуванням",
+     "Чи вимагати клієнта в чеку — від цього залежить, чи буде потім аналітика «хто купує»"
+    ],
+    "залежності": [
+     "Рахунок із каси (account_move) → позиція inv",
+     "Складські рухи чека (picking_ids) → pos-2-2",
+     "employee_id заповнюється лише коли ввімкнено вхід касирів (pos-2-1)"
+    ],
+    "пастки": [
+     "ГОЛОВНЕ: вигляд самого чека НЕ є друкованим бланком. У базі немає жодного ir.actions.report на модель pos.order — перевірено запитом. Чек малює інтерфейс каси (окремий JS-застосунок). Правити можна тільки текст шапки й підвалу (pos-2-4); «додати колонку в чек» — поза периметром",
+     "partner_id не обовʼязковий → більшість чеків буде без клієнта, і зведення «хто купив» побудувати нема з чого",
+     "state='paid' і state='done' — різні речі: чек стає «Posted» лише після закриття зміни. До того в бекофісі суми висять у «Paid» і бухзапису немає",
+     "Нумерація чека (pos_reference) формується інтерфейсом каси від номера сесії, а не через ir.sequence — «зробіть нам свою нумерацію чеків» виконати штатно не можна",
+     "На стенді 0 записів pos.order: продажів не проводили, тому поведінка при повній зміні перевірена лише за структурою моделі"
+    ],
+    "межі": [
+     "Фіскальний чек, ПРРО, X- і Z-звіт, підпис чека — поза контуром. У базі чек = операційний документ продажу й повернення",
+     "Макет чека і його друкована форма — поза периметром (немає QWeb-бланка)"
+    ],
+    "меню": "Точка продажу → Замовлення → Замовлення"
+   },
    "питання": []
   },
   "pos-1-4": {
@@ -14442,8 +14615,64 @@
    "вид": "документи",
    "текст": "відкриття й закриття зміни",
    "де": "pos.session: opening_control → opened → closed",
-   "стан": "pending",
-   "знайдено": null,
+   "стан": "explored",
+   "знайдено": {
+    "моделі": [
+     {
+      "модель": "pos.session",
+      "поля": [
+       "name — «Session ID», char",
+       "state — «Status», selection ОБОВʼЯЗКОВЕ: opening_control «Opening Control» → opened «In Progress» → closing_control «Closing Control» → closed «Closed & Posted»",
+       "config_id — «Point of Sale», many2one pos.config, обовʼязкове",
+       "user_id — «Opened By», many2one res.users, ОБОВʼЯЗКОВЕ",
+       "start_at — «Opening Date», stop_at — «Closing Date», datetime",
+       "cash_register_balance_start — «Starting Balance», monetary",
+       "cash_register_balance_end — «Theoretical Closing Balance», monetary (розрахункове)",
+       "cash_register_balance_end_real — «Ending Balance», monetary (те, що перерахував касир)",
+       "cash_register_difference — «Before Closing Difference», monetary",
+       "cash_real_transaction — «Transaction», monetary",
+       "opening_notes / closing_notes — text",
+       "rescue — «Recovery Session», boolean",
+       "order_ids, picking_ids, picking_count, failed_pickings — «Failed Pickings», boolean",
+       "move_id — «Journal Entry», many2one account.move",
+       "statement_line_ids — «Cash Lines», one2many account.bank.statement.line",
+       "update_stock_at_closing — «Stock should be updated at closing», boolean",
+       "total_payments_amount, bank_payment_ids"
+      ]
+     },
+     {
+      "модель": "pos.config",
+      "поля": [
+       "cash_control — «Advanced Cash Control», boolean: на касі 1 true, на касі 2 false"
+      ]
+     }
+    ],
+    "рішення": [
+     "Вмикати чи ні «Advanced Cash Control» (cash_control) — це і є питання «чи рахуємо гроші в касі на відкритті й закритті». Вимкнено — полів для перерахунку просто немає",
+     "Хто має право закривати зміну: user_id «Opened By» обовʼязковий і це користувач Odoo (ліцензія), а не касир-співробітник",
+     "Що робити з розбіжністю готівки — Odoo НЕ блокує закриття, вона просто фіксує різницю",
+     "Періодичність зміни: одна зміна = один бухзапис (move_id). Зміна на кілька днів змішує виручку різних днів",
+     "Хто відстежує rescue-сесії («Recovery Session») — Odoo відкриває їх сама, коли попередню зміну не закрили коректно"
+    ],
+    "залежності": [
+     "move_id (бухзапис зміни) і statement_line_ids (готівкові рядки) → позиція inv: без журналу готівки зміна не закриється як слід",
+     "failed_pickings звʼязує закриття зміни зі складом (pos-2-2)",
+     "Звіт за зміну (pos-1-5) будується саме на pos.session"
+    ],
+    "пастки": [
+     "ПЕРЕВІРЕНО НА ДАНИХ: на стенді є ЗАКРИТА зміна з cash_register_balance_start=500, ending balance=0 і cash_register_difference=−500. Odoo прийняла закриття з розбіжністю −500 мовчки, без попередження й без блокування. Клієнт має знати: система фіксує недостачу, але не заважає її створити",
+     "cash_control=false (як на касі 2) — при закритті взагалі немає полів «скільки грошей у касі», будь-яка недостача невидима",
+     "user_id — це один користувач Odoo на всю зміну, навіть якщо за касою по черзі стояли троє касирів. Хто саме продав — видно лише в employee_id чека",
+     "failed_pickings=true: якщо складські рухи зміни не провелися, зміна все одно закривається, а залишки лишаються завищеними",
+     "Незакрита вчорашня зміна тягне сьогоднішні продажі у вчорашній звіт — виручка за день зʼїжджає",
+     "cash_register_balance_end «Theoretical» і …_end_real — різні поля; звіряти треба саме різницю, а не кінцевий залишок"
+    ],
+    "межі": [
+     "Z-звіт у фіскальному сенсі, інкасація як фінансова операція, касова книга — поза контуром",
+     "Бухзапис зміни й журнал готівки — зона позиції inv, не каси"
+    ],
+    "меню": "Точка продажу → Замовлення → Сесії (pos.session)"
+   },
    "питання": []
   },
   "pos-1-5": {
@@ -14455,8 +14684,41 @@
    "вид": "бланки",
    "текст": "звіт за зміну",
    "де": "ir.actions.report point_of_sale.report_saledetails",
-   "стан": "pending",
-   "знайдено": null,
+   "стан": "explored",
+   "знайдено": {
+    "моделі": [
+     {
+      "модель": "ir.actions.report",
+      "поля": [
+       "name — «Sales Details»",
+       "model — pos.session",
+       "report_name — point_of_sale.report_saledetails",
+       "report_type — qweb-pdf",
+       "binding_model_id — «Point of Sale Session» (кнопка друку стоїть на сесії)",
+       "paperformat_id — ПОРОЖНЄ (друкується у форматі компанії)",
+       "print_report_name — ПОРОЖНЄ (усі файли зберігаються з однаковою назвою)"
+      ]
+     }
+    ],
+    "рішення": [
+     "Це ЄДИНИЙ штатний друкований бланк усього POS — перевірено запитом по ir.actions.report для моделей pos.order / pos.session / pos.config: інших звітів немає",
+     "За який період звітувати: звіт будується по обраних сесіях, тобто «за зміну», а не «за календарний день»",
+     "Усе інше в аналітиці продажів — це подання й зведені таблиці в бекофісі, а не друкований бланк"
+    ],
+    "залежності": [
+     "Звіт бере дані зі закритої pos.session (pos-1-4) — на відкритій зміні він неповний",
+     "Окремий макет під чекову стрічку 80 мм — це власний формат паперу, а не правка звіту"
+    ],
+    "пастки": [
+     "Вміст звіту фіксований; «додайте в звіт за зміну колонку X» = правка QWeb-шаблона = поза периметром",
+     "paperformat_id порожній: якщо клієнт очікує друк на чековому принтері, штатний формат A4 його не влаштує",
+     "Звіт не привʼязаний до дня: дві зміни за день дадуть два окремі звіти, зведення за день доводиться робити в бекофісі"
+    ],
+    "межі": [
+     "X- і Z-звіт фіскального реєстратора — це не цей документ і не наш контур"
+    ],
+    "меню": "Точка продажу → Замовлення → Сесії → кнопка друку «Sales Details»"
+   },
    "питання": []
   },
   "pos-2-1": {
@@ -14468,8 +14730,61 @@
    "вид": "довідники",
    "текст": "кілька кас і касирів",
    "де": "друга pos.config · pos_hr → hr.employee.pin · basic_employee_ids і advanced_employee_ids",
-   "стан": "pending",
-   "знайдено": null,
+   "стан": "explored",
+   "знайдено": {
+    "моделі": [
+     {
+      "модель": "pos.config",
+      "поля": [
+       "basic_employee_ids — «Employees with basic access», many2many hr.employee",
+       "advanced_employee_ids — «Employees with manager access», many2many hr.employee",
+       "module_pos_hr — «Module Pos Hr», boolean (вмикає екран вибору касира)",
+       "group_pos_user_id — «Point of Sale User Group», group_pos_manager_id — «Point of Sale Manager Group», many2one res.groups (технічні)"
+      ]
+     },
+     {
+      "модель": "hr.employee",
+      "поля": [
+       "name — обовʼязкове",
+       "pin — «PIN», char (без вимог до довжини й унікальності)",
+       "barcode — «Badge ID», char",
+       "user_id — many2one res.users (може бути порожнім — тоді це не користувач Odoo)",
+       "company_id, department_id, active"
+      ]
+     },
+     {
+      "модель": "res.groups",
+      "поля": [
+       "point_of_sale.group_pos_user (id 65) — «Користувач ТП»",
+       "point_of_sale.group_pos_manager (id 66) — «Менеджер ТП»",
+       "point_of_sale.group_pos_preset (id 67)",
+       "інших POS-груп у базі немає; модуль pos_hr власної групи не додає"
+      ]
+     }
+    ],
+    "рішення": [
+     "Касир — це співробітник (hr.employee) з PIN-кодом, а НЕ користувач Odoo. Ліцензія на нього не потрібна — головний аргумент для магазину з пʼятьма продавцями",
+     "Поділ доступу на касі рівно двобічний: basic_employee_ids (просто продає) і advanced_employee_ids (знижка, повернення, закриття зміни). Третього рівня немає й зробити його штатно нічим",
+     "Хто з людей має вхід у бекофіс — це вже групи point_of_sale.group_pos_user / group_pos_manager і ліцензовані користувачі",
+     "Скільки кас (pos.config) і хто до якої привʼязаний: на стенді каса 1 має basic=[Олена Касир], advanced=[Тимур, Ігор Касир]; каса 2 — basic порожній, advanced=[Тимур]"
+    ],
+    "залежності": [
+     "Потрібен застосунок «Співробітники» (hr) — модуль pos_hr встановлений автоматично разом із ним",
+     "Кожна нова каса — окрема pos.config з власними списками співробітників (pos-3-1)"
+    ],
+    "пастки": [
+     "ПЕРЕВІРЕНО НА ДАНИХ: на обох касах стенда module_pos_hr = FALSE, хоча списки basic_/advanced_employee_ids заповнені. Тобто списки касирів наповнили, а екран вибору касира не ввімкнули — каса працює під одним користувачем, а в чеках не буде видно, хто продав. Це саме те значення, що мовчки дає неправильний результат",
+     "pin — звичайний char: порожній PIN означає вхід без коду (на стенді у співробітника Тимур pin=false), однаковий PIN у двох людей ніхто не перевіряє",
+     "Якщо обидва списки порожні (як basic на касі 2), обмеження фактично немає",
+     "Співробітник без user_id ніде в системі не є користувачем: його дії видно тільки в полі employee_id чека, у жодному іншому документі — ні",
+     "advanced_employee_ids дає право на знижку без стелі (див. pos-2-3) — «менеджер» тут не про суму, а про кнопки"
+    ],
+    "межі": [
+     "Облік робочого часу касира, графіки змін, зарплата за зміну — поза контуром",
+     "Персональні права «цей касир бачить лише свої чеки» штатно недосяжні"
+    ],
+    "меню": "Точка продажу → Налаштування → Точки продажу (розділ співробітників); співробітники — Співробітники → Співробітники (вкладка з PIN)"
+   },
    "питання": []
   },
   "pos-2-2": {
@@ -14481,8 +14796,73 @@
    "вид": "довідники",
    "текст": "списання зі складу за продажем",
    "де": "pos.config: picking_type_id, warehouse_id",
-   "стан": "pending",
-   "знайдено": null,
+   "стан": "explored",
+   "знайдено": {
+    "моделі": [
+     {
+      "модель": "res.company",
+      "поля": [
+       "point_of_sale_update_stock_quantities — «Update quantities in stock», selection: closing «At the session closing» / real «In real time». НА СТЕНДІ 'real' у всіх трьох компаніях"
+      ]
+     },
+     {
+      "модель": "pos.config",
+      "поля": [
+       "picking_type_id — «Operation Type», ОБОВʼЯЗКОВЕ; каса 1 → «Замовлення ТП» складу WH, каса 2 → «Замовлення ТП» складу «Склад точки №2»",
+       "warehouse_id — «Warehouse», many2one stock.warehouse",
+       "ship_later — «Ship Later», boolean (на стенді false); route_id — маршрут для товару, який везуть пізніше"
+      ]
+     },
+     {
+      "модель": "pos.session",
+      "поля": [
+       "update_stock_at_closing — boolean (обчислюється з налаштування компанії)",
+       "picking_ids / picking_count / failed_pickings"
+      ]
+     },
+     {
+      "модель": "pos.order",
+      "поля": [
+       "picking_ids / picking_count"
+      ]
+     },
+     {
+      "модель": "stock.picking.type",
+      "поля": [
+       "Odoo сама створює по кожному складу тип операції «Замовлення ТП» з sequence_code=POS і маршрутом Запаси → Customers (на стенді id 17 для WH, 27 для точки №2, 18 для складу другої юрособи)"
+      ]
+     },
+     {
+      "модель": "product.template",
+      "поля": [
+       "is_storable — «Track Inventory»: лише такий товар взагалі рухається по складу"
+      ]
+     }
+    ],
+    "рішення": [
+     "Коли списувати товар: у момент чека ('real') чи одним пакетом при закритті зміни ('closing'). Це головне рішення позиції — і воно ухвалюється на рівні КОМПАНІЇ, а не каси",
+     "З якого складу списує кожна каса — picking_type_id разом із warehouse_id",
+     "Чи продаються на касі послуги/неконтрольовані товари (is_storable=false) — вони не рухають залишок узагалі",
+     "Чи потрібен продаж «з доставкою пізніше» (ship_later) — тоді потрібен маршрут і це вже логістика, а не каса"
+    ],
+    "залежності": [
+     "Жорстка залежність від застосунку «Склад»: picking_type_id обовʼязкове поле pos.config",
+     "Роздільні склади за точками — pos-3-3",
+     "Списання формує складські рухи, які закриваються при закритті зміни (pos-1-4)"
+    ],
+    "пастки": [
+     "point_of_sale_update_stock_quantities живе на res.company → «нехай ця каса списує одразу, а та при закритті» неможливо. Каси однієї юрособи поводяться однаково",
+     "Варіант 'closing' означає, що впродовж дня залишок на екрані НЕ змінюється: продали 40 упаковок, у складі досі стара цифра. Клієнт, який дивиться залишки вдень, вважає це помилкою",
+     "failed_pickings: якщо списання не пройшло (немає залишку), зміна все одно закриється, а розбіжність доведеться шукати руками",
+     "picking_type_id і warehouse_id — два незалежні поля. Можна вказати склад точки №2, а тип операції залишити від головного складу, і продажі списуватимуться не звідти. Odoo цього не перевіряє",
+     "Товар без is_storable продається без жодного обмеження й без руху: «мінус на складі» на ньому не зʼявиться ніколи"
+    ],
+    "межі": [
+     "Партії й серійники на касі — це рівень 2 позиції «Склад», не каси",
+     "Фіскалізація ні до чого: тут ідеться про рух залишків"
+    ],
+    "меню": "Налаштування → Точка продажу → «Update quantities in stock» (рівень компанії); склад каси — Точка продажу → Налаштування → Точки продажу"
+   },
    "питання": []
   },
   "pos-2-3": {
@@ -14494,8 +14874,56 @@
    "вид": "довідники",
    "текст": "знижки на касі",
    "де": "pos.config.manual_discount · module_pos_discount — окремий модуль",
-   "стан": "pending",
-   "знайдено": null,
+   "стан": "explored",
+   "знайдено": {
+    "моделі": [
+     {
+      "модель": "pos.config",
+      "поля": [
+       "manual_discount — «Line Discounts», boolean (на стенді true на обох касах)",
+       "module_pos_discount — «Global Discounts», boolean (на стенді FALSE на обох касах)",
+       "use_pricelist, pricelist_id, available_pricelist_ids"
+      ]
+     },
+     {
+      "модель": "ir.module.module",
+      "поля": [
+       "pos_discount — state = UNINSTALLED; pos_loyalty — installed"
+      ]
+     },
+     {
+      "модель": "product.pricelist.item",
+      "поля": [
+       "applied_on — 1_product / 2_product_category / 3_global",
+       "compute_price — fixed / percentage / formula",
+       "percent_price, fixed_price, min_quantity, categ_id, date_start, date_end"
+      ]
+     }
+    ],
+    "рішення": [
+     "Клієнт словом «знижка» називає три різні механізми, і треба зʼясувати який: (1) знижка на рядок вручну — manual_discount; (2) знижка на весь чек — окремий модуль pos_discount; (3) знижка за правилом (від кількості, за категорією, за клієнтом) — прайс-лист",
+     "Хто має право ставити знижку — advanced_employee_ids. Стелі «не більше N %» у штатній конфігурації немає",
+     "Чи вмикати прайс-листи на касі взагалі (use_pricelist) — на стенді вимкнено, тобто 5 наявних прайс-листів каса не бачить"
+    ],
+    "залежності": [
+     "Знижка «на весь чек» вимагає встановлення модуля pos_discount — на стенді він НЕ встановлений",
+     "Права на знижку — з pos-2-1 (advanced_employee_ids)",
+     "Прайс-листи ведуться в Продажах, а не в касі"
+    ],
+    "пастки": [
+     "module_pos_discount=false і модуль pos_discount uninstalled → кнопки «знижка на весь чек» на касі просто немає, хоча клієнт вважає її стандартною частиною каси",
+     "manual_discount=true дає касиру ставити будь-який відсоток без обмеження — обіцяти «контроль знижок» не можна",
+     "use_pricelist=false: прайс-листи в базі є («Оптовий — мінус 10 %», «Роздрібний — знижка від кількості» з правилами −5 % від 20 шт і −12 % від 100 шт по категорії «Товари / Кава»), а на касі вони не працюють. Пастка саме в тому, що в Продажах усе виглядає налаштованим",
+     "Знижка з прайс-листа не показується на чеку окремим рядком «знижка» — просто інша ціна. Клієнт майже завжди хоче бачити суму знижки",
+     "product.pricelist.item з date_start / date_end мовчки перестає діяти: акція скінчилася, і ніхто не повідомив",
+     "Прайс-лист привʼязаний до company_id — для другої юрособи потрібен свій"
+    ],
+    "межі": [
+     "Бали, купони й картки лояльності — це інший механізм, позиція pos-3-2",
+     "Автоматичні знижки за складними умовами (сума чека, час доби) поза штатною конфігурацією"
+    ],
+    "меню": "Точка продажу → Налаштування → Точки продажу (розділ «Ціни»); прайс-листи — Продажі → Товари → Прайс-листи"
+   },
    "питання": []
   },
   "pos-2-4": {
@@ -14507,8 +14935,53 @@
    "вид": "поля",
    "текст": "власний текст шапки й підвалу чека (штатно); власні поля замовлення POS для бекофісу",
    "де": "pos.config.receipt_header і receipt_footer · ir.model.fields + ir.ui.view",
-   "стан": "pending",
-   "знайдено": null,
+   "стан": "explored",
+   "знайдено": {
+    "моделі": [
+     {
+      "модель": "pos.config",
+      "поля": [
+       "receipt_header — «Receipt Header», text (на стенді: адреса й телефон ТОВ «Тодо»)",
+       "receipt_footer — «Receipt Footer», text (на стенді: умови обміну й повернення)",
+       "iface_print_auto — «Automatic Receipt Printing», boolean (на стенді false)",
+       "iface_print_skip_screen — «Skip Preview Screen», boolean"
+      ]
+     },
+     {
+      "модель": "pos.order",
+      "поля": [
+       "nb_print — «Number of Print», integer; ticket_code — «Ticket Code», char"
+      ]
+     },
+     {
+      "модель": "ir.model.fields + ir.ui.view",
+      "поля": [
+       "власні поля додаються Studio на pos.order і показуються поданнями бекофісу"
+      ]
+     }
+    ],
+    "рішення": [
+     "Що саме писати в шапці й підвалі чека — це ВЕСЬ штатний обсяг правки чека. Нічого іншого в чеку змінити не можна",
+     "Чи друкувати чек автоматично після оплати (iface_print_auto) чи касир тисне кнопку",
+     "Чи потрібні власні поля в замовленні POS — і для чого саме: вони живуть тільки в бекофісі"
+    ],
+    "залежності": [
+     "Власні поля вимагають плану Custom (Studio)",
+     "Кожна каса — окрема pos.config зі своїм текстом (pos-3-1)"
+    ],
+    "пастки": [
+     "ГОЛОВНА ПАСТКА БЛОКУ: власне поле, додане Studio на pos.order, на екран каси не потрапляє й на чек не друкується. Інтерфейс каси — окремий JS-застосунок, а не подання Odoo. Клієнт каже «додайте поле в замовлення POS», маючи на увазі екран каси, а ми чуємо бекофіс — і обидві сторони кажуть «так» про різні речі",
+     "ir.actions.report на pos.order немає взагалі (перевірено) → «змінити макет чека», «додати логотип», «переставити колонки» — неможливо в межах штатної конфігурації",
+     "receipt_header / receipt_footer — простий текст без розмітки й без підстановок: номер чека, імʼя касира, дату в них не вставити",
+     "Текст задається на кожній касі окремо: на стенді його скопіювали руками на обидві. Зміниться адреса — правити у двох місцях, і забути легко",
+     "iface_print_auto=false (як на стенді) — чек не друкується сам; клієнт вважає це поломкою"
+    ],
+    "межі": [
+     "Макет чека, логотип, шрифт, ширина стрічки — поза контуром",
+     "Фіскальні реквізити в чеку — поза контуром"
+    ],
+    "меню": "Точка продажу → Налаштування → Точки продажу → розділ «Чек»"
+   },
    "питання": []
   },
   "pos-3-1": {
@@ -14520,8 +14993,55 @@
    "вид": "довідники",
    "текст": "кілька точок продажу",
    "де": "pos.config — по одній на точку",
-   "стан": "pending",
-   "знайдено": null,
+   "стан": "explored",
+   "знайдено": {
+    "моделі": [
+     {
+      "модель": "pos.config",
+      "поля": [
+       "по одному запису на точку (на стенді 2: «Каса — основна точка», «Каса — точка №2»)",
+       "company_id — точки різних юросіб не бачать одна одну",
+       "trusted_config_ids — «Trusted Point of Sale Configurations», many2many pos.config",
+       "picking_type_id, warehouse_id, journal_id, invoice_journal_id, payment_method_ids, cash_control, receipt_header/footer — усе задається окремо на кожній касі"
+      ]
+     },
+     {
+      "модель": "pos.payment.method",
+      "поля": [
+       "config_ids — «Point of Sale»: один спосіб оплати можна дати кільком касам"
+      ]
+     },
+     {
+      "модель": "res.company",
+      "поля": [
+       "на стенді 3 компанії; налаштування списання зі складу задається на компанії, не на касі"
+      ]
+     }
+    ],
+    "рішення": [
+     "Одна точка = одна pos.config = повний власний набір рішень. Нічого не успадковується від «першої каси» — це головне, що треба сказати клієнту про ціну другої точки",
+     "Спільні чи роздільні способи оплати між точками (config_ids)",
+     "Спільний чи роздільний склад (pos-3-3)",
+     "trusted_config_ids — чи дозволяти касі бачити й обслуговувати замовлення сусідньої точки (повернення покупки, зробленої в іншій точці)",
+     "Одна юрособа на всі точки чи різні — від цього залежить, чи взагалі можливий обмін між ними"
+    ],
+    "залежності": [
+     "Кожна нова точка тягне за собою: власні способи оплати або спільні, власний склад або спільний, власні списки касирів, власний текст чека",
+     "Точка в іншій юрособі тягне власні журнали → позиція inv на кожну юрособу"
+    ],
+    "пастки": [
+     "ПЕРЕВІРЕНО НА ДАНИХ: друга каса стенда налаштована інакше за першу — у неї один спосіб оплати замість трьох, cash_control вимкнено, порожній список basic_employee_ids. Тобто «зробіть таку саму другу касу» безшовно не відбувається, розбіжності виникають самі",
+     "Способи оплати привʼязані до company_id → для точки в іншій юрособі потрібні власні способи й журнали",
+     "Повернення покупки, зробленої в іншій юрособі, неможливе взагалі",
+     "Зведений звіт «по всіх точках» будується в бекофісі й по кожній компанії окремо, а не однією кнопкою",
+     "trusted_config_ids порожній за замовчуванням — каси одна одну не бачать, поки це не заповнили"
+    ],
+    "межі": [
+     "Обмін даними між точками через зовнішні системи — поза контуром",
+     "Права «керівник точки бачить лише свою точку» штатно робляться тільки окремими юрособами"
+    ],
+    "меню": "Точка продажу → Налаштування → Точки продажу (перелік усіх кас)"
+   },
    "питання": []
   },
   "pos-3-2": {
@@ -14533,8 +15053,84 @@
    "вид": "довідники",
    "текст": "програма лояльності",
    "де": "loyalty.program program_type = loyalty · pos_loyalty",
-   "стан": "pending",
-   "знайдено": null,
+   "стан": "explored",
+   "знайдено": {
+    "моделі": [
+     {
+      "модель": "loyalty.program",
+      "поля": [
+       "name — «Program Name», char, обовʼязкове",
+       "program_type — «Program Type», selection ОБОВʼЯЗКОВЕ, ВІСІМ варіантів: coupons «Coupons» / gift_card «Gift Card» / loyalty «Loyalty Cards» / promotion «Promotions» / ewallet «eWallet» / promo_code «Discount Code» / buy_x_get_y «Buy X Get Y» / next_order_coupons «Next Order Coupons»",
+       "applies_on — «Applies On», selection ОБОВʼЯЗКОВЕ: current «Current order» / future «Future orders» / both",
+       "pos_ok — «Point of Sale», boolean; sale_ok — «Sales», boolean (одна програма може працювати і на касі, і в Продажах)",
+       "pos_config_ids — «Point of Sales», many2many pos.config (порожнє = усі каси)",
+       "date_from — «Start Date», date_to — «End date», date",
+       "limit_usage — «Limit Usage», boolean; max_usage — «Max Usage», integer",
+       "portal_visible — «Portal Visible», boolean",
+       "company_id, currency_id (обовʼязкове), active, trigger"
+      ]
+     },
+     {
+      "модель": "loyalty.rule",
+      "поля": [
+       "program_id — обовʼязкове",
+       "mode — «Application», selection: auto «Automatic» / with_code «With a promotion code»",
+       "code — «Discount code», char",
+       "minimum_qty — «Minimum Quantity», integer; minimum_amount — «Minimum Purchase», monetary",
+       "reward_point_amount — «Reward», float; reward_point_mode — «Reward Point Mode», selection ОБОВʼЯЗКОВЕ (money / unit / order)",
+       "product_ids — на які товари діє правило"
+      ]
+     },
+     {
+      "модель": "loyalty.reward",
+      "поля": [
+       "reward_type — тип винагороди (знижка / товар у подарунок)",
+       "discount — «Discount», float; discount_mode — «Discount Mode», selection ОБОВʼЯЗКОВЕ (percent / per_point / per_order)",
+       "discount_applicability — «Discount Applicability»: order «Order» / cheapest «Cheapest Product» / specific «Specific Products»",
+       "required_points — «Points needed», float"
+      ]
+     },
+     {
+      "модель": "loyalty.card",
+      "поля": [
+       "program_id, partner_id, points — «Points», code — «Code» (обовʼязкове), expiration_date — «Expiration Date»"
+      ]
+     },
+     {
+      "модель": "ir.module.module",
+      "поля": [
+       "loyalty — installed; pos_loyalty — installed (auto_install)"
+      ]
+     }
+    ],
+    "рішення": [
+     "Який саме з ВОСЬМИ типів програми потрібен клієнту — це головне питання позиції. «Програма лояльності» для клієнта може означати бали (loyalty), промокод (promo_code), подарункову картку (gift_card), «2+1» (buy_x_get_y), гаманець (ewallet) або купон на наступну покупку. Це різні налаштування й різні розмови",
+     "Курс балів: reward_point_mode (за гривню / за одиницю / за замовлення) і скільки балів дає покупка (reward_point_amount) проти скільки коштує винагорода (required_points + discount). На стенді «Бонуси на касі»: 1 бал за гривню, 100 балів = 50 ₴ знижки",
+     "Автоматично чи за кодом (loyalty.rule.mode): «Промокод ОСІНЬ-10» на стенді — with_code, код «ОСІНЬ-10», поріг покупки 500 ₴",
+     "Термін дії програми (date_from / date_to) і обмеження кількості використань (limit_usage / max_usage)",
+     "На яких касах діє програма — pos_config_ids; порожнє поле означає «на всіх»",
+     "Чи потрібна ідентифікація клієнта: бали лягають на loyalty.card, привʼязану до партнера — без картки контрагента бали нікуди накопичувати"
+    ],
+    "залежності": [
+     "Програма з pos_ok=true працює на касі тільки завдяки модулю pos_loyalty (встановлений автоматично разом із point_of_sale + loyalty)",
+     "Gift Card і eWallet тягнуть службові товари: на стенді «Gift Card» і «Top-up eWallet» уже мають available_in_pos=true і зʼявляться на екрані каси",
+     "Бали вимагають клієнта в чеку → перетинається з pos-1-3 (partner_id не обовʼязковий)",
+     "Одна програма може одночасно бути в Продажах (sale_ok) — рішення поза межами каси"
+    ],
+    "пастки": [
+     "pos_config_ids порожній (як у всіх трьох програм на стенді) означає «діє на ВСІХ касах», а не «на жодній». Нова точка автоматично отримає всі акції головної, і ніхто цього не помітить",
+     "Програма привʼязана до company_id: у другої юрособи власних програм немає, картки й бали між юрособами не переносяться",
+     "date_to порожній — програма діє вічно; клієнт вважає акцію сезонною, а вона працює після сезону",
+     "discount_mode 'per_point' і 'percent' дають зовсім різні суми при однакових цифрах — 10 у percent це 10 %, а у per_point це 10 ₴ за бал",
+     "Службові товари Gift Card / Top-up eWallet з англійськими назвами вже стоять на касі — якщо програму не використовують, вони просто смітять на екрані",
+     "Знижка з програми і знижка з прайс-листа (pos-2-3) складаються — стелі загальної знижки штатно немає"
+    ],
+    "межі": [
+     "Смс- і email-розсилки по картках лояльності, зовнішні бонусні системи, пластикові картки зі сканером — поза контуром",
+     "Фіскалізація ні до чого; але знижка на чек має бути видима у звірці — це операційний, не фіскальний бік"
+    ],
+    "меню": "Точка продажу → Товари → Знижки й лояльність (loyalty.program); картки клієнтів — там же"
+   },
    "питання": []
   },
   "pos-3-3": {
@@ -14546,8 +15142,53 @@
    "вид": "довідники",
    "текст": "роздільні склади за точками",
    "де": "stock.warehouse · pos.config.warehouse_id",
-   "стан": "pending",
-   "знайдено": null,
+   "стан": "explored",
+   "знайдено": {
+    "моделі": [
+     {
+      "модель": "stock.warehouse",
+      "поля": [
+       "name, code — на стенді 3 склади: WH «Тодо — демо-стенд» (компанія 1), ТЖ2 «Склад точки №2» (та сама компанія 1), ЮО2 «Склад другої юрособи» (компанія 3)",
+       "company_id — many2one res.company",
+       "lot_stock_id — основне місце зберігання",
+       "reception_steps — на стенді one_step; delivery_steps — на стенді ship_only"
+      ]
+     },
+     {
+      "модель": "pos.config",
+      "поля": [
+       "warehouse_id — «Warehouse»; picking_type_id — «Operation Type», обовʼязкове"
+      ]
+     },
+     {
+      "модель": "stock.picking.type",
+      "поля": [
+       "на кожен склад Odoo створює власне «Замовлення ТП» (sequence_code=POS): id 17 для WH, 27 для точки №2, 18 для складу другої юрособи"
+      ]
+     }
+    ],
+    "рішення": [
+     "Скільки складів заводити: кожна точка — окремий stock.warehouse із власним кодом; Odoo сама добудує йому повний набір типів операцій",
+     "Звідки списує кожна каса: warehouse_id і picking_type_id мають вказувати на ОДИН і той самий склад",
+     "Як товар потрапляє на склад точки — це переміщення між складами, тобто робота Складу, а не каси",
+     "Чи потрібне розділення бачення залишків між точками — і чи готовий клієнт заради цього на окремі юрособи"
+    ],
+    "залежності": [
+     "Жорстко тягне позицію «Склад» (кілька складів — рівень 2/3 тієї позиції)",
+     "Кожна точка з власним складом — це і pos-3-1 (окрема pos.config)"
+    ],
+    "пастки": [
+     "warehouse_id і picking_type_id — незалежні поля, і невідповідність між ними Odoo не перевіряє: каса начебто «точки №2» списуватиме з головного складу, і помітять це через тиждень по залишках. На стенді звірено правильно (склад 3 + тип 27), але саме тут помилка не видима",
+     "Прав доступу «на склад» у Odoo немає: касир точки №2 бачить залишки всіх складів своєї компанії. Розділити реально можна лише окремими юрособами",
+     "Кожен новий склад створює повний набір типів операцій і послідовностей; прибрати зайві не можна — перелік операцій у Складі росте",
+     "delivery_steps=ship_only на стенді: якщо клієнту потрібне комплектування-пакування, це змінює всю схему і додає кроки"
+    ],
+    "межі": [
+     "Розмежування доступу до складів — тільки через окремі юрособи (підтверджено обмеженням Odoo)",
+     "Міжскладські переміщення й поповнення точок — позиція «Склад», не каса"
+    ],
+    "меню": "Склад → Конфігурація → Склади; привʼязка до каси — Точка продажу → Налаштування → Точки продажу"
+   },
    "питання": []
   },
   "pos-3-4": {
@@ -14559,8 +15200,71 @@
    "вид": "місця",
    "текст": "окреме робоче місце для звірки змін: свій пункт меню, своє подання й свій фільтр",
    "де": "ir.ui.view mode=primary + inherit_id · ir.actions.act_window.view_id + domain · ir.ui.menu.group_ids (пишеться) · ir.ui.view.group_ids — не пишеться",
-   "стан": "pending",
-   "знайдено": null,
+   "стан": "explored",
+   "знайдено": {
+    "моделі": [
+     {
+      "модель": "ir.actions.act_window",
+      "поля": [
+       "name — «Name»; res_model — «Destination Model», char ОБОВʼЯЗКОВЕ",
+       "view_mode — перелік подань (list,form,kanban,pivot,graph)",
+       "domain — «Domain Value», char (жорсткий фільтр робочого місця)",
+       "context — «Context Value», char ОБОВʼЯЗКОВЕ (тут задається групування за замовчуванням)",
+       "view_id — «View Ref.», many2one ir.ui.view (те саме подання, яке відкриється першим)",
+       "group_ids — «Groups», many2many res.groups",
+       "НА СТЕНДІ ВЖЕ Є: дія 1337 «Звірка змін», res_model=pos.order, view_mode=list,form, context={'group_by': ['session_id']}, view_id=4885"
+      ]
+     },
+     {
+      "модель": "ir.ui.view",
+      "поля": [
+       "name, model, type (list/form/kanban/pivot), mode — «View inheritance mode», selection ОБОВʼЯЗКОВЕ (primary / extension)",
+       "inherit_id — «Inherited View», many2one",
+       "priority, active, group_ids",
+       "НА СТЕНДІ: подання 4885 «pos.order.list.zvirka.todo», model=pos.order, type=list, mode=primary, inherit_id ПОРОЖНІЙ, priority 16, group_ids порожні"
+      ]
+     },
+     {
+      "модель": "ir.ui.menu",
+      "поля": [
+       "name, parent_id, action (reference на ir.actions.act_window), sequence, group_ids — «Groups», many2many res.groups, active",
+       "НА СТЕНДІ: меню 800 «Звірка змін», батько «Point of Sale», sequence 90, group_ids ПОРОЖНІ",
+       "Для порівняння штатні: меню 454 «Point of Sale/Orders/Orders» має group_ids [65, 66]; меню 468 «Sessions» — [65]"
+      ]
+     },
+     {
+      "модель": "res.groups",
+      "поля": [
+       "point_of_sale.group_pos_user = id 65, point_of_sale.group_pos_manager = id 66 — інших POS-груп у базі немає"
+      ]
+     }
+    ],
+    "рішення": [
+     "Що саме має бачити людина, яка звіряє зміни: модель (pos.order чи pos.session), фільтр (domain), групування (context group_by) і набір колонок (власне подання)",
+     "Чи робити подання самостійним (mode=primary, як 4885 на стенді) чи надбудовою над штатним (mode=extension + inherit_id). Самостійне не ламається при оновленні штатного, але й не отримує його покращень",
+     "Де в меню стоїть новий пункт і з яким порядком (parent_id + sequence; на стенді sequence 90 — у кінці розділу «Point of Sale»)",
+     "Кому пункт видно — ir.ui.menu.group_ids. Це і є робочий важіль розмежування: штатні пункти POS роздані саме так (65 і/або 66)",
+     "Скільки таких робочих місць треба: одне «звірка змін» чи ще й «повернення», «борги клієнтів»"
+    ],
+    "залежності": [
+     "Потрібен план Custom (Studio) — власні подання й пункти меню",
+     "Робоче місце має сенс тільки після pos-1-4 (зміни) і pos-2-1 (касири), інакше нема що звіряти",
+     "Наповнення екрана залежить від того, чи заповнюється employee_id у чеках (module_pos_hr — див. пастку pos-2-1)"
+    ],
+    "пастки": [
+     "На стенді меню «Звірка змін» має ПОРОЖНІ group_ids — тобто робоче місце для звірки бачать усі, хто взагалі бачить застосунок «Точка продажу», включно зі звичайними касирами. Порожнє поле читається як «нікому не обмежено», а не «нікому не видно»",
+     "Метадані кажуть, що ir.ui.view.group_ids записуване (readonly=false), але покластися на обмеження доступу через подання не можна — обмеження треба ставити на пункті меню (ir.ui.menu.group_ids), а не на поданні. Перевірити записом не міг: робота велась тільки на читання",
+     "mode=primary без inherit_id (як 4885) означає повністю власний список колонок: усе, що Odoo додасть у штатне подання наступною версією, сюди не потрапить",
+     "context в ir.actions.act_window обовʼязковий і це рядок — синтаксична помилка в ньому ламає весь пункт меню, а не одну колонку",
+     "domain дії 1337 порожній (false): робоче місце показує ВСІ чеки за всю історію, згруповані за змінами. Без фільтра за датою воно з часом стає непридатним",
+     "Пункт меню сховати від касира недостатньо: дані все одно доступні через пошук і через штатні пункти «Orders» / «Sessions»"
+    ],
+    "межі": [
+     "Кнопки з власною логікою, обчислювані поля й будь-який Python — поза периметром",
+     "Розмежування «касир бачить лише свої чеки» через це не робиться: меню ховає пункт, а не рядки"
+    ],
+    "меню": "Точка продажу → Звірка змін (створений пункт, sequence 90); штатні — Точка продажу → Замовлення → Замовлення / Сесії"
+   },
    "питання": []
   },
   "pur-1-1": {
@@ -23874,7 +24578,7 @@
    "вид": "документи",
    "текст": "календар завантаження команди",
    "де": "planning.slot — штатне подання-ґант",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      "planning.slot — головна модель зміни. Подання: gantt id 3967 planning.slot.gantt (primary, база), розширення 4030 і 4045, варіанти 3968 (група за роллю), 4033 (проєкт), 4003/4004 (замовлення), 3973 (nosample); також calendar 3961, list 3954, pivot 3962, graph 3963",
@@ -23901,7 +24605,38 @@
     ],
     "меню": "Planning → Schedule → By Resource / By Role / By Project / By Sales Order"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Коли керівник відкриває графік роботи команди, у якому вигляді йому зручніше бачити тиждень — по людях, по видах робіт, по проєктах чи по замовленнях клієнтів?",
+     "чому": "Це чотири окремі пункти меню, а не перемикач усередині одного екрана; якщо не вгадати головний, керівник щодня шукатиме потрібний розріз вручну.",
+     "ставить": "ir.actions.act_window 1042 / 1045 / 1040 / 1039 · Planning → Schedule"
+    },
+    {
+     "q": "На який період керівник дивиться найчастіше — день, тиждень чи місяць?",
+     "чому": "Масштаб, з яким графік відкривається, задається один раз; незручний масштаб змушує перемикати вигляд при кожному відкритті.",
+     "ставить": "planning.slot — подання-ґант · Planning → Schedule"
+    },
+    {
+     "q": "Чи потрібен кожному працівникові власний екран «мої зміни», чи всі дивляться один спільний графік?",
+     "чому": "Особистий екран показує людині лише її роботи й вільні; без нього кожен бачитиме графік усієї компанії й губитиметься в ньому.",
+     "ставить": "ir.actions.act_window 1026 «My Planning» · Planning → My Planning"
+    },
+    {
+     "q": "Що працівник має бачити на своєму екрані — тільки те, що попереду, чи й уже відпрацьовані зміни теж?",
+     "чому": "Особистий екран за замовчуванням одразу відсікає частину записів, і людина вирішує, що графіка їй не поставили, хоча він є.",
+     "ставить": "ir.actions.act_window 1026: search_default_my_shifts / open_shifts / unwanted_shifts"
+    },
+    {
+     "q": "Чи буває у вас, що роботу вже пообіцяли людині, але точну дату й час ще не визначили?",
+     "чому": "Запис без дати початку й кінця у календарі не показується взагалі — його видно лише списком, і керівник вважатиме, що роботи не заплановано.",
+     "ставить": "planning.slot: start_datetime / end_datetime · Planning → Schedule"
+    },
+    {
+     "q": "Керівник ставитиме роботи, перетягуючи їх мишею в календарі, чи заповнюватиме картку кожної роботи?",
+     "чому": "Від цього залежить, які поля мають бути видні одразу і чи вистачить швидкого перетягування, чи потрібна повна форма.",
+     "ставить": "planning.slot — подання-ґант і форма · Planning → Schedule"
+    }
+   ]
   },
   "pln-1-2": {
    "sid": "pln-1-2",
@@ -23912,7 +24647,7 @@
    "вид": "документи",
    "текст": "призначення виконавців на періоди",
    "де": "planning.slot: resource_id, start_datetime, end_datetime",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      "planning.slot: resource_id (Resource, many2one resource.resource, НЕ обовʼязкове — порожнє = відкрита зміна), employee_id (Employee, m2o hr.employee, зберігається), user_id, department_id, manager_id, job_title, work_email, work_location_id (усі похідні від співробітника)",
@@ -23948,7 +24683,38 @@
     ],
     "меню": "Planning → Schedule (форма зміни); Planning → Configuration → Shift Templates"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Що для вас одна зміна — робочий день людини, конкретне завдання, виїзд до клієнта чи бронювання обладнання?",
+     "чому": "Від цього залежить, скільки записів заводять на день і що керівник бачить у графіку; переробити це рішення пізніше найдорожче.",
+     "ставить": "planning.slot · Planning → Schedule"
+    },
+    {
+     "q": "Чи потрібно, щоб графік ставав видимим для людей лише після того, як керівник його остаточно затвердив?",
+     "чому": "Поки графік не виданий, люди не бачать нічого, а керівник вважає, що всі попереджені — це найчастіша причина «мені ніхто не сказав».",
+     "ставить": "planning.slot.state (draft / published) — кнопка Publish · Planning → Schedule"
+    },
+    {
+     "q": "Як ви повідомляєте людину, якщо вже узгоджену зміну довелося перенести?",
+     "чому": "Після кожної правки вже виданого графіка його треба видати повторно; інакше система лише позначить розбіжність, а людина працюватиме за старим.",
+     "ставить": "planning.slot.publication_warning · Planning → Schedule → Publish"
+    },
+    {
+     "q": "Чи входить у вас обід у робочі години і чи буває, що робота закінчується пізніше за офіційний робочий день?",
+     "чому": "Години роботи рахуються тільки в межах робочого часу людини: перерва й час поза ним не враховуються, тож поставлені 8 годин у звіті можуть виявитися 6.",
+     "ставить": "planning.slot.allocated_hours · resource.calendar.attendance (day_period = lunch)"
+    },
+    {
+     "q": "Які зміни у вас повторюються з тижня в тиждень і на скільки місяців наперед графік має бути видно?",
+     "чому": "Повторення генерується на задану наперед глибину; крім того, правка або видалення однієї роботи з повторюваного ряду може зачепити весь ряд.",
+     "ставить": "planning.slot.repeat / planning.recurrency · res.company.planning_generation_interval"
+    },
+    {
+     "q": "Чи може людина відмовитися від уже призначеної їй роботи і за скільки днів до неї це ще припустимо?",
+     "чому": "Правило відмови одне на всю компанію і за замовчуванням дозволяє зняти себе аж до самого початку роботи; якщо у вас так не можна, межу треба задати одразу.",
+     "ставить": "res.company.planning_self_unassign_days_before · Planning → Configuration → Settings"
+    }
+   ]
   },
   "pln-1-3": {
    "sid": "pln-1-3",
@@ -23959,7 +24725,7 @@
    "вид": "довідники",
    "текст": "облік доступності",
    "де": "resource.calendar · planning.slot.allocated_hours перераховується",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      "resource.calendar: name (обовʼязкове), tz (Timezone, selection, обовʼязкове), schedule_type (Schedule Type, selection, ОБОВʼЯЗКОВЕ: fully_fixed «Fully Fixed» / flexible «Flexible» — нове у 19), flexible_hours (bool), duration_based (Attendance based on duration), hours_per_day (Average Hour per Day, float), hours_per_week (float), full_time_required_hours (Full Time Equivalent, float), work_time_rate, is_fulltime, two_weeks_calendar, attendance_ids / attendance_ids_1st_week / attendance_ids_2nd_week, global_leave_ids (Global Time Off), leave_ids (Time Off), associated_leaves_count, company_id, active",
@@ -23994,7 +24760,38 @@
     ],
     "меню": "Налаштування → Технічні → Робочі графіки (act 96); картка співробітника → вкладка «Робоча інформація»; Відпустки (для заявок)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Звідки система має знати, що людина сьогодні доступна — у всіх однаковий робочий час, у кожного свій, чи є люди без фіксованих годин?",
+     "чому": "Доступність — основа всього планування: без заданого робочого часу календар малює порожнє тло, а години робіт рахуються неправильно.",
+     "ставить": "resource.calendar.schedule_type · hr.employee.resource_calendar_id · Налаштування → Технічні → Робочі графіки"
+    },
+    {
+     "q": "Чи ведете ви відпустки й лікарняні в системі із затвердженням заявок, чи домовляєтеся усно?",
+     "чому": "Планування бачить людину зайнятою тільки після затвердженої в системі заявки; усна домовленість у графік не потрапляє, і керівник поставить людину на роботу під час її відпустки.",
+     "ставить": "hr.leave → resource.calendar.leaves → planning.slot.leave_warning · застосунок «Відпустки»"
+    },
+    {
+     "q": "Які дні неробочі для всієї компанії — державні свята, корпоративні вихідні — і хто щороку оновлює цей перелік?",
+     "чому": "Свята вносяться в робочий час списком вручну; якщо їх не внести, система вважатиме святковий день робочим і порахує на нього години.",
+     "ставить": "resource.calendar.global_leave_ids · Налаштування → Технічні → Робочі графіки"
+    },
+    {
+     "q": "Чи є у вас люди, які працюють з іншого часового поясу?",
+     "чому": "Часовий пояс задається окремо в людини, в її ресурсі й у робочому часі; розбіжність тихо зсуває початок роботи на години, і жодної помилки система не покаже.",
+     "ставить": "hr.employee.tz · resource.resource.tz · resource.calendar.tz"
+    },
+    {
+     "q": "Крім людей, ви плануєте зайнятість обладнання, машин чи приміщень?",
+     "чому": "Зайнятість техніки й відсутність людей зберігаються в одному переліку; якщо їх не розділяти, звіти про людей включатимуть обладнання.",
+     "ставить": "resource.resource.resource_type (user / material) · resource.calendar.leaves"
+    },
+    {
+     "q": "Чи буває, що людина працює довше за свій звичайний робочий день, і ці години треба бачити в плані?",
+     "чому": "Час поза робочим графіком у години роботи не потрапляє взагалі й пропадає без попередження — план виглядатиме меншим, ніж домовлялися.",
+     "ставить": "planning.slot.allocated_hours vs resource.calendar.attendance"
+    }
+   ]
   },
   "pln-1-4": {
    "sid": "pln-1-4",
@@ -24005,7 +24802,7 @@
    "вид": "документи",
    "текст": "перегляд конфліктів",
    "де": "planning.slot.overlap_slot_count",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      "planning.slot: overlap_slot_count (Overlap Slot Count, integer, обчислюване, не зберігається), conflicting_slot_ids (Conflicting Slot, many2many planning.slot, не зберігається)",
@@ -24033,7 +24830,38 @@
     ],
     "меню": "Planning → Schedule (індикатор просто у ґанті й на формі зміни)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Що для вас конфлікт у графіку — та сама людина у двох місцях одночасно, робота поверх відпустки чи перевищення денної норми годин?",
+     "чому": "Система бачить лише перетин у часі; решту випадків доведеться ловити очима або окремим звітом, і про це краще домовитися до старту.",
+     "ставить": "planning.slot.overlap_slot_count / conflicting_slot_ids · Planning → Schedule"
+    },
+    {
+     "q": "Якщо керівник ставить людину на дві роботи, що накладаються, система має просто попередити чи не дати зберегти?",
+     "чому": "Заборонити збереження неможливо: система підсвічує накладку, але запис усе одно збережеться — порядок доведеться будувати на контролі керівника.",
+     "ставить": "planning.slot.overlap_slot_count · Planning → Schedule"
+    },
+    {
+     "q": "Чи буває у вас, що людині ставлять три роботи підряд в один день, і чи це для вас проблема?",
+     "чому": "Роботи, які йдуть одна за одною і не накладаються, система вважає нормою й не позначає ніяк, скільки б їх не було.",
+     "ставить": "planning.slot.allocated_hours · Planning → Reporting → Planning Analysis"
+    },
+    {
+     "q": "Хто й коли перевіряє графік на накладки — керівник щодня перед видачею чи раз на тиждень?",
+     "чому": "Позначка про накладку живе тільки на екрані: за нею не можна ні відфільтрувати перелік, ні побудувати звіт, тож перевірка — це чиясь щоденна звичка.",
+     "ставить": "planning.slot.overlap_slot_count (не зберігається) · Planning → Schedule"
+    },
+    {
+     "q": "Чи бувають у вас нормальні перетини — коли людина веде дві короткі роботи паралельно?",
+     "чому": "Тоді частину попереджень доведеться свідомо ігнорувати або ділити зайнятість людини між роботами у відсотках; правило треба назвати заздалегідь.",
+     "ставить": "planning.slot.allocated_percentage · Planning → Schedule"
+    },
+    {
+     "q": "Якщо робота ще нікому не призначена, вона має враховуватися в завантаженні команди?",
+     "чому": "Робота без виконавця ні з чим не конфліктує і не потрапляє в розріз за людьми — керівник побачить вільну команду там, де роботи вже набрано.",
+     "ставить": "planning.slot.resource_id (порожній) · Planning → Open Shifts"
+    }
+   ]
   },
   "pln-1-5": {
    "sid": "pln-1-5",
@@ -24044,7 +24872,7 @@
    "вид": "документи",
    "текст": "звіт за завантаженням",
    "де": "групування planning.slot",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      "planning.analysis.report (звітна модель, лише читання). Показники: allocated_hours (Allocated Time), allocated_percentage, effective_hours (Effective Time), remaining_hours (Time Remaining), percentage_hours (Progress %), allocated_hours_cost (Allocated Time Cost), effective_hours_cost, billable_allocated_hours, non_billable_allocated_hours. Розрізи: employee_id, department_id, manager_id, job_title, role_id, project_id, sale_line_id, resource_id, resource_type, recurrency_id, company_id, start_datetime, end_datetime, employee_skill_ids, publication_warning, request_to_switch",
@@ -24075,7 +24903,38 @@
     ],
     "меню": "Planning → Reporting → Planning Analysis"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "У якому розрізі керівник хоче бачити завантаження — людина за тиждень, вид робіт за місяць, проєкт за людьми чи відділ?",
+     "чому": "Розріз визначає, які поля мають дисципліновано заповнюватися на кожній роботі; без них звіт буде порожнім саме там, де він потрібен.",
+     "ставить": "planning.analysis.report · Planning → Reporting → Planning Analysis"
+    },
+    {
+     "q": "Чим ви міряєте завантаження — годинами, відсотком зайнятості чи грошима?",
+     "чому": "Грошові показники рахуються від вартості години кожної людини; якщо її не заповнити, у звіті будуть нулі, а керівник вирішить, що звіт зламаний.",
+     "ставить": "hr.employee.hourly_cost → planning.analysis.report.allocated_hours_cost"
+    },
+    {
+     "q": "Ви хочете бачити тільки те, що заплановано, чи ще й скільки фактично відпрацьовано?",
+     "чому": "Фактичні години беруться з щоденного обліку витраченого часу; якщо його не вести, показник виконання завжди нульовий і звіт вводить в оману.",
+     "ставить": "planning.analysis.report.effective_hours / percentage_hours (hr_timesheet)"
+    },
+    {
+     "q": "У звіт мають входити всі накидані чернетки графіка чи тільки остаточно виданий людям графік?",
+     "чому": "За замовчуванням звіт рахує чернетки й виданий графік разом, тож завантаження виглядає більшим за реально узгоджене.",
+     "ставить": "planning.slot.state · Planning → Reporting → Planning Analysis"
+    },
+    {
+     "q": "Куди у звіті мають потрапляти роботи, які ще нікому не призначені?",
+     "чому": "Такі роботи збираються в групу «не задано» і легко губляться, хоча саме вони — те, під що людей ще треба знайти.",
+     "ставить": "planning.slot.resource_id (порожній) · planning.analysis.report"
+    },
+    {
+     "q": "Хто відкриває цей звіт і як часто — щотижня на планірці чи раз на місяць?",
+     "чому": "Від цього залежить, за який період і з яким групуванням звіт має відкриватися одразу, без щоразового перелаштування.",
+     "ставить": "ir.actions.act_window 1036 · Planning → Reporting → Planning Analysis"
+    }
+   ]
   },
   "pln-1-6": {
    "sid": "pln-1-6",
@@ -24086,7 +24945,7 @@
    "вид": "довідники",
    "текст": "картки виконавців-співробітників (без кадрового обліку)",
    "де": "hr.employee: default_planning_role_id, planning_role_ids",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      "hr.employee: name (Employee Name), user_id, company_id (обовʼязкове), resource_id (Resource, обовʼязкове), resource_calendar_id (Working Hours), tz, employee_type (обовʼязкове, selection), department_id, job_id, hourly_cost (monetary), default_planning_role_id (Default Role → planning.role), planning_role_ids (Roles, many2many planning.role), is_flexible, skill_ids / employee_skill_ids, active",
@@ -24118,7 +24977,38 @@
     ],
     "меню": "Planning → Configuration → Employees; Співробітники (застосунок)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Кого ви взагалі плануєте — тільки штатних людей чи ще підрядників і зовнішніх майстрів?",
+     "чому": "Кожен, кого ставлять у графік, має мати картку з робочим часом; без картки людину неможливо поставити в графік узагалі.",
+     "ставить": "hr.employee · Planning → Configuration → Employees"
+    },
+    {
+     "q": "Хто з ваших людей заходитиме в систему сам, а хто взагалі не працюватиме в ній?",
+     "чому": "Людина без власного входу не побачить свого графіка й не зможе взяти вільну роботу — а керівник вважатиме, що вона просто не заходить.",
+     "ставить": "hr.employee.user_id · Planning → Configuration → Employees"
+    },
+    {
+     "q": "Які дані про людину потрібні саме для планування — посада, відділ, керівник, місце роботи, вартість години?",
+     "чому": "Ці поля дають розрізи у звіті завантаження; незаповнені — і звіт не покаже ні за відділами, ні за керівниками.",
+     "ставить": "hr.employee: job_id, department_id, parent_id, work_location_id, hourly_cost"
+    },
+    {
+     "q": "Чи потрібно рахувати завантаження в грошах і в якій валюті ви це рахуєте?",
+     "чому": "Вартість години зберігається у валюті компанії; якщо юросіб кілька і валюти різні, зведення без перерахунку показуватиме неспівставні числа.",
+     "ставить": "hr.employee.hourly_cost · res.company.currency_id"
+    },
+    {
+     "q": "Що робити з графіком людини, яка звільнилася або пішла надовго?",
+     "чому": "Виключення людини зі списку не прибирає її майбутні роботи — вони лишаються в графіку й у звітах, доки їх не переставлять руками.",
+     "ставить": "hr.employee.active · planning.slot"
+    },
+    {
+     "q": "Чи плануєте ви також обладнання, машини чи приміщення окремо від людей?",
+     "чому": "Техніку заводять окремим ресурсом без картки працівника, і її зайнятість зʼявляється в тому самому графіку — це треба врахувати в структурі одразу.",
+     "ставить": "resource.resource.resource_type = material · Planning → Configuration → Materials"
+    }
+   ]
   },
   "pln-2-1": {
    "sid": "pln-2-1",
@@ -24129,7 +25019,7 @@
    "вид": "довідники",
    "текст": "кілька команд і ролей",
    "де": "planning.role · hr.employee.planning_role_ids",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      "planning.role: name (обовʼязкове), active, color (integer), sequence, resource_ids (Resources, many2many resource.resource), product_ids (Services, one2many product.template), slot_properties_definition (properties_definition), sync_shift_rental, rental_product_count",
@@ -24161,7 +25051,33 @@
     ],
     "меню": "Planning → Configuration → Roles; Planning → Schedule → By Role"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Які види робіт або спеціальності у вас існують і кого можна поставити замість кого?",
+     "чому": "Саме за цим система шукає, ким закрити роботу; без цього переліку підбір не знайде нікого, а групування графіка буде безглуздим.",
+     "ставить": "planning.role · Planning → Configuration → Roles"
+    },
+    {
+     "q": "Коли ви кажете «бригада» або «команда» — це група за спеціальністю, за керівником чи за місцем роботи?",
+     "чому": "Окремого поняття «команда» немає: залежно від відповіді це буде або спеціальність, або відділ, і розрізи у звітах вийдуть зовсім різні.",
+     "ставить": "planning.role vs hr.department · Planning → Configuration → Roles"
+    },
+    {
+     "q": "Чи є у вас люди, які працюють у кількох спеціальностях, і яка з них для них основна?",
+     "чому": "Основна спеціальність і перелік усіх — це два різні списки в картці; якщо спеціальність не додати в перелік, підбір людину не побачить, навіть коли вона стоїть основною.",
+     "ставить": "hr.employee: default_planning_role_id / planning_role_ids"
+    },
+    {
+     "q": "Чи очікуєте ви, що люди однієї бригади бачитимуть у системі лише свій графік?",
+     "чому": "Спеціальність нічого не закриває — вона тільки фарбує, групує й фільтрує; будь-хто з доступом до планування бачить графік усієї компанії.",
+     "ставить": "planning.role (не є правом доступу) · ir.ui.menu.group_ids"
+    },
+    {
+     "q": "Хто веде перелік спеціальностей і що робити, коли якийсь вид робіт більше не використовується?",
+     "чому": "Перелік правиться з двох боків — і зі спеціальності, і з картки людини, тож легко розсинхронити; а видалення спеціальності не чистить уже заплановані роботи.",
+     "ставить": "planning.role.resource_ids · hr.employee.planning_role_ids"
+    }
+   ]
   },
   "pln-2-2": {
    "sid": "pln-2-2",
@@ -24172,7 +25088,7 @@
    "вид": "довідники",
    "текст": "зміни й графіки роботи",
    "де": "resource.calendar (сам графік) і рядки присутності — окремі записи resource.calendar.attendance (dayofweek, hour_from, hour_to) · Налаштування → Технічні → Робочі графіки",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      "resource.calendar (сам графік): name (обовʼязкове), tz (обовʼязкове), schedule_type (обовʼязкове: fully_fixed / flexible), flexible_hours, duration_based, hours_per_day (Average Hour per Day), hours_per_week, full_time_required_hours (Full Time Equivalent), work_time_rate, is_fulltime, two_weeks_calendar (Calendar in 2 weeks mode), two_weeks_explanation, attendance_ids / attendance_ids_1st_week / attendance_ids_2nd_week, global_leave_ids, company_id, active",
@@ -24207,7 +25123,38 @@
     ],
     "меню": "Налаштування → Технічні → Робочі графіки; картка співробітника → Робоча інформація → Робочі години"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Опишіть, будь ласка, як у вас чергуються робочі й вихідні дні в кожної групи людей — це та сама сітка щотижня чи цикл, який зсувається?",
+     "чому": "Робочий час задається тижневою сіткою, щонайбільше з чергуванням двох тижнів; цикл, що не вкладається в тиждень або два, доведеться вести окремими записами вручну — це треба знати до старту, а не після.",
+     "ставить": "resource.calendar.attendance.dayofweek · resource.calendar.two_weeks_calendar · Налаштування → Технічні → Робочі графіки"
+    },
+    {
+     "q": "Скільки різних робочих графіків у вас насправді — один на всіх, кілька типових чи майже в кожного свій?",
+     "чому": "Кожен графік — окремий запис, який хтось має завести й підтримувати; від їх кількості прямо залежить обсяг налаштування.",
+     "ставить": "resource.calendar · hr.employee.resource_calendar_id"
+    },
+    {
+     "q": "Коли у ваших людей перерва і чи вважається вона робочим часом?",
+     "чому": "Перерва вирізається з будь-якої роботи, що її перетинає: чотиригодинна робота через обід перетворюється у звіті на тригодинну, і пояснити це постфактум важко.",
+     "ставить": "resource.calendar.attendance.day_period = lunch"
+    },
+    {
+     "q": "Чи є люди на неповному дні і від якої норми ви рахуєте їхню зайнятість — від 40 годин на тиждень чи від іншої?",
+     "чому": "Норма повної зайнятості задається окремо від годин у сітці; якщо вони розходяться, частка зайнятості й перерахунок днів відпустки в години будуть неправильні.",
+     "ставить": "resource.calendar: hours_per_week / hours_per_day / full_time_required_hours"
+    },
+    {
+     "q": "Як часто у вас змінюється робочий час людей і хто ухвалює таку зміну?",
+     "чому": "Правка робочого часу одразу перераховує години у вже запланованих майбутніх роботах — узгоджений з людьми графік може тихо змінитися заднім числом.",
+     "ставить": "resource.calendar → planning.slot.allocated_hours"
+    },
+    {
+     "q": "Чи є у вас люди без фіксованих годин, які самі вирішують, коли працювати?",
+     "чому": "Для них робочий час зводиться до середніх годин на день або тиждень: календар виглядатиме порожнім, хоча години рахуватимуться — керівника треба попередити заздалегідь.",
+     "ставить": "resource.calendar.schedule_type = flexible · flexible_hours / hours_per_day"
+    }
+   ]
   },
   "pln-2-3": {
    "sid": "pln-2-3",
@@ -24218,7 +25165,7 @@
    "вид": "документи",
    "текст": "планування за ролями, проєктами й замовленнями",
    "де": "planning.slot: project_id, sale_line_id, role_id",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      "planning.slot: project_id (Project → project.project, зберігається), sale_line_id (Sales Order Item → sale.order.line, зберігається), sale_order_id (Sales Order, зберігається), sale_order_state, partner_id (Customer, похідне), role_id, sale_line_plannable (Plan Services), role_product_ids (Services), allow_timesheets, timesheet_ids, effective_hours (Effective Time), percentage_hours (Progress)",
@@ -24253,7 +25200,38 @@
     ],
     "меню": "Planning → Schedule → By Project / By Sales Order; проєкт → кнопка «Планування»; картка товару-послуги"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Від чого ви відштовхуєтесь, коли ставите роботу в графік — від проєкту, від замовлення клієнта чи просто від людини й дати?",
+     "чому": "Це визначає, які поля обовʼязково заповнюються на кожній роботі; без них розрізи «за проєктом» і «за замовленням» у звітах будуть порожні.",
+     "ставить": "planning.slot: project_id / sale_line_id · Planning → Schedule → By Project / By Sales Order"
+    },
+    {
+     "q": "Які саме послуги ви продаєте так, що після продажу їх треба комусь поставити в графік?",
+     "чому": "Звʼязок «продали — запланували» вмикається на картці кожної послуги окремо; поки послуги не позначені по одній, планування за замовленнями не працює взагалі.",
+     "ставить": "product.template: planning_enabled, planning_role_id · картка товару-послуги"
+    },
+    {
+     "q": "Ви продаєте послуги в годинах чи пакетом без погодинного виміру?",
+     "чому": "Залишок «продано 40, заплановано 24, лишилось 16» рахується тільки коли послуга продається в годинах; при продажу штуками числа виходять безглузді.",
+     "ставить": "product.template.uom_id (Hours) · sale.order.line.planning_hours_to_plan"
+    },
+    {
+     "q": "Хто відповідатиме за те, щоб на кожній роботі стояв проєкт або замовлення?",
+     "чому": "Ці поля заповнюються руками й нічим не підставляються самі; без дисципліни звіт за проєктами лишиться майже порожнім, хоча роботи ведуться.",
+     "ставить": "planning.slot: project_id / sale_line_id · Planning → Schedule"
+    },
+    {
+     "q": "Що має відбуватися з уже запланованими роботами, якщо замовлення скасували?",
+     "чому": "Стан замовлення система не перевіряє — роботи лишаються в графіку, і люди підуть виконувати скасоване.",
+     "ставить": "planning.slot.sale_order_state · Planning → Schedule → By Sales Order"
+    },
+    {
+     "q": "Чи потрібно бачити, скільки з проданих годин уже виконано, а не лише заплановано?",
+     "чому": "Виконане береться з щоденного обліку витраченого часу; без нього показник виконання завжди нульовий, а «залишилось» дорівнюватиме проданому.",
+     "ставить": "planning.slot.effective_hours / percentage_hours · Planning → Reporting → Planning / Timesheets Analysis"
+    }
+   ]
   },
   "pln-2-4": {
    "sid": "pln-2-4",
@@ -24264,7 +25242,7 @@
    "вид": "поля",
    "текст": "поля навичок і ролей виконавців (штатно)",
    "де": "planning.role.slot_properties_definition → planning.slot.slot_properties · hr_skills",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      "planning.role.slot_properties_definition (Planning Slot Properties, тип properties_definition) → planning.slot.slot_properties (Properties, тип properties, зберігається). На стенді роль «Аналітик» визначає властивість misce_roboty типу selection «Місце роботи» зі значеннями Офіс / У клієнта / Віддалено; зміна id 1 несе значення 'client'. Ролі «Консультант» і «Касир» мають порожнє визначення",
@@ -24296,7 +25274,33 @@
     ],
     "меню": "Planning → Configuration → Roles → вкладка властивостей; Співробітники → картка → Навички"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Що ще, крім людини, часу й виду робіт, має бути записано в самій роботі — адреса обʼєкта, потрібний інструмент, контакт на місці, номер машини?",
+     "чому": "Такий набір заводиться штатно, але його треба назвати заздалегідь: він описується окремо для кожного виду робіт, а не один раз на всю систему.",
+     "ставить": "planning.role.slot_properties_definition → planning.slot.slot_properties · Planning → Configuration → Roles"
+    },
+    {
+     "q": "Цей набір додаткових даних однаковий для всіх видів робіт чи в кожного свій?",
+     "чому": "Додаткові поля описуються всередині кожного виду робіт — те саме поле доводиться заводити стільки разів, скільки видів робіт, і потім однаково підтримувати.",
+     "ставить": "planning.role.slot_properties_definition"
+    },
+    {
+     "q": "Чи буває, що вже заплановану роботу перекваліфіковують на інший вид робіт?",
+     "чому": "Зі зміною виду робіт змінюється й набір додаткових полів: значення, яких у новому наборі немає, стають недоступними, і дані фактично губляться.",
+     "ставить": "planning.slot.role_id → planning.slot.slot_properties"
+    },
+    {
+     "q": "Чи потрібно буде рахувати звіти за цими додатковими даними — наприклад, скільки робіт було на виїзді?",
+     "чому": "Такі поля зберігаються осібно від звичайних, і зведення та фільтри по них обмежені; якщо розріз потрібен постійно, краще спиратися на штатне поле.",
+     "ставить": "planning.slot.slot_properties · Planning → Reporting → Planning Analysis"
+    },
+    {
+     "q": "Чи потрібен вам довідник умінь людей і хто підтримуватиме його в актуальному стані?",
+     "чому": "Уміння видно в картці людини й у звіті, але на підбір виконавця вони не впливають; проставляти їх доведеться вручну кожному, і без цього довідник порожній.",
+     "ставить": "hr.employee.employee_skill_ids · hr.skill.type / hr.skill · Співробітники → картка → Навички"
+    }
+   ]
   },
   "pln-3-1": {
    "sid": "pln-3-1",
@@ -24307,7 +25311,7 @@
    "вид": "документи",
    "текст": "автопідбір за ролями і доступністю (Auto Plan); навички — довідково в картці співробітника",
    "де": "planning.slot.action_self_assign перевірено · Auto Plan — кнопка в поданні",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      "planning.slot: role_id (Role), resource_id (порожній = відкрита зміна), is_users_role, resource_roles, employee_skill_ids (довідково), allow_self_unassign (Let Employee Unassign Themselves), self_unassign_days_before (Days before shift for unassignment), unassign_deadline (Deadline for unassignment), is_unassign_deadline_passed, request_to_switch (Has there been a request to switch on this shift slot?)",
@@ -24341,7 +25345,38 @@
     ],
     "меню": "Planning → Schedule (кнопка Auto Plan у ґанті); Planning → Open Shifts; Planning → Configuration → Settings (самообслуговування)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Ви хочете, щоб система сама пропонувала, кого поставити на вільну роботу, чи керівник розставляє людей руками?",
+     "чому": "Автоматичний підбір працює за єдиним вбудованим правилом і не налаштовується: якщо ваш порядок вибору людей інший, покладатися на нього не можна.",
+     "ставить": "planning.slot — кнопка Auto Plan · Planning → Schedule"
+    },
+    {
+     "q": "Чи готові ви на кожній ще не призначеній роботі одразу вказувати, який фахівець потрібен?",
+     "чому": "Підбір бере тільки роботи з вказаним видом робіт і без виконавця; якщо вид робіт не проставлено, система їх мовчки пропустить і нічого не повідомить.",
+     "ставить": "planning.slot: role_id заповнено, resource_id порожній · Planning → Open Shifts"
+    },
+    {
+     "q": "За чим має бути збіг при підборі — тільки за фахом і вільним часом, чи ще й за конкретними вміннями людини?",
+     "чому": "Підбір враховує фах і зайнятість, а вміння — ні; якщо вибір у вас залежить від умінь, останнє слово має лишатися за керівником, і це варто сказати команді відразу.",
+     "ставить": "planning.slot.role_id + resource.calendar · employee_skill_ids (у підборі не бере участі)"
+    },
+    {
+     "q": "Що система має робити, коли вільної підходящої людини немає — лишити роботу нерозподіленою чи все одно когось поставити?",
+     "чому": "Система лишає роботу без виконавця й нічого не повідомляє; хтось має щодня переглядати перелік нерозподілених робіт, інакше вони дійдуть до дати порожніми.",
+     "ставить": "planning.slot.resource_id · Planning → Open Shifts"
+    },
+    {
+     "q": "Після того як людей розставлено, хто перевіряє графік перед тим, як його побачать працівники?",
+     "чому": "Розставлені роботи лишаються чернеткою, доки графік не виданий; без цього кроку люди не побачать нічого, а керівник вважатиме роботу зробленою.",
+     "ставить": "planning.slot.state — кнопка Publish · Planning → Schedule"
+    },
+    {
+     "q": "Чи можуть люди самі мінятися роботами між собою, чи лише знімати себе з роботи — і чи має це бути однаково для всіх?",
+     "чому": "Порядок самообслуговування задається один на всю компанію; зробити його різним для різних груп неможливо, тож правило треба узгодити відразу.",
+     "ставить": "res.company.planning_employee_unavailabilities · Planning → Configuration → Settings"
+    }
+   ]
   },
   "pln-3-2": {
    "sid": "pln-3-2",
@@ -24352,7 +25387,7 @@
    "вид": "документи",
    "текст": "автопризначення відкритих змін; контроль перевантаження за індикатором годин",
    "де": "planning.slot: resource_id порожній, overlap_slot_count, allocated_percentage",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      "planning.slot: resource_id порожній = відкрита зміна; ir.actions.act_window 1033 «Open Shifts» (view_mode calendar,gantt,list,form,kanban,pivot,graph; context search_default_open_shifts), меню Planning → Open Shifts (618)",
@@ -24385,7 +25420,33 @@
     ],
     "меню": "Planning → Open Shifts; Planning → Schedule"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Чи існує у вас поняття вільної роботи, яку може взяти будь-хто з потрібним фахом, чи всі призначення робить керівник?",
+     "чому": "Від цього залежить, чи потрібен людям окремий екран вільних робіт і власний вхід у систему — без входу взяти роботу неможливо.",
+     "ставить": "planning.slot.resource_id порожній · Planning → Open Shifts"
+    },
+    {
+     "q": "Що для вас перевантаження людини — більше певної кількості годин на день, більше норми за тиждень чи дві роботи підряд без відпочинку?",
+     "чому": "Жодного з цих обмежень система не стереже і призначити понад норму не заборонить; лишається щоденний перегляд керівником і звіт, і про це треба домовитися на березі.",
+     "ставить": "planning.slot: allocated_hours, overlap_slot_count, allocated_percentage"
+    },
+    {
+     "q": "Чи копіюєте ви графік попереднього тижня на наступний?",
+     "чому": "Копіювання переносить роботи разом з людьми — включно з тими, хто на новому тижні у відпустці; такий графік обовʼязково переглядають після копіювання.",
+     "ставить": "planning.slot.was_copied · Planning → Schedule (Copy Previous Week)"
+    },
+    {
+     "q": "Чи буває, що людина зайнята на роботі лише частково — наприклад, півдня на одному обʼєкті й півдня на іншому?",
+     "чому": "Часткова зайнятість ділить години, але дві половини на тому самому проміжку все одно позначаються як накладка; керівник має знати, що тут це нормально.",
+     "ставить": "planning.slot.allocated_percentage · Planning → Schedule"
+    },
+    {
+     "q": "Скільки часу вільна робота може висіти нерозподіленою і хто за цим стежить?",
+     "чому": "Нерозподілені роботи не потрапляють у завантаження за людьми і не дають жодних попереджень — про них згадують, коли термін уже близько.",
+     "ставить": "Planning → Open Shifts (act 1033) · planning.analysis.report"
+    }
+   ]
   },
   "pln-3-3": {
    "sid": "pln-3-3",
@@ -24396,7 +25457,7 @@
    "вид": "довідники",
    "текст": "звіт планових годин проти доступних по періодах (pivot / Spreadsheet)",
    "де": "planning.slot.allocated_hours vs resource.calendar",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      "planning.analysis.report (act 1036, pivot+graph): allocated_hours, allocated_percentage, allocated_hours_cost, billable_allocated_hours, non_billable_allocated_hours, effective_hours, effective_hours_cost, remaining_hours (Time Remaining), percentage_hours (Progress %); розрізи employee_id, department_id, manager_id, job_title, role_id, project_id, sale_line_id, resource_id, resource_type, company_id, start_datetime/end_datetime, employee_skill_ids",
@@ -24427,7 +25488,33 @@
     ],
     "меню": "Planning → Reporting → Planning Analysis; Planning → Reporting → Planning / Timesheets Analysis; Spreadsheet із pivot"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Що для вас 100 % завантаження людини — 40 годин на тиждень, 8 на день, чи з поправкою на відпустки й свята?",
+     "чому": "Норма доступних годин у звітах не показується взагалі: її доведеться вносити у зведену таблицю руками, тож цифру треба погодити заздалегідь і одну на всіх.",
+     "ставить": "resource.calendar: hours_per_week / hours_per_day · Planning → Reporting"
+    },
+    {
+     "q": "З чим ви порівнюєте план — з нормою робочого часу, з проданими годинами чи з фактично відпрацьованими?",
+     "чому": "Це три різні джерела: норма живе в робочому часі, продане — у замовленнях, фактичне — у щоденному обліку часу; кожне треба вести окремо, інакше порівняння не збереться.",
+     "ставить": "planning.analysis.report · project.timesheet.forecast.report.analysis · Planning → Reporting"
+    },
+    {
+     "q": "Чи має завантаження автоматично зменшуватися на дні, коли людина у відпустці?",
+     "чому": "Відпустка не дає поставити людину в графік, але окремим показником у жодному звіті не рахується — з норми її доведеться віднімати вручну.",
+     "ставить": "resource.calendar.leaves · Planning → Reporting → Planning Analysis"
+    },
+    {
+     "q": "У якому періоді керівник дивиться завантаження — тиждень, місяць, квартал — і кому цей звіт потрібен на руки?",
+     "чому": "Від цього залежить, чи вистачить штатного зведення, чи потрібна окрема таблиця, яку хтось веде і оновлює.",
+     "ставить": "Planning → Reporting → Planning Analysis · Spreadsheet із зведенням"
+    },
+    {
+     "q": "У порівнянні мають враховуватися чернетки графіка чи тільки виданий людям графік?",
+     "чому": "За замовчуванням у звіт входить і те, і те, тож завантаження виглядає більшим за фактично узгоджене з людьми.",
+     "ставить": "planning.slot.state / is_published · Planning → Reporting"
+    }
+   ]
   },
   "pln-3-4": {
    "sid": "pln-3-4",
@@ -24438,7 +25525,7 @@
    "вид": "місця",
    "текст": "окреме робоче місце керівника: свій пункт меню, своє подання завантаження й свій фільтр",
    "де": "ir.ui.view mode=primary + inherit_id · ir.actions.act_window.view_id + domain · ir.ui.menu.group_ids (пишеться) · ir.ui.view.group_ids — не пишеться",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      "ir.ui.view: приклад ЖИВЕ на стенді — id 4889 «planning.slot.list.kerivnyk.todo», model planning.slot, type list, mode primary, inherit_id false, active true",
@@ -24473,7 +25560,38 @@
     ],
     "меню": "власний пункт у Planning (приклад на стенді: Planning → Завантаження команди)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Що саме керівник має бачити, відкривши свій окремий пункт меню — перелік робіт, календар завантаження чи зведення за видами робіт?",
+     "чому": "Вигляд задається один раз при створенні цього екрана; якщо потрібен саме календар завантаження, це треба сказати одразу — перелік його не замінить.",
+     "ставить": "ir.actions.act_window: view_mode / view_id · власний пункт меню в Planning"
+    },
+    {
+     "q": "Який фільтр і яке групування мають стояти одразу при відкритті — поточний тиждень, тільки виданий графік, за видами робіт чи за людьми?",
+     "чому": "У цьому й сенс окремого екрана: він відкривається вже налаштованим, і щодня нічого перелаштовувати не треба.",
+     "ставить": "ir.actions.act_window: domain, context group_by"
+    },
+    {
+     "q": "Кому цей пункт меню має бути видно — усім чи лише керівникам?",
+     "чому": "Сховати можна сам пункт меню, але не дані: хто знає адресу сторінки, все одно її відкриє, тож на закритість інформації такий поділ не розрахований.",
+     "ставить": "ir.ui.menu.group_ids"
+    },
+    {
+     "q": "Чи має цей екран показувати роботи, у яких ще не проставлені дати?",
+     "чому": "Якщо їх не відсікти, числа на цьому екрані розійдуться з календарем, де такі роботи не показуються, і керівник щоразу бачитиме два різні підсумки.",
+     "ставить": "ir.actions.act_window.domain · planning.slot.start_datetime"
+    },
+    {
+     "q": "Чи мають у переліку бути видні люди, у яких на цей тиждень робіт немає взагалі?",
+     "чому": "За замовчуванням порожні рядки згортаються, і найвільніші люди зникають з екрана — саме ті, кого керівник шукає.",
+     "ставить": "context planning_expand_resource / planning_expand_role"
+    },
+    {
+     "q": "Чи потрібні різним керівникам різні такі екрани — кожному свій набір людей?",
+     "чому": "Кожен такий екран — окремий комплект записів, який готується й підтримується окремо; їхню кількість треба знати заздалегідь.",
+     "ставить": "ir.ui.view + ir.actions.act_window + ir.ui.menu (комплект на кожен екран)"
+    }
+   ]
   },
   "hlp-1-1": {
    "sid": "hlp-1-1",
@@ -28105,7 +29223,7 @@
    "вид": "довідники",
    "текст": "один тариф",
    "де": "sale.subscription.plan: billing_period_value, billing_period_unit, auto_close_limit",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -28232,7 +29350,38 @@
     ],
     "меню": "Subscriptions → Configuration → Recurring Plans (ir.actions.act_window,1176)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Як часто ви берете гроші за цю послугу — раз на місяць, раз на квартал чи раз на рік?",
+     "чому": "Це задає весь ритм роботи: періодичність визначає, коли з'явиться наступний рахунок і за який відрізок часу. Помилилися на старті — доведеться переукладати домовленості з усіма клієнтами, бо в діючих договорах період змінюється лише разом із перевипуском рахунків.",
+     "ставить": "sale.subscription.plan.billing_period_value + billing_period_unit / Підписки → Налаштування → Тарифні плани"
+    },
+    {
+     "q": "Період у кожного клієнта рахується від його власної дати початку — чи ви хочете, щоб усі рахунки виставлялися першого числа, однаково для всіх?",
+     "чому": "Від цього залежить, чи буде у вас один «день рахунків» на місяць, чи вони йтимуть щодня по одному. Якщо вирівнювати на початок періоду, перший рахунок буде за неповний період, і клієнта треба попередити про це заздалегідь.",
+     "ставить": "sale.subscription.plan.billing_first_day / Підписки → Налаштування → Тарифні плани"
+    },
+    {
+     "q": "Скільки днів після несплати ви ще обслуговуєте клієнта, перш ніж вважати, що він пішов?",
+     "чому": "Це єдиний автоматичний запобіжник: рахунок система виставляє сама, а гроші клієнт переказує сам, тож без строку очікування неоплачені договори висітимуть як діючі й псуватимуть суму очікуваного доходу. Врахуйте: перевірка прострочених іде раз на тиждень, тож припинення станеться не день у день, а протягом тижня після вказаного строку.",
+     "ставить": "sale.subscription.plan.auto_close_limit / Підписки → Налаштування → Тарифні плани"
+    },
+    {
+     "q": "Чи має клієнт можливість сам відмовитися від послуги через особистий кабінет — і якщо так, обслуговування припиняється в день відмови чи доживає до кінця оплаченого періоду?",
+     "чому": "Це різні гроші й різні розмови: у першому випадку клієнт іде миттєво, у другому ви дообслуговуєте оплачене. Якщо самостійну відмову не вмикати, кожне припинення проходитиме через вашого менеджера — це повільніше, але ви контролюєте момент.",
+     "ставить": "sale.subscription.plan.user_closable + user_closable_options / Підписки → Налаштування → Тарифні плани"
+    },
+    {
+     "q": "Чи дозволяємо клієнту самому продовжити домовленість, докупити обсяг або поставити обслуговування на паузу?",
+     "чому": "Кожна з цих можливостей вмикається окремо і працює лише через особистий кабінет клієнта. Якщо кабінету клієнти не використовують, вмикати їх немає сенсу — усе одно всі дії робитиме менеджер, і краще одразу так і домовитися.",
+     "ставить": "sale.subscription.plan.user_extend / user_quantity / pausable_by_user / Підписки → Налаштування → Тарифні плани"
+    },
+    {
+     "q": "Скільки коштує послуга за один період — і чи ця сума однакова для всіх клієнтів?",
+     "чому": "Ціна за період зберігається не в самому тарифі, а окремим правилом ціни. Якщо його не задати, договір на рік виставить ту саму суму, що й договір на місяць — це найчастіша помилка при запуску.",
+     "ставить": "product.pricelist.item.plan_id + fixed_price / Продажі → Налаштування → Прайс-листи"
+    }
+   ]
   },
   "sub-1-2": {
    "sid": "sub-1-2",
@@ -28243,7 +29392,7 @@
    "вид": "довідники",
    "текст": "договір з клієнтом",
    "де": "sale.order з plan_id · product.template.recurring_invoice",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -28394,7 +29543,38 @@
     ],
     "меню": "Subscriptions → Subscriptions → Subscriptions (1180); шаблони: Subscriptions → Configuration → Quotation Templates (1177)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Що саме ви продаєте за такою домовленістю: послугу (обслуговування, супровід, оренда) чи ще й товар — і це один рядок у договорі чи кілька?",
+     "чому": "Регулярне нарахування вмикається ознакою на самій послузі. Якщо її не поставити, підтвердження договору просто створить звичайний разовий продаж і жодних наступних рахунків не буде — це виявиться аж наступного місяця.",
+     "ставить": "product.template.recurring_invoice / Підписки → Товари"
+    },
+    {
+     "q": "Домовленість безстрокова чи на визначений строк — і що має статися за місяць до її закінчення?",
+     "чому": "Якщо вказати дату закінчення, система за місяць до неї сама переведе договір у стан «треба продовжити», і менеджер має бути готовий дзвонити саме тоді. Безстрокова домовленість не нагадає ні про що — вона просто триває, поки хтось її не зупинить.",
+     "ставить": "sale.order.end_date / sale.order.template.is_unlimited + duration_value + duration_unit / Підписки → Налаштування → Шаблони пропозицій"
+    },
+    {
+     "q": "З якої дати починається перший оплачуваний період: з дня підписання, з першого числа наступного місяця чи з дня, коли ви фактично почали обслуговувати?",
+     "чому": "Від цієї дати відлічуються всі наступні періоди й усі наступні рахунки. Помилка в ній тягнеться далі по всьому ланцюжку рахунків, і виправляти доводиться вручну по кожному договору.",
+     "ставить": "sale.order.start_date / Підписки → Підписки"
+    },
+    {
+     "q": "Чи є в договорі разові позиції — монтаж, підключення, перший виїзд, навчання — і чи має клієнт заплатити за них повністю в першому ж рахунку?",
+     "чому": "Разові й регулярні рядки в одному договорі поводяться по-різному: разовий виставиться цілком одразу, регулярний ділиться на періоди. Якщо цього не проговорити, перший рахунок виявиться вдвічі більшим за очікуваний, і клієнт почне з'ясовувати стосунки замість платити.",
+     "ставить": "sale.order.line.recurring_invoice / Підписки → Підписки → рядки договору"
+    },
+    {
+     "q": "Чи потрібен вам типовий текст домовленості з умовами — і скільки таких варіантів (різні умови під різні тарифи)?",
+     "чому": "Готовий шаблон економить менеджеру час і не дає йому щоразу вигадувати умови. Кількість варіантів визначає обсяг роботи: один шаблон і п'ять шаблонів — це різні роботи.",
+     "ставить": "sale.order.template.note / Підписки → Налаштування → Шаблони пропозицій"
+    },
+    {
+     "q": "Рахунки за регулярне обслуговування мають іти в тій самій нумерації, що й решта ваших продажів, чи окремою?",
+     "чому": "Окрема нумерація зручна для звірки й для розмови з клієнтом, але її треба закласти одразу: змінити нумерацію після того, як виставлені перші рахунки, без розривів у номерах уже не вийде.",
+     "ставить": "sale.order.template.journal_id → account.journal / Підписки → Налаштування → Шаблони пропозицій"
+    }
+   ]
   },
   "sub-1-3": {
    "sid": "sub-1-3",
@@ -28405,7 +29585,7 @@
    "вид": "документи",
    "текст": "регулярний рахунок",
    "де": "sale.order підписки → account.move за next_invoice_date",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -28515,7 +29695,43 @@
     ],
     "меню": "Subscriptions → Subscriptions (документ підписки, кнопка/лічильник рахунків); графік: Налаштування → Технічні → Заплановані дії → крон 63"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Клієнт платить наперед — до початку періоду обслуговування — чи ви виставляєте рахунок після того, як період відпрацьовано?",
+     "чому": "Це визначає, коли з'явиться рахунок відносно дати початку періоду, і напряму впливає на ваші гроші: передоплата дає обіг наперед, постоплата означає, що ви місяць працюєте власним коштом.",
+     "ставить": "sale.order.next_invoice_date відносно sale.order.start_date / Підписки → Підписки"
+    },
+    {
+     "q": "За скільки днів до початку періоду клієнт має отримати рахунок?",
+     "чому": "Багато компаній платять раз на тиждень або проводять рахунки через свою бухгалтерію кілька днів. Якщо надсилати рахунок у день початку періоду, оплата стабільно спізнюватиметься, і ви щомісяця матимете фальшиве прострочення.",
+     "ставить": "sale.order.next_invoice_date / ir.cron 63 «Sale Subscription: generate recurring invoices» / Налаштування → Технічні → Заплановані дії"
+    },
+    {
+     "q": "До якого числа клієнт має заплатити за рахунком — і цей строк однаковий для всіх клієнтів чи в окремих він свій?",
+     "чому": "Строк оплати визначає, з якого дня клієнт вважається боржником і коли піде нагадування. Якщо строк не заданий, рахунок вважається простроченим одразу, і система почне тиснути на клієнта передчасно.",
+     "ставить": "account.move.invoice_payment_term_id → account.payment.term / Рахунки → Налаштування → Умови оплати"
+    },
+    {
+     "q": "Рахунок іде клієнту листом автоматично одразу після створення, чи менеджер спершу дивиться його й надсилає руками?",
+     "чому": "Автоматичне надсилання економить час, але помилку побачить одразу клієнт, а не ви. Ручна перевірка безпечніша, проте потребує людини, яка щодня заходить і надсилає — без неї рахунки просто лежатимуть у системі.",
+     "ставить": "account.move.auto_post + ir.cron 27 «Send invoices automatically» / Налаштування → Технічні → Заплановані дії"
+    },
+    {
+     "q": "Куди надсилати рахунок: на пошту відповідальної людини, на спільну скриньку бухгалтерії чи ще кудись?",
+     "чому": "У малому бізнесі рахунок часто губиться саме тут: менеджер отримав, бухгалтеру не переслав. Адресу і текст листа задаємо один раз, тому варто одразу знати, чи адреса одна на клієнта, чи їх кілька.",
+     "ставить": "sale.subscription.plan.invoice_mail_template_id → mail.template / Налаштування → Технічні → Шаблони листів"
+    },
+    {
+     "q": "Чи є вимога, щоб рахунок з'являвся в конкретну годину — наприклад, о дев'ятій ранку першого числа — чи достатньо, щоб він був у той день?",
+     "чому": "Рахунки створює завдання, яке відпрацьовує раз на добу, тому обіцяти точну годину не можна. Якщо клієнт очікує рахунок «строго вранці», це треба сказати вголос до підписання, а не пояснювати потім.",
+     "ставить": "ir.cron 63 «Sale Subscription: generate recurring invoices and payments» / Налаштування → Технічні → Заплановані дії"
+    },
+    {
+     "q": "Хто у вас має право посунути дату наступного рахунка вручну — і чи всі розуміють, що після цього зсунеться весь подальший графік?",
+     "чому": "Дату наступного рахунка можна змінити руками, і система прийме будь-яку. Одна така правка «щоб цього разу пізніше» назавжди зсуває графік клієнта, а помічають це через два-три місяці, коли рахунки перестають збігатися з домовленістю.",
+     "ставить": "sale.order.next_invoice_date / Підписки → Підписки"
+    }
+   ]
   },
   "sub-1-4": {
    "sid": "sub-1-4",
@@ -28526,7 +29742,7 @@
    "вид": "документи",
    "текст": "облік оплат",
    "де": "account.payment.register",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -28629,7 +29845,38 @@
     ],
     "меню": "Рахунки (Invoicing) → Клієнти → Рахунки → кнопка «Зареєструвати оплату» на проведеному рахунку"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Якими способами клієнти платять за обслуговування: переказ на рахунок компанії, готівка в касу, оплата на місці?",
+     "чому": "Кожен спосіб — це окреме місце, куди лягають гроші, і окремий порядок відмітки оплати. Списати гроші з картки клієнта система в Україні не може, тому будь-який варіант тут означає, що клієнт платить сам, а факт оплати хтось відмічає.",
+     "ставить": "account.payment.register.journal_id → account.journal / Рахунки → Клієнти → Рахунки → «Зареєструвати оплату»"
+    },
+    {
+     "q": "Хто і як часто відмічає в системі, що гроші прийшли — менеджер щодня чи бухгалтер раз на тиждень?",
+     "чому": "Від цього залежить, наскільки правдивий ваш список боржників і чи можна за ним дзвонити клієнтам. Якщо оплати відмічають раз на тиждень, то половину тижня система вважає боржниками тих, хто вже заплатив, і нагадування підуть не тим людям.",
+     "ставить": "account.payment.register / Рахунки → Клієнти → Рахунки"
+    },
+    {
+     "q": "Клієнт заплатив трохи менше, ніж у рахунку — рахунок лишається відкритим боргом на різницю чи вважається закритим?",
+     "чому": "Тут два різні наслідки: у першому випадку копійчані залишки накопичуються і засмічують список боргів, у другому — рахунок закривається, а різниця має кудись подітися. Списання різниці потребує облікових налаштувань, яких у нашій роботі немає, тому відповідь визначає, що взагалі можна пообіцяти.",
+     "ставить": "account.payment.register.payment_difference_handling / Рахунки → Клієнти → Рахунки → «Зареєструвати оплату»"
+    },
+    {
+     "q": "Буває, що клієнт платить однією сумою одразу за кілька рахунків — треба, щоб це відмічалося одним платежем?",
+     "чому": "Для клієнтів з кількома точками або кількома договорами це звичайна практика. Якщо не передбачити, менеджер розбиватиме суму руками по рахунках і рано чи пізно помилиться в розкладці.",
+     "ставить": "account.payment.register.group_payment / Рахунки → Клієнти → Рахунки"
+    },
+    {
+     "q": "Чи бувають оплати частинами за графіком — аванс і залишок — чи рахунок завжди оплачується однією сумою?",
+     "чому": "Під час відмітки оплати система за замовчуванням пропонує не всю суму рахунка, а найближчий платіж за графіком. Якщо про це не знати, менеджер натисне «зберегти» і зареєструє не ту суму, а рахунок лишиться частково відкритим.",
+     "ставить": "account.payment.register.installments_mode / Рахунки → Клієнти → Рахунки → «Зареєструвати оплату»"
+    },
+    {
+     "q": "Що клієнт має писати в призначенні платежу, щоб ви впізнавали оплату у виписці?",
+     "чому": "Звірка виписки з рахунками робиться очима, і саме призначення платежу вирішує, знайдеться оплата за хвилину чи за пів години. Домовленість про номер рахунка в призначенні варто закласти в сам рахунок, а не переказувати клієнту усно.",
+     "ставить": "account.move.payment_reference / account.payment.register.communication / Рахунки → Клієнти → Рахунки"
+    }
+   ]
   },
   "sub-1-5": {
    "sid": "sub-1-5",
@@ -28640,7 +29887,7 @@
    "вид": "документи",
    "текст": "звіт за активними підписками",
    "де": "sale.order: recurring_monthly, subscription_state",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -28727,7 +29974,38 @@
     ],
     "меню": "Subscriptions → Reporting → Subscriptions (ir.actions.act_window,1196; подання graph, list, pivot)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Що керівник хоче бачити на одному екрані: скільки домовленостей діє, на яку суму на місяць і скільки закрилося за місяць?",
+     "чому": "Це визначає, який саме звіт налаштовуємо і які поля в договорі обов'язково заповнювати. Якщо потрібної цифри немає в договорі, у звіті вона не з'явиться жодним чином.",
+     "ставить": "sale.order.recurring_monthly + subscription_state / Підписки → Звітність → Підписки"
+    },
+    {
+     "q": "Чи вважати діючими ті домовленості, що стоять на паузі?",
+     "чому": "Від цієї відповіді залежить головна цифра звіту — сума очікуваного доходу на місяць. Керівник і менеджер часто рахують по-різному, і розбіжність виявляється на першій же нараді.",
+     "ставить": "sale.order.subscription_state (діє / пауза) / Підписки → Звітність → Підписки"
+    },
+    {
+     "q": "Закриті домовленості мають бути видні в тому ж звіті чи зникати зі списку?",
+     "чому": "Готовий звіт за замовчуванням показує тільки діючі й призупинені, а закриті ховає. Керівник, який шукає торішній договір і не бачить його, вирішує, що дані втрачено, — це перше, на що скаржаться після запуску.",
+     "ставить": "sale.order.subscription_state = закрито / фільтри дії «Subscriptions Analysis» / Підписки → Звітність → Підписки"
+    },
+    {
+     "q": "У яких зрізах дивитесь цифри: за тарифом, за менеджером, за галуззю клієнта, за послугою, за регіоном?",
+     "чому": "Зрізи визначають, які довідники треба заповнювати з першого дня — галузь клієнта, команду продажів, категорію послуги. Заднім числом проставити їх по сотні договорів реально, але це ручна робота.",
+     "ставить": "sale.subscription.report (plan_id, team_id, industry_id, categ_id, country_id) / Підписки → Звітність → Підписки"
+    },
+    {
+     "q": "Як часто дивляться цей звіт і хто саме — і чи прийнятно, що частина цифр оновлюється раз на тиждень, а не миттєво після кожної дії?",
+     "чому": "Показники регулярного доходу перераховує тижневе завдання. Якщо власник щоранку звіряє суму й бачить учорашню цифру, він втрачає довіру до всієї системи, хоча вона працює правильно.",
+     "ставить": "ir.cron 65 «Sale Subscription: Update KPI» / Налаштування → Технічні → Заплановані дії"
+    },
+    {
+     "q": "Якщо у вас кілька юридичних осіб, звіт потрібен спільний по всіх чи окремо по кожній?",
+     "чому": "Це впливає і на права доступу, і на те, чи взагалі можна показати одну підсумкову цифру. Спільний звіт по різних юрособах вимагає, щоб усі домовленості велися в одній базі за однаковими правилами.",
+     "ставить": "sale.subscription.report / sale.order.company_id / Підписки → Звітність → Підписки"
+    }
+   ]
   },
   "sub-2-1": {
    "sid": "sub-2-1",
@@ -28738,7 +30016,7 @@
    "вид": "довідники",
    "текст": "кілька тарифів",
    "де": "sale.subscription.plan",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -28829,7 +30107,38 @@
     ],
     "меню": "Subscriptions → Configuration → Recurring Plans; ціни: Sales → Configuration → Pricelists (правило з полем Recurring Plan)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Скільки у вас тарифів і чим вони відрізняються: довжиною оплаченого періоду, обсягом послуги чи і тим, і тим?",
+     "чому": "Різниця в періоді й різниця в обсязі налаштовуються в різних місцях. Якщо це переплутати на старті, доведеться перескладати домовленості з клієнтами, які вже підписалися.",
+     "ставить": "sale.subscription.plan (billing_period_value, billing_period_unit) / Підписки → Налаштування → Тарифні плани"
+    },
+    {
+     "q": "Річна оплата у вас дешевша за дванадцять місячних — і на скільки?",
+     "чому": "Знижка за рік задається окремим правилом ціни, привʼязаним до тарифу. Без такого правила річна домовленість виставить ту саму суму, що й місячна, і ви побачите це лише коли клієнт отримає рахунок.",
+     "ставить": "product.pricelist.item.plan_id + compute_price + fixed_price / Продажі → Налаштування → Прайс-листи"
+    },
+    {
+     "q": "Хто ініціює перехід клієнта з одного тарифу на інший — клієнт сам через особистий кабінет чи тільки ваш менеджер?",
+     "чому": "Самостійний перехід треба явно дозволити й перелічити, на які саме тарифи можна перейти. Якщо кабінетом клієнти не користуються, весь перехід — це робота менеджера, і сценарій виглядає інакше.",
+     "ставить": "sale.subscription.plan.related_plan_id / Підписки → Налаштування → Тарифні плани"
+    },
+    {
+     "q": "Чи є у вас тарифи, де ціна залежить від кількості — скажімо, від п'яти одиниць ціна за одиницю нижча?",
+     "чому": "Це окреме правило ціни з умовою за кількістю. Якщо його не закласти, менеджер даватиме знижку руками, і однакові клієнти отримають різні ціни.",
+     "ставить": "product.pricelist.item.min_quantity / Продажі → Налаштування → Прайс-листи"
+    },
+    {
+     "q": "Чи буває акційна ціна, яка діє тільки до визначеної дати?",
+     "чому": "У правила ціни є строк дії, і після нього ціна повертається до звичайної сама. Без строку акційну ціну доведеться пам'ятати й вимикати руками, а забуту акцію ви побачите тільки в підсумках місяця.",
+     "ставить": "product.pricelist.item.date_start + date_end / Продажі → Налаштування → Прайс-листи"
+    },
+    {
+     "q": "Різні тарифи — це для вас різні послуги в переліку того, що ви продаєте, чи одна послуга з різною ціною?",
+     "чому": "Від цього залежить, як виглядатиме звітність: за окремими послугами чи за тарифами однієї послуги. Переназвати й перерозкласти це потім означає переробити всі діючі домовленості.",
+     "ставить": "product.template / product.pricelist.item / Підписки → Товари"
+    }
+   ]
   },
   "sub-2-2": {
    "sid": "sub-2-2",
@@ -28840,7 +30149,7 @@
    "вид": "автоматизації",
    "текст": "автоматичне продовження з виставленням рахунку (автосписання з картки для UA недоступне)",
    "де": "ir.cron «Sale Subscription: generate recurring invoices and payments» · method_direct_trigger · sale.order.next_invoice_date",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -28942,7 +30251,38 @@
     ],
     "меню": "Налаштування → Технічні → Заплановані дії (крони 62–65); Subscriptions → Subscriptions → To Renew (1182)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Коли ви кажете «підписка продовжилась сама» — ви маєте на увазі, що система виставила наступний рахунок, чи що гроші вже надійшли?",
+     "чому": "Списати гроші з картки клієнта в українських умовах система не може: вона сама виставляє й надсилає рахунок, а платить клієнт самостійно. Якщо очікування інше, це треба сказати вголос до підписання домовленості, інакше перший же місяць закінчиться конфліктом.",
+     "ставить": "ir.cron 63 «Sale Subscription: generate recurring invoices and payments» / sale.order.next_invoice_date"
+    },
+    {
+     "q": "Домовленість продовжується сама безстроково чи щоразу хтось має підтвердити продовження?",
+     "чому": "Безстрокова просто йде далі й далі, строкова за місяць до кінця сама проситься на продовження й потрапляє в робочий список менеджера. Це два різні процеси і два різні навантаження на людей.",
+     "ставить": "sale.order.end_date / sale.order.is_renewing / Підписки → Підписки → До продовження"
+    },
+    {
+     "q": "Клієнт не заплатив — що система має зробити: сама припинити обслуговування, поставити на паузу чи просто підсвітити менеджеру?",
+     "чому": "Автоматичне припинення прибирає безнадійні домовленості з цифр доходу, але може відрізати клієнта, який просто затримав переказ на кілька днів. Ще важливо: перевірка прострочених іде раз на тиждень, тому припинення станеться не рівно на визначений день, а протягом тижня після нього.",
+     "ставить": "sale.subscription.plan.auto_close_limit / ir.cron 62 «Sale Subscription: subscriptions expiration»"
+    },
+    {
+     "q": "Хто дзвонить клієнту в дні до припинення — і за скільки днів наперед ця людина має бачити список тих, кому дзвонити?",
+     "чому": "Автоматика лише виставляє рахунок і рахує дні; гроші повертає розмова. Без відповідальної людини й готового списку строк очікування просто відлічить дні й закриє домовленість.",
+     "ставить": "Підписки → Підписки → До продовження (дія 1182) / mail.activity"
+    },
+    {
+     "q": "Чи потрібна пауза в обслуговуванні — сезонність, відпустка клієнта, ремонт — і чи може клієнт узяти її сам?",
+     "чому": "На паузі рахунки не виставляються, і це чесний спосіб утримати клієнта замість втратити. Але пауза недоступна там, де платять після періоду, тому відповідь треба звіряти з порядком оплати.",
+     "ставить": "sale.subscription.plan.pausable_by_user / sale.order.user_pause_start"
+    },
+    {
+     "q": "Які причини припинення ви хочете бачити у звітності своїми словами: дорого, не користується, закрився бізнес, перейшов до іншого підрядника?",
+     "чому": "Готовий перелік причин англійською й описує іншу ситуацію (наприклад, невдале списання з картки, якого у нас не буває). Без свого переліку менеджери ставитимуть «інше», і через рік ви не зможете сказати, чому пішли клієнти.",
+     "ставить": "sale.order.close.reason / Підписки → Налаштування → Причини закриття"
+    }
+   ]
   },
   "sub-2-3": {
    "sid": "sub-2-3",
@@ -28953,7 +30293,7 @@
    "вид": "автоматизації",
    "текст": "нагадування про оплату",
    "де": "mail.template (текст листа) + base.automation (строки нагадувань) · Налаштування → Технічні → Шаблони листів і Правила автоматизації",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -29074,7 +30414,38 @@
     ],
     "меню": "Налаштування → Технічні → Шаблони листів; Налаштування → Технічні → Правила автоматизації; Рахунки → Клієнти → Follow-up (нагадування по боргу)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Чи попереджати клієнта до того, як прийде рахунок — і за скільки днів?",
+     "чому": "Попередження наперед різко зменшує кількість прострочень, бо клієнт устигає провести оплату через свою бухгалтерію. Точність тут — день, а не година: правила за датою перевіряються раз на добу, тому «за три дні вранці» пообіцяти не можна.",
+     "ставить": "base.automation.trg_date_id = sale.order.next_invoice_date + trg_date_range / Налаштування → Технічні → Правила автоматизації"
+    },
+    {
+     "q": "Через скільки днів після простроченої оплати йде перше нагадування, і скільки їх усього до останнього попередження?",
+     "чому": "Строки й кількість кроків задаються один раз і працюють однаково для всіх клієнтів. Якщо кроків більше, ніж узгоджено, це окрема робота, а якщо менше — борги висітимуть без жодної реакції.",
+     "ставить": "account_followup.followup.line.delay / Рахунки → Клієнти → Нагадування"
+    },
+    {
+     "q": "Нагадування — це лист клієнту, задача менеджеру подзвонити, чи і те, і те?",
+     "чому": "Лист дешевий і безособовий, дзвінок дорогий і дієвий. У малому бізнесі найкраще працює зв'язка: перший крок листом, другий — задача на людину, і саме це треба вирішити наперед.",
+     "ставить": "account_followup.followup.line.send_email / create_activity → mail.activity.type / Рахунки → Клієнти → Нагадування"
+    },
+    {
+     "q": "Нагадування має йти саме, без участі людини — чи хтось щодня переглядає список боржників і натискає «надіслати»?",
+     "чому": "Готові кроки нагадувань за замовчуванням не виконуються самі: поки людина не відкриє список боргів, жоден лист не піде. Якщо ви розраховуєте на повний автомат, це треба вмикати окремо й перевірити на живих клієнтах.",
+     "ставить": "account_followup.followup.line.auto_execute / Рахунки → Клієнти → Нагадування"
+    },
+    {
+     "q": "Від кого клієнт має отримувати нагадування — від свого менеджера, від спільної скриньки компанії чи від керівника — і кому йде копія?",
+     "чому": "Підпис під листом визначає, кому клієнт відповість і хто побачить відповідь. Лист від безликої адреси часто просто ігнорують, а копія керівнику на першому ж кроці псує стосунки з нормальним клієнтом, який просто забув.",
+     "ставить": "mail.template (email_from, шаблони 55 «Payment Reminder», 54) / Налаштування → Технічні → Шаблони листів"
+    },
+    {
+     "q": "Текст першого і повторного нагадування однаковий чи другий жорсткіший — і чи треба окремо повідомляти клієнта, що обслуговування припинено за несплатою?",
+     "чому": "Кожен різний текст — це окремий шаблон листа, який хтось має написати вашими словами. Повідомлення про припинення часто забувають, і клієнт дізнається про це, коли до нього не приїхали.",
+     "ставить": "mail.template 55 / 54 / Налаштування → Технічні → Шаблони листів"
+    }
+   ]
   },
   "sub-2-4": {
    "sid": "sub-2-4",
@@ -29085,7 +30456,7 @@
    "вид": "поля",
    "текст": "поля тарифу в договорі",
    "де": "ir.model.fields + ir.ui.view",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -29159,7 +30530,38 @@
     ],
     "меню": "Studio на формі підписки; Налаштування → Технічні → Поля моделей / Подання"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Які умови домовленості менеджер має бачити прямо в картці договору: обсяг послуги, час реакції, кількість виїздів на місяць, перелік обладнання, номер договору клієнта?",
+     "чому": "Усе, чого немає в картці, менеджер шукатиме в переписці або питатиме в колеги — і саме там виникають помилки в обслуговуванні. Кожна така характеристика — окреме поле, тому перелік краще закрити одразу, а не додавати по одному щомісяця.",
+     "ставить": "ir.model.fields (напр. x_taryf_pidpysky на sale.order) / Studio на формі підписки"
+    },
+    {
+     "q": "Ці дані менеджер обирає з готового переліку значень чи вписує вільним текстом?",
+     "чому": "Вільний текст пишеться швидко, але за ним неможливо ні відфільтрувати, ні порахувати: «Стандарт», «стандартний» і «Станд.» будуть трьома різними значеннями. Якщо потім перевести таке поле в перелік, старі записи самі не переїдуть — їх доведеться правити руками.",
+     "ставить": "ir.model.fields (тип поля: вибір / текст) / Studio на формі підписки"
+    },
+    {
+     "q": "Які з цих даних мають бути видні прямо в загальному списку домовленостей і в пошуку, а які досить бачити всередині картки?",
+     "чому": "Колонка в списку і поле в картці — різна робота. Якщо менеджеру треба щодня сортувати за часом реакції, це має бути в списку, інакше він відкриватиме кожну картку по черзі.",
+     "ставить": "ir.ui.view (успадковані list 4464 і search 4444) / Налаштування → Технічні → Подання"
+    },
+    {
+     "q": "Без яких із цих даних договір не можна підтверджувати — тобто які поля обов'язкові?",
+     "чому": "Обов'язковість — єдиний надійний спосіб не отримати порожні картки. Але зайва обов'язковість блокує роботу менеджера в полі, коли частини даних ще немає, тому перелік має бути коротким і чесним.",
+     "ставить": "ir.model.fields (обов'язковість) / Studio на формі підписки"
+    },
+    {
+     "q": "Ці умови треба друкувати в бланку договору або рахунка для клієнта?",
+     "чому": "Друк — окрема робота поверх поля, і робиться вона окремим бланком під конкретний випадок. Якщо в одному бланку треба то показувати, то ховати блок залежно від тарифу, ми зробимо кілька окремих бланків замість одного розумного.",
+     "ставить": "ir.actions.report / бланк договору → Налаштування → Технічні → Звіти"
+    },
+    {
+     "q": "Ви очікуєте, що ці умови підставляються самі з обраного тарифу — чи менеджер вписує їх руками при укладенні?",
+     "чому": "Автоматичне підставлення значення з іншого поля — це обчислення в коді, а ми працюємо тільки штатними засобами. Реальні варіанти: менеджер заповнює руками або ці умови взагалі не пишуться в договорі, а випливають із назви тарифу.",
+     "ставить": "sale.order.plan_id / ir.model.fields / Studio на формі підписки"
+    }
+   ]
   },
   "sub-3-1": {
    "sid": "sub-3-1",
@@ -29170,7 +30572,7 @@
    "вид": "документи",
    "текст": "розширення (upsell) з пропорційним донарахуванням; зменшення — без повернення коштів",
    "де": "sale.order.prepare_upsell_order · discount на рядку допродажу",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -29267,7 +30669,38 @@
     ],
     "меню": "Subscriptions → Subscriptions → Upsells (1183); дія — кнопка на картці підписки"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Чи можна докупити обсяг посеред оплаченого періоду — і що саме докуповують: більше одиниць тієї самої послуги чи перехід на дорожчий тариф?",
+     "чому": "Це два різні документи й два різні порядки дій. Докупівля оформлюється окремим документом просто з картки домовленості; якщо менеджер шукатиме кнопку в загальному списку допродажів, він її не знайде і вирішить, що можливості немає.",
+     "ставить": "sale.order.prepare_upsell_order / кнопка на картці підписки → Підписки → Підписки"
+    },
+    {
+     "q": "За залишок поточного періоду берете гроші пропорційно — за фактичні дні до кінця періоду — чи нове діє тільки з наступного періоду цілим?",
+     "чому": "Пропорція справедлива для клієнта, але створює дрібні незручні суми в рахунку. Рішення «з наступного періоду» простіше в роботі, проте означає, що клієнт кілька тижнів користується більшим обсягом безкоштовно.",
+     "ставить": "sale.order.line.discount + parent_line_id / Підписки → Підписки → Допродажі"
+    },
+    {
+     "q": "У рахунку неповний період виглядатиме як знижка у відсотках, а не написом «за 12 днів із 30» — це прийнятно для ваших клієнтів?",
+     "чому": "Так влаштований механізм: пропорція записується саме відсотком знижки в рядку. Клієнт, який побачить у рахунку слово «знижка», почне питати, за що вона, і менеджер має вміти пояснити це з першого разу.",
+     "ставить": "sale.order.line.discount / Підписки → Підписки → Допродажі"
+    },
+    {
+     "q": "Клієнт зменшує обсяг посеред періоду: зміна діє з наступного періоду, гроші за вже оплачене не повертаються — це для вас прийнятно?",
+     "чому": "Повернення коштів за невикористаний період потребує окремих облікових документів, яких ми не робимо. Тому правило про неповернення має бути записане в умовах домовленості з першого дня, а не з'ясовуватися при першому ж зменшенні.",
+     "ставить": "sale.order.line / sale.order.prepare_upsell_order / Підписки → Підписки"
+    },
+    {
+     "q": "Хто має право підтвердити докупівлю — менеджер сам чи потрібне погодження керівника?",
+     "чому": "Докупівля змінює суму регулярних платежів, тому це рішення про гроші. У вашій базі вже є подібна механіка погоджень на знижки, і питання лише в тому, чи поширювати її сюди.",
+     "ставить": "sale.order (погодження, x_discount_approval) / права доступу продажів"
+    },
+    {
+     "q": "Докупівля виставляється окремим рахунком одразу чи чекає й іде разом із наступним регулярним рахунком?",
+     "чому": "Окремий рахунок дає гроші швидше, спільний зменшує кількість паперів для клієнта. Рішення впливає на те, скільки рахунків клієнт отримує на місяць і чи не заплутається його бухгалтерія.",
+     "ставить": "sale.order.invoice_status → account.move / Підписки → Підписки → Допродажі"
+    }
+   ]
   },
   "sub-3-2": {
    "sid": "sub-3-2",
@@ -29278,7 +30711,7 @@
    "вид": "документи",
    "текст": "пропорційні нарахування — для послуг; для товарів не рахуються",
    "де": "sale.order.line.recurring_invoice = так/ні · discount пропорції тільки на повторюваних",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -29366,7 +30799,38 @@
     ],
     "меню": "Subscriptions → Products; картка товару → вкладка Sales (галочка Subscription Product, політика виставлення)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "У домовленості є тільки послуги чи ще й товари — розхідники, картриджі, запчастини, обладнання в оренду?",
+     "чому": "Товари в регулярній домовленості поводяться інакше за послуги, і саме тут виникає найбільше непорозумінь. Крім того, товар тягне за собою складський облік — це вже інша частина роботи, і її треба помітити до підписання.",
+     "ставить": "product.template.type + recurring_invoice / Підписки → Товари"
+    },
+    {
+     "q": "Перерахунок за неповний період потрібен тільки для послуг — товари в тій самій домовленості виставляться повною ціною; це збігається з тим, як ви домовляєтесь із клієнтом?",
+     "чому": "Це найчастіше непорозуміння у всій темі: клієнт очікує, що «все порахується пропорційно», а по товарних рядках прийде повна сума. Якщо ваша домовленість передбачає інше, товари треба виносити в окремий документ.",
+     "ставить": "sale.order.line.recurring_invoice / Підписки → Підписки → рядки договору"
+    },
+    {
+     "q": "Обслуговування почалося посеред місяця — перший рахунок за неповний період чи за повний?",
+     "чому": "Це перше, що клієнт побачить після підписання, і перше, через що він може посваритися. Рішення треба прийняти до першого рахунка, бо потім доведеться його переробляти вручну.",
+     "ставить": "sale.order.start_date / sale.order.line.discount / Підписки → Підписки"
+    },
+    {
+     "q": "Клієнт платить наперед за домовлений обсяг чи за фактично надане — виїзди, години, кількість звернень?",
+     "чому": "Оплата за замовлене йде за графіком і не залежить від людей. Оплата за фактично надане означає, що хтось має щомісяця вносити фактичні обсяги, інакше рахунок просто не сформується або буде порожнім.",
+     "ставить": "product.template.invoice_policy + service_policy / Підписки → Товари → картка послуги"
+    },
+    {
+     "q": "Хто і в який момент підтверджує, що послугу за період надано?",
+     "чому": "Якщо ви берете гроші за факт, факт має хтось внести — і саме тут регулярність зазвичай ламається. Треба назвати конкретну роль і день місяця, а не «майстер після виїзду».",
+     "ставить": "sale.order.line.qty_delivered / Підписки → Підписки → рядки договору"
+    },
+    {
+     "q": "Товар у домовленості має чекати фактичного відвантаження перед рахунком чи рахунок іде за графіком незалежно від складу?",
+     "чому": "Якщо товар виставляється за відвантаженням, регулярний рахунок чекатиме комірника, і графік поїде — а клієнт вирішить, що ви про нього забули. Це рішення важливе саме для домовленостей, де є і послуга, і речі.",
+     "ставить": "product.template.invoice_policy = за доставленим / Підписки → Товари → картка товару"
+    }
+   ]
   },
   "sub-3-3": {
    "sid": "sub-3-3",
@@ -29377,7 +30841,7 @@
    "вид": "документи",
    "текст": "аналітика Retention і MRR; churn у відсотках — окремий дашборд",
    "де": "sale.order.recurring_monthly · звіти підписок",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -29477,7 +30941,38 @@
     ],
     "меню": "Subscriptions → Reporting → Retention (1197), MRR Breakdown (1198), MRR Timeline (1199)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "За який період ви хочете бачити утримання клієнтів: місяць, квартал чи рік?",
+     "чому": "Від періоду залежить, який звіт має сенс: для місячних домовленостей помісячна картина, для річних — тільки річна, інакше цифри стрибатимуть без причини. Це визначає, що взагалі показувати керівнику.",
+     "ставить": "ir.actions.act_window 1197 «Retention Analysis» / Підписки → Звітність → Утримання"
+    },
+    {
+     "q": "Що для вас втрачений клієнт: закрита домовленість, несплата понад визначену кількість днів чи те, що він просто перестав користуватися?",
+     "чому": "Це визначення задає всю цифру втрат. Система рахує втратою саме закриття домовленості, тому якщо у вас клієнт «тихо зникає», а домовленість ніхто не закриває, звіт показуватиме благополуччя там, де його немає.",
+     "ставить": "sale.order.log.event_type (втрата) + sale.order.close_reason_id / Підписки → Звітність"
+    },
+    {
+     "q": "У яких зрізах вам цікава сума регулярного доходу: за тарифом, галуззю клієнта, менеджером, каналом залучення?",
+     "чому": "Кожен зріз вимагає, щоб відповідне поле заповнювалося при укладенні кожної домовленості. Якщо канал залучення ніхто не ставить, зріз за каналами буде порожнім, скільки б звітів ми не зробили.",
+     "ставить": "sale.order.log.report (plan_id, industry_id, team_id, campaign_id) / Підписки → Звітність → MRR Breakdown"
+    },
+    {
+     "q": "Відсоток відтоку потрібен окремою цифрою на екрані — чи достатньо таблиці, де видно, скільки клієнтів залишилося з кожного місяця?",
+     "чому": "Готової цифри у відсотках у системі немає: є суми змін доходу, зміна кількості домовленостей і таблиця утримання. Окрема панель із відсотком — це окрема робота, і краще вирішити наперед, чи вона потрібна.",
+     "ставить": "sale.order.log.report (mrr_change_normalized, contract_number) / Підписки → Звітність → Утримання"
+    },
+    {
+     "q": "З якого місяця починаємо рахувати — історію попередніх років у систему перенести не вийде?",
+     "чому": "Записи про зміни доходу пишуться самі з моменту, коли ви почали працювати в системі, і заднім числом їх не створити. Тому перші порівняння «рік до року» стануть можливі щонайраніше через рік роботи.",
+     "ставить": "sale.order.log.event_date / Підписки → Звітність"
+    },
+    {
+     "q": "Несплачений рахунок не зменшує суму регулярного доходу, поки домовленість не закрито — вас влаштовує такий підрахунок чи ви рахуєте тільки отримані гроші?",
+     "чому": "Цей звіт показує домовлений дохід, а не касу. Керівник, який очікує побачити тут фактичні надходження, буде вводити себе в оману, і саме про це варто домовитися до першого показу звіту.",
+     "ставить": "sale.order.log.amount_signed / Підписки → Звітність → MRR Analysis"
+    }
+   ]
   },
   "sub-3-4": {
    "sid": "sub-3-4",
@@ -29488,7 +30983,7 @@
    "вид": "місця",
    "текст": "подання для контролю продовжень",
    "де": "ir.ui.view",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -29577,7 +31072,38 @@
     ],
     "меню": "Subscriptions → Контроль продовжень (меню 806 → дія 1343); Subscriptions → Subscriptions → To Renew (1182)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "За скільки днів наперед менеджер має бачити те, що закінчується або потребує продовження?",
+     "чому": "Це визначає, за яким саме відбором будується робочий список. Замало днів — менеджер не встигне домовитися до кінця строку, забагато — список буде переповнений і його перестануть відкривати.",
+     "ставить": "ir.actions.act_window 1343 (домен) / Підписки → Контроль продовжень"
+    },
+    {
+     "q": "Які дані потрібні прямо колонками в цьому списку: клієнт, тариф, дата наступного рахунка, сума на місяць, дата закінчення, відповідальний, чи заплачено?",
+     "чому": "Список має відповідати на питання «кому дзвонити сьогодні» без відкриття карток. Зверніть увагу: обчислені колонки на кшталт «залишилось днів» ми не робимо — замість них список відбирається за датою, і це працює так само.",
+     "ставить": "ir.ui.view (успадкований список 4464) / Налаштування → Технічні → Подання"
+    },
+    {
+     "q": "Як список має бути згрупований одразу при відкритті: за менеджером, за тарифом чи за місяцем продовження?",
+     "чому": "Групування за замовчуванням — це те, як людина бачить свою роботу щоранку. Якщо не задати спільне групування, кожен зробить своє, і на нараді ви дивитиметесь на різні екрани.",
+     "ставить": "sale.order.filter.subscription (4444) / Налаштування → Технічні → Подання"
+    },
+    {
+     "q": "Керівник бачить усі домовленості, а менеджер тільки свої — чи всі бачать усе?",
+     "чому": "Розмежування будується штатними правилами продажів. Окремого розмежування саме за домовленостями немає, тому якщо потрібне жорсткіше розділення, це вирішується організаційно, а не налаштуванням.",
+     "ставить": "права доступу продажів / ir.actions.act_window 1343 (домен) / Підписки → Контроль продовжень"
+    },
+    {
+     "q": "Чи має бути видно в цьому ж списку домовленості, закриті за останні кілька місяців?",
+     "чому": "Готові списки ховають закриті домовленості, і люди вирішують, що дані зникли. Якщо повернення клієнтів для вас звичайна історія, закриті мають бути під рукою, а не в архіві, який ніхто не відкриває.",
+     "ставить": "sale.order.subscription_state / фільтри дії 1180 / Підписки → Підписки"
+    },
+    {
+     "q": "Вам потрібна дошка з картками за станами і задачі-нагадування менеджеру просто з цього списку — чи вистачить звичайного списку?",
+     "чому": "Дошка й задачі — це інший стиль роботи й інший обсяг налаштування. Крім того, у чинному списку контролю продовжень немає ні графіків, ні зведення: якщо вони потрібні керівнику, це буде окремий екран.",
+     "ставить": "ir.ui.view kanban / activity (4468) / Підписки → Контроль продовжень"
+    }
+   ]
   },
   "rnt-1-1": {
    "sid": "rnt-1-1",
@@ -29588,7 +31114,7 @@
    "вид": "довідники",
    "текст": "об'єкти оренди",
    "де": "product.template.rent_ok · tracking = serial",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -29724,7 +31250,38 @@
     ],
     "меню": "Rental → Products (menu 713); серійники — Inventory → Products → Lots/Serial Numbers"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Кожна одиниця у вас на окремому обліку зі своїм номером, чи ви рахуєте їх гуртом — «п'ять дрилів», без різниці, який саме поїхав до клієнта?",
+     "чому": "Від цього залежить, чи побачите ви історію й зайнятість кожного апарата окремо. Якщо номерів немає, графік і бронювання працюють тільки за кількістю, а перевести парк на поодиничний облік потім означає завести його наново.",
+     "ставить": "product.template.tracking / Оренда → Товари"
+    },
+    {
+     "q": "Як позначені ваші одиниці — власним інвентарним номером, заводським серійним, чи обома одразу?",
+     "чому": "Приймальник шукає річ за тим номером, що написаний на наклейці. Якщо в базі буде інший номер, кожна видача перетворюється на пошук.",
+     "ставить": "stock.lot.name / stock.lot.ref · Склад → Товари → Партії та серійні номери"
+    },
+    {
+     "q": "На які групи ділиться ваш парк — техніка, інструмент, транспорт, посуд — і що в них принципово різне?",
+     "чому": "Групи задають, які характеристики (стан, комплектація, паспорт) ведуться по кожній речі. Перекроїти групи потім означає втратити вже заповнені характеристики.",
+     "ставить": "product.category / Оренда → Налаштування → Категорії товарів"
+    },
+    {
+     "q": "Чи буває, що ту саму річ ви і здаєте, і продаєте?",
+     "чому": "Такі позиції заводяться одразу під обидва способи. Якщо це не передбачити, продаж доведеться оформлювати окремою позицією-двійником, і залишки роз'їдуться.",
+     "ставить": "product.template.sale_ok + rent_ok / Оренда → Товари"
+    },
+    {
+     "q": "Хто і коли внесе повний перелік вашого парку з кількістю по кожній одиниці — і чи є він зараз хоч у якомусь файлі?",
+     "чому": "Поки одиниця не значиться в наявності, вона не з'явиться ні в бронюванні, ні при видачі. Парк, заведений лише списком назв, виглядає готовим, але не працює — це найчастіша причина зриву першого тижня.",
+     "ставить": "stock.lot.product_qty / stock.lot.location_id · Склад → Партії та серійні номери"
+    },
+    {
+     "q": "Чи здаєте ви щось нематеріальне — місце, годину роботи оператора, доставку?",
+     "чому": "Такі позиції не мають номерів і залишків, тому в графіку зайнятості вони не з'являться, і рахувати їх доступність система не буде. Це треба сказати вголос до того, як ви на це розраховуватимете.",
+     "ставить": "product.template.type (service) / Оренда → Товари"
+    }
+   ]
   },
   "rnt-1-2": {
    "sid": "rnt-1-2",
@@ -29735,7 +31292,7 @@
    "вид": "документи",
    "текст": "видача й повернення",
    "де": "sale.order: rental_status, has_pickable_lines, has_returnable_lines · майстер видачі/повернення",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -29923,7 +31480,38 @@
     ],
     "меню": "Rental → Orders → Orders (707); Rental → Orders → To Do Today → Pickup (710) / Return (711)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Хто фізично оформлює видачу — менеджер просто в замовленні, чи склад окремим документом на відвантаження?",
+     "чому": "Це два різні режими роботи. Другий дає складські документи й реальне резервування, але додає крок і людину; перемикати його на ходу, коли вже є десятки оренд, боляче.",
+     "ставить": "Оренда → Налаштування → «Use pickings for rental orders» (група доступу)"
+    },
+    {
+     "q": "Буває, що з п'яти замовлених одиниць клієнт забирає три сьогодні, а дві завтра — і повертає теж частинами?",
+     "чому": "Часткова видача й часткове повернення підтримуються, але тоді менеджер щоразу вписує кількість руками. Якщо цього не проговорити, у вас будуть «повернені» оренди з речами, які досі в клієнта.",
+     "ставить": "sale.order.line.qty_delivered / qty_returned · майстер видачі"
+    },
+    {
+     "q": "Що ви робите, коли клієнт привозить не ту одиницю, яку брав — іншу вашу або взагалі чужу?",
+     "чому": "При поверненні відмічають конкретні номери. Якщо привезли не той апарат, хтось має вирішити, приймаємо це як повернення чи як обмін — інакше одна одиниця назавжди залишиться «в клієнта», а інша зникне з обліку.",
+     "ставить": "rental.order.wizard.line.returnable_lot_ids / Оренда → Замовлення → Повернення"
+    },
+    {
+     "q": "Де ви записуєте стан речі в момент повернення — подряпини, некомплект, брудна — і чи потрібне фото?",
+     "чому": "У вікні повернення є тільки кількості й номери: місця під стан і перелік дефектів там немає, фотофіксації теж. Куди це записувати й хто це робить, треба вирішити наперед, бо на цьому тримається вся розмова про заставу.",
+     "ставить": "sale.order / рядок повернення · Оренда → Замовлення"
+    },
+    {
+     "q": "Чи потрібні вам друковані акт видачі й акт повернення під підпис клієнта — і чи однакові умови в них для всіх клієнтів?",
+     "чому": "Друкується сама угода, окремих актів як документів немає. А якщо умови різняться за типами клієнтів, це кілька окремих бланків, а не один із перемикачем — і кожен бланк це окрема робота.",
+     "ставить": "Друковані форми sale.order / Оренда → Замовлення"
+    },
+    {
+     "q": "Якими словами ваші люди називають етапи — заброньовано, видано, повернуто — і хто відповідає на кожному?",
+     "чому": "Штатні підписи етапів оманливі: «Зарезервовано» означає «чекає видачі», а «Видано» — «зараз у клієнта». Якщо не звірити словник на старті, перші тижні менеджери плутатимуть, кому дзвонити.",
+     "ставить": "sale.order.rental_status / Оренда → Замовлення"
+    }
+   ]
   },
   "rnt-1-3": {
    "sid": "rnt-1-3",
@@ -29934,7 +31522,7 @@
    "вид": "параметри",
    "текст": "тариф за період",
    "де": "product.pricing (recurrence_id + price) · sale.temporal.recurrence",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -30090,7 +31678,38 @@
     ],
     "меню": "Rental → Configuration → Rental periods (717) — періоди; товар → вкладка прокату — ціни й штрафи; Rental → Configuration → Settings (716) — дефолти штрафів і пільговий час"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Ваша доба — це 24 години від моменту видачі, чи «ніч» із фіксованим часом видачі зранку й повернення до вечора?",
+     "чому": "Це два різні способи рахувати строк і суму. При нічній схемі час видачі й повернення однаковий для всіх, і той, хто забрав опівдні, заплатить стільки ж, скільки той, хто забрав о восьмій.",
+     "ставить": "sale.temporal.recurrence.overnight / pickup_time / return_time · Оренда → Налаштування → Періоди прокату"
+    },
+    {
+     "q": "Клієнт узяв на добу й три години — ви берете за дві доби, за добу плюс години, чи прощаєте?",
+     "чому": "Неповний період не округлюється сам собою «як прийнято»: правило треба задати. Від нього залежить кожен другий рахунок і кожна суперечка на прийманні.",
+     "ставить": "sale.temporal.recurrence.unit / duration · Оренда → Налаштування → Періоди прокату"
+    },
+    {
+     "q": "З якої хвилини запізнення ви починаєте рахувати пеню і скільки прощаєте?",
+     "чому": "Пільговий час задається один для всієї бази, не для окремого клієнта. Якщо його не поставити, пеня почне рахуватися з першої хвилини, і про це дізнаються від клієнта.",
+     "ставить": "res.config.settings.min_extra_hour / Оренда → Налаштування"
+    },
+    {
+     "q": "Пеня за прострочення у вас однакова сума за годину чи добу на кожну річ, чи ви рахуєте її відсотком від вартості оренди?",
+     "чому": "Система вміє тільки фіксовану суму за годину або за добу, вписану окремо в кожну річ. Відсоток, зростаюча шкала й межа, вище якої пеня не росте, доведеться рахувати людині — це варто знати до того, як пообіцяти клієнтам умови.",
+     "ставить": "product.template.extra_hourly / extra_daily · товар → вкладка прокату"
+    },
+    {
+     "q": "Знижка за довший строк у вас є — тиждень дешевший за сім діб, місяць дешевший за чотири тижні?",
+     "чому": "Кожна сходинка — це окреме правило ціни на кожній речі, а не формула. Скільки сходинок, стільки роботи по всьому каталогу, і множиться воно на кількість позицій.",
+     "ставить": "product.pricing (recurrence_id + price) / товар → вкладка прокату"
+    },
+    {
+     "q": "Якою назвою пеня має з'являтися в рахунку — «Пеня за прострочення», «Додаткова доба» чи інакше?",
+     "чому": "Пеня додається окремим рядком через заздалегідь заведену послугу. Якщо її не завести, сума прострочення нікуди не потрапить і залишиться усною домовленістю.",
+     "ставить": "res.config.settings.extra_product / Оренда → Налаштування"
+    }
+   ]
   },
   "rnt-1-4": {
    "sid": "rnt-1-4",
@@ -30101,7 +31720,7 @@
    "вид": "документи",
    "текст": "договір і рахунок",
    "де": "sale.order оренди → рахунок штатним майстром",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -30247,7 +31866,38 @@
     ],
     "меню": "Rental → Orders → Orders (707); Rental → Configuration → Quotation Templates (718)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Коли ви берете гроші — наперед за весь строк, частиною наперед, чи після повернення за фактом?",
+     "чому": "Від цього залежить, який документ і в який момент виставляє менеджер. Змінити порядок на ходу означає переучувати людей і розбирати вже виставлені рахунки.",
+     "ставить": "sale.advance.payment.inv.advance_payment_method / Оренда → Замовлення → Створити рахунок"
+    },
+    {
+     "q": "Якщо клієнт повернув раніше строку — ви повертаєте різницю, і хто її перераховує?",
+     "чому": "Рахунок, виставлений за замовлений строк, сам не зменшиться від раннього повернення. Суму або правлять руками до виставлення, або оформлюють окремим документом — і це має бути чиясь конкретна робота.",
+     "ставить": "product.template.invoice_policy / sale.order"
+    },
+    {
+     "q": "Скільки днів ваша пропозиція діє, поки клієнт думає?",
+     "чому": "Прострочена пропозиція має самостійно перестати бути дійсною, інакше техніка висить у бронюванні під клієнта, який давно зник.",
+     "ставить": "sale.order.validity_date / sale.order.template.number_of_days"
+    },
+    {
+     "q": "Постійний клієнт бере техніку кілька разів на місяць — ви хочете один рахунок за місяць чи рахунок на кожну видачу?",
+     "чому": "Один рахунок на кілька оренд збирається окремим режимом. Якщо про це не домовитися, бухгалтер клієнта отримає двадцять дрібних рахунків і повернеться зі скаргою.",
+     "ставить": "sale.advance.payment.inv.consolidated_billing / Оренда → Замовлення"
+    },
+    {
+     "q": "Які тексти обов'язково мають бути в документі — строк повернення, відповідальність за пошкодження, пеня — і чи однакові вони для всіх клієнтів?",
+     "чому": "Умови в бланку не перемикаються за типом клієнта: різні умови означають кілька окремих бланків. Порахувати їх треба зараз, бо кожен додатковий — окрема робота.",
+     "ставить": "sale.order.template.note / Оренда → Налаштування → Шаблони пропозицій"
+    },
+    {
+     "q": "Ви розраховуєте, що клієнт підпише угоду онлайн і одразу оплатить карткою?",
+     "чому": "Підпис онлайн у документі є, а от жодного українського платіжного сервісу в системі немає. Оплату приймаєте звичним способом і відмічаєте вручну — краще почути це зараз, ніж пообіцяти клієнтам кнопку «оплатити».",
+     "ставить": "sale.order.template.require_signature / require_payment"
+    }
+   ]
   },
   "rnt-1-5": {
    "sid": "rnt-1-5",
@@ -30258,7 +31908,7 @@
    "вид": "параметри",
    "текст": "звіт за орендою",
    "де": "sale.rental.report",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -30352,7 +32002,33 @@
     ],
     "меню": "Rental → Reporting (714)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Що керівник хоче бачити першим числом — виручку за період, кількість видач чи скільки техніки простоює?",
+     "чому": "Головна цифра визначає, як побудувати добірку. Якщо її не назвати, вийде звіт «про все», у який ніхто не дивиться.",
+     "ставить": "sale.rental.report / Оренда → Звітність"
+    },
+    {
+     "q": "Коли ви кажете «виручка за березень» — це сума виставлених рахунків, чи вартість днів прокату, які припали на березень?",
+     "чому": "Штатний звіт рознесе суму замовлення по днях оренди: оренда з 25 лютого по 5 березня потрапить у два місяці частинами. Цифра не зійдеться з рахунками, і це виявиться на першій же нараді.",
+     "ставить": "sale.rental.report.price / Оренда → Звітність"
+    },
+    {
+     "q": "У яких розрізах ви дивитесь — за видом техніки, за конкретною одиницею, за клієнтом, за менеджером?",
+     "чому": "Розріз за конкретною одиницею можливий тільки якщо кожна має свій номер. Якщо облік гуртовий, «яка кавомашина приносить більше» ви не побачите ніколи.",
+     "ставить": "sale.rental.report.categ_id / lot_id / partner_id · Оренда → Звітність"
+    },
+    {
+     "q": "Чи потрібен вам показник завантаження парку у відсотках — скільки з наявних одиниць зараз у роботі?",
+     "чому": "Готової цифри завантаження немає: її або рахують очима, зіставляючи видані одиниці з наявними, або домовляються дивитися кількість видач замість відсотка. Це різні очікування, і краще їх звести зараз.",
+     "ставить": "sale.rental.report.qty_delivered / Оренда → Звітність"
+    },
+    {
+     "q": "Прострочення й пеню хочете бачити окремою цифрою?",
+     "чому": "Пеня потрапляє у звіт як звичайна послуга-рядок. Щоб її було видно окремо, треба заздалегідь домовитися, як вона названа і в якій групі каталогу лежить.",
+     "ставить": "sale.rental.report.product_id / Оренда → Звітність"
+    }
+   ]
   },
   "rnt-2-1": {
    "sid": "rnt-2-1",
@@ -30363,7 +32039,7 @@
    "вид": "довідники",
    "текст": "графік оренд по товарах і серійниках (Gantt)",
    "де": "product.template.tracking = serial (щоб ґант ішов по екземплярах); саме подання-ґант штатне · Оренда → Графік",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -30427,7 +32103,33 @@
     ],
     "меню": "Rental → Schedule (712)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Коли ви кажете «бачити зайнятість кожного апарата» — ви очікуєте окремий рядок на кожну одиницю, чи достатньо запису «3 кавомашини зайнято»?",
+     "чому": "Смуга в графіку малюється на рядок замовлення, а не на одиницю: замовлення на три кавомашини дасть одну смугу. Щоб бачити кожен апарат окремо, менеджер має заводити їх окремими рядками з номерами — це змінює те, як оформлюють замовлення щодня.",
+     "ставить": "sale.order.line / Оренда → Розклад"
+    },
+    {
+     "q": "Який період адміністратор тримає на екрані — день, тиждень чи місяць?",
+     "чому": "Від цього залежить, що видно без прокручування. Якщо горизонт не той, графіком просто перестають користуватися й повертаються до зошита.",
+     "ставить": "Оренда → Розклад (подання-графік)"
+    },
+    {
+     "q": "Оренду створюють прямо з графіка, тягнучи смугу на вільний час, чи спочатку заводять замовлення й лише потім дивляться на графік?",
+     "чому": "Це два різні сценарії роботи адміністратора й різне навчання. Другий безпечніший, але повільніший на телефонній розмові з клієнтом.",
+     "ставить": "Оренда → Розклад"
+    },
+    {
+     "q": "Що має кидатися в очі кольором — прострочені, ще не видані, непідтверджені?",
+     "чому": "Кольори смуг задані наперед і означають стан замовлення. Своя легенда — наприклад, червоним пошкоджені апарати — не робиться, тому очікування треба звірити до показу керівнику.",
+     "ставить": "sale.order.line.rental_color / Оренда → Розклад"
+    },
+    {
+     "q": "Вам уже показували в цій базі пункт «Графік оренди» — ви очікуєте саме такий вигляд, чи стрічки на часовій шкалі?",
+     "чому": "Наявний пункт із такою назвою відкриває звичайний список замовлень із фільтром за датою, а не графік. Якщо очікування — стрічки, це інша робота, і краще звірити на екрані до початку.",
+     "ставить": "Оренда → Графік оренди (наявний пункт) vs Оренда → Розклад"
+    }
+   ]
   },
   "rnt-2-2": {
    "sid": "rnt-2-2",
@@ -30438,7 +32140,7 @@
    "вид": "параметри",
    "текст": "тарифи за різними періодами",
    "де": "product.pricing — правило на кожен період",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -30520,7 +32222,38 @@
     ],
     "меню": "Rental → Products → вкладка прокату (ціни); Rental → Configuration → Rental periods (717)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Скільки у вас реально цінових сходинок — доба, три доби, тиждень, місяць?",
+     "чому": "Кожна сходинка заводиться окремим правилом. Це прямо множиться на кількість позицій каталогу, тому число сходинок — це число, від якого залежить обсяг роботи.",
+     "ставить": "sale.temporal.recurrence / Оренда → Налаштування → Періоди прокату"
+    },
+    {
+     "q": "Скільки позицій у вашому каталозі прокату — і чи ціна однакова всередині групи однотипних?",
+     "чому": "Ціни задаються на кожній позиції окремо, спільної ціни на групу немає. Двісті позицій означають двісті наборів правил — це окрема робота із завантаженням, а не галочка.",
+     "ставить": "product.pricing.product_template_id / товар → вкладка прокату"
+    },
+    {
+     "q": "Якщо клієнт бере на 10 днів, а у вас є і добова, і тижнева ціна — скільки він має заплатити?",
+     "чому": "Система сама візьме сходинку, яка підходить під строк, і видасть тижневий тариф там, де ви чекали десять діб. Якщо певний строк ви не здаєте, для нього просто не має бути ціни — заборони як такої немає.",
+     "ставить": "sale.temporal.recurrence.duration / product.pricing"
+    },
+    {
+     "q": "Чи є у вас особливі періоди, яких немає у звичному наборі — зміна 8 годин, півдня, вихідні?",
+     "чому": "Такий період заводиться один раз і стає спільним для всієї бази. Вигадати його на льоту всередині конкретного замовлення не вийде, тому перелік треба зібрати наперед.",
+     "ставить": "sale.temporal.recurrence / Оренда → Налаштування → Періоди прокату"
+    },
+    {
+     "q": "Корпоративні або постійні клієнти платять за іншими цінами?",
+     "чому": "Другий набір цін подвоює кількість правил на кожній позиції. Це впливає і на строк налаштування, і на те, хто потім за ними стежить.",
+     "ставить": "product.pricing.pricelist_id / Оренда → Товари"
+    },
+    {
+     "q": "Ціни різняться за варіантами однієї позиції — розмір, потужність, модель?",
+     "чому": "Правило можна прив'язати до конкретного варіанта, але правило без прив'язки діє на всі. Легко ненароком перекрити ціну дорожчої моделі дешевшою і побачити це вже в рахунку.",
+     "ставить": "product.pricing.product_variant_ids"
+    }
+   ]
   },
   "rnt-2-3": {
    "sid": "rnt-2-3",
@@ -30531,7 +32264,7 @@
    "вид": "довідники",
    "текст": "бронювання наперед",
    "де": "sale.order: rental_start_date, rental_return_date · res.company: renting_minimal_time_duration, заборонені дні",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -30647,7 +32380,38 @@
     ],
     "меню": "Rental → Configuration → Settings (716) — Minimal Rental Duration, Padding, заборонені дні; товар → Reserve product"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Є у вас мінімальний строк оренди — і що робити, коли просять на пів дня?",
+     "чому": "Мінімальний строк задається один раз на всю компанію й діє на всі позиції одразу. Винятки для окремих речей доведеться відпускати руками, тому важливо, чи вони взагалі бувають.",
+     "ставить": "res.company.renting_minimal_time_duration / Оренда → Налаштування"
+    },
+    {
+     "q": "У які дні ви не видаєте й не приймаєте — і чи закриваєтесь на свята?",
+     "чому": "Закрити можна дні тижня, наприклад неділю. Календаря свят немає: 1 січня чи санітарний день доведеться закривати вручну щоразу, і про це має хтось пам'ятати.",
+     "ставить": "res.company.renting_forbidden_mon…sun / Оренда → Налаштування"
+    },
+    {
+     "q": "Скільки часу вам треба на чистку й перевірку між двома клієнтами?",
+     "чому": "Ця пауза рахується перед наступною видачею, а не після повернення. У календарі вона виглядає інакше, ніж очікують, — це варто побачити на екрані до того, як почнете бронювати.",
+     "ставить": "res.config.settings.padding_time / product.template.preparation_time"
+    },
+    {
+     "q": "Ви приймаєте бронювання понад наявну кількість — у чергу — чи система має не давати забронювати зайняте?",
+     "чому": "Черги очікування на зайнятий об'єкт немає. Якщо у вас так працюють, доведеться домовитися, де вести список охочих, бо в базі його не буде.",
+     "ставить": "sale.order.line.qty_available / Оренда → Замовлення"
+    },
+    {
+     "q": "Чи буває, що ту саму річ віддають або продають зі складу, поки вона стоїть у чиємусь бронюванні?",
+     "чому": "Доки видача не оформлюється складським документом, бронювання видно тільки всередині оренди — для решти складських операцій ця одиниця вважається вільною. Це головна причина подвійних обіцянок клієнтам.",
+     "ставить": "Оренда → Налаштування → «Use pickings for rental orders»"
+    },
+    {
+     "q": "Конкретний апарат закріплюється за клієнтом уже при бронюванні, чи ви даєте будь-який вільний у момент видачі?",
+     "чому": "У бронюванні перелік придатних одиниць — це лише підказка, жорстко одиниця закріплюється при видачі. Пообіцяти клієнту «саме цей автомобіль» за місяць наперед система не допоможе.",
+     "ставить": "sale.order.line.reserved_lot_ids / Оренда → Замовлення"
+    }
+   ]
   },
   "rnt-2-4": {
    "sid": "rnt-2-4",
@@ -30658,7 +32422,7 @@
    "вид": "поля",
    "текст": "поля стану й комплектації об’єкта",
    "де": "властивості товару · ir.model.fields + ir.ui.view",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -30716,7 +32480,38 @@
     ],
     "меню": "Inventory / Rental → Configuration → Product Categories (визначення властивостей); товар → вкладка з властивостями"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Стан «пошкоджений» ви ставите на конкретний апарат чи на всю модель одразу?",
+     "чому": "Характеристики зберігаються на позиції каталогу, тобто спільні для всіх однакових апаратів. «Ця кавомашина пошкоджена, а сусідня ні» так не запишеш — під це потрібне окреме поле на кожній одиниці, і це інша робота.",
+     "ставить": "product.template.product_properties / stock.lot"
+    },
+    {
+     "q": "Які характеристики ви хочете бачити при видачі — рік випуску, комплектація, страховка, паспорт, інвентарний номер?",
+     "чому": "Перелік визначається для групи каталогу один раз. Додавати їх поштучно потім довше, ніж зібрати перелік зараз.",
+     "ставить": "product.category.product_properties_definition / Оренда → Налаштування → Категорії товарів"
+    },
+    {
+     "q": "Які стани у вас бувають — готовий, на обслуговуванні, пошкоджений, списаний — і хто їх перемикає?",
+     "чому": "Стан ніхто не поставить сам собою: має бути людина й момент у процесі. Якщо їх не назвати, поле стоятиме порожнім у всіх записів.",
+     "ставить": "product.template.product_properties"
+    },
+    {
+     "q": "Що має статися, коли апарат позначили пошкодженим — його ще можна забронювати?",
+     "чому": "Позначка стану ні на що не впливає: пошкоджений апарат так само пропонується в бронюванні. Не дати його має людина, а не система — це треба вбудувати в процес приймання.",
+     "ставить": "product.template.product_properties / Оренда → Розклад"
+    },
+    {
+     "q": "Чи треба вам щодня шукати техніку за цими ознаками — «покажи все, що на ремонті»?",
+     "чому": "За такими характеристиками пошук обмежений, у графік і звіт вони не потрапляють. Якщо фільтр потрібен щодня, ознаку треба робити інакше, окремим полем — і вирішувати це до заповнення карток.",
+     "ставить": "product.template.product_properties / ir.model.fields"
+    },
+    {
+     "q": "Чи буває, що ви переносите позицію з однієї групи каталогу в іншу?",
+     "чому": "Набір характеристик прив'язаний до групи: при переносі раніше заповнені значення зникають без попередження. Якщо переміщення часті, структуру груп треба продумати одразу.",
+     "ставить": "product.category / product.template.product_properties"
+    }
+   ]
   },
   "rnt-3-1": {
    "sid": "rnt-3-1",
@@ -30727,7 +32522,7 @@
    "вид": "довідники",
    "текст": "застава окремою позицією; оцінка пошкоджень — вручну",
    "де": "product.template: товар-послуга «Застава…» (type service, invoice_policy order) — саме його ми заводимо; далі це звичайний sale.order.line, окремого механізму застави в Odoo немає",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -30822,7 +32617,38 @@
     ],
     "меню": "Rental → Products (створити товар-послугу «Застава»); Rental → Orders — додати рядком у замовлення"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Ви берете заставу — і в якому вигляді: рядком у рахунку, окремою передоплатою чи готівкою повз систему?",
+     "чому": "Окремого механізму застави немає, це звичайна послуга в замовленні. Від вибору залежить, чи буде вона взагалі видна в базі, чи залишиться в зошиті адміністратора.",
+     "ставить": "product.template (послуга «Застава», type service) / Оренда → Товари"
+    },
+    {
+     "q": "Сума застави фіксована, залежить від речі чи від відсотка її вартості?",
+     "чому": "Відсоток система не порахує — суму ставлять руками в рядку. Якщо правило складне, приймальник щоразу рахуватиме подумки і помилятиметься.",
+     "ставить": "sale.order.line.price_unit / Оренда → Замовлення"
+    },
+    {
+     "q": "Як ви бачите, скільки застав зараз утримано і за ким — і хто нагадує їх повернути?",
+     "чому": "Система не знає, що ця сума підлягає поверненню: реєстру утриманих застав немає й нагадування не буде. Залишок доводиться дивитися звітом по цій послузі вручну, і саме тут гроші зависають.",
+     "ставить": "sale.order.line / Оренда → Замовлення"
+    },
+    {
+     "q": "Клієнт узяв три речі під одну заставу, а повернув дві — як ви рахуєте, скільки віддати?",
+     "чому": "Застава ніяк не пов'язана з конкретною одиницею, часткове повернення система не порахує. Це рішення людини й ручний рядок, тому правило має бути записане заздалегідь.",
+     "ставить": "sale.order.line / Оренда → Замовлення"
+    },
+    {
+     "q": "Хто оцінює пошкодження і чи є у вас готові розцінки на типові дефекти?",
+     "чому": "Оцінка вноситься тільки вручну окремим рядком. Без готових розцінок кожен випадок стає суперечкою на прийманні й затримкою повернення грошей.",
+     "ставить": "sale.order.line.price_unit / Оренда → Замовлення"
+    },
+    {
+     "q": "Хто у вас проводить повернення грошей клієнту після закриття оренди?",
+     "чому": "Це окрема грошова операція, вона не робиться сама після повернення речі. Треба знати, хто і коли її виконує, інакше застава висітиме місяцями.",
+     "ставить": "sale.advance.payment.inv / Оренда → Замовлення"
+    }
+   ]
   },
   "rnt-3-2": {
    "sid": "rnt-3-2",
@@ -30833,7 +32659,7 @@
    "вид": "довідники",
    "текст": "технологічна пауза між орендами (штатно); ТО об’єктів — заявками в застосунку «Обслуговування», без автоматичного зв’язку з орендою",
    "де": "product.template.preparation_time · maintenance.request — окремо",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -30962,7 +32788,38 @@
     ],
     "меню": "Rental → Configuration → Settings (Padding); товар → Reserve product; Maintenance → Maintenance Requests"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Пауза на підготовку однакова для всієї техніки, чи генератору треба день, а дрилю — пів години?",
+     "чому": "Є одне спільне значення для бази й окреме на кожній позиції. Якщо різниця велика, це не одне налаштування, а робота по всьому каталогу.",
+     "ставить": "res.config.settings.padding_time / product.template.preparation_time"
+    },
+    {
+     "q": "Пауза вам потрібна після повернення чи перед наступною видачею — і як ви це описали б словами?",
+     "чому": "Система вміє тільки друге: «дві години на чистку після здачі» вона покаже як недоступність перед наступною видачею. Якщо між орендами кілька днів, пауза взагалі не проявиться — і хтось видасть неприбрану річ.",
+     "ставить": "sale.order.line.reservation_begin / product.template.preparation_time"
+    },
+    {
+     "q": "Ви ведете технічне обслуговування — за календарем, за кількістю видач, чи коли зламалось?",
+     "чому": "За календарем і за заявками система вміє. «Через кожні 50 прокатів» вона не порахує — лічильника видач по одиниці немає, і це треба вирішити до обіцянок.",
+     "ставить": "maintenance.request.maintenance_type / Обслуговування → Заявки"
+    },
+    {
+     "q": "Техніка на обслуговуванні — це той самий перелік, що ви здаєте, чи окремий перелік обладнання?",
+     "чому": "Заявки на ремонт ведуться за власним довідником обладнання, не пов'язаним із номерами одиниць у прокаті. Вийде два переліки, які хтось має зіставляти вручну, — це постійна ручна робота, а не разова.",
+     "ставить": "maintenance.equipment / Обслуговування → Обладнання"
+    },
+    {
+     "q": "Що має статися з бронюваннями, якщо апарат став на ремонт на тиждень?",
+     "чому": "Заявка на ремонт не закриває одиницю в графіку: її так само забронюють на час ремонту. Знімати бронювання має людина, і в процесі має бути крок, хто це робить.",
+     "ставить": "maintenance.request / Оренда → Розклад"
+    },
+    {
+     "q": "Хто заводить заявку на ремонт після повернення пошкодженої речі — приймальник одразу чи майстер потім?",
+     "чому": "Автоматично із повернення заявка не виникає. Якщо кроку в процесі немає, поламане поїде наступному клієнту, і про це дізнаються від нього.",
+     "ставить": "maintenance.request / Обслуговування → Заявки"
+    }
+   ]
   },
   "rnt-3-3": {
    "sid": "rnt-3-3",
@@ -30973,7 +32830,7 @@
    "вид": "довідники",
    "текст": "комплектація позиціями з серійниками; типові комплекти — шаблонами пропозицій",
    "де": "sale.order.line з серійниками · sale.order.template",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -31082,7 +32939,38 @@
     ],
     "меню": "Rental → Configuration → Quotation Templates (718); Rental → Orders"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Які набори ви здаєте разом одним пакетом — і що конкретно в них входить?",
+     "чому": "Готовий набір заводиться заздалегідь і підставляється в замовлення одним рухом. Без переліку менеджер щоразу збиратиме комплект по пам'яті й забуватиме дрібне.",
+     "ставить": "sale.order.template.sale_order_template_line_ids / Оренда → Налаштування → Шаблони пропозицій"
+    },
+    {
+     "q": "Набір продається однією ціною «намет із меблями — стільки-то», чи ціною кожної складової окремо?",
+     "чому": "Ціна набору — це сума рядків. Єдина ціна за пакет робиться ще однією позицією-послугою, а складові тоді доводиться показувати без цін — клієнт побачить документ інакше, ніж ви очікуєте.",
+     "ставить": "sale.order.line.price_unit / product.template"
+    },
+    {
+     "q": "Коли менеджер бере готовий набір — строки завжди спільні для всіх складових?",
+     "чому": "Готовий набір підставляє рядки без дат, а дати ставляться одразу на все замовлення. Якщо намет треба на три дні, а генератор на один, це або два замовлення, або ручна правка кожного рядка.",
+     "ставить": "sale.order.template.line / sale.order.line.start_date"
+    },
+    {
+     "q": "Хто й за яким переліком звіряє повноту набору при поверненні?",
+     "чому": "Система не перевірить, що повернули все: сигналу «бракує двох стільців» не буде. Це робота приймальника з переліком перед очима, і її треба закласти в процес, а не сподіватися на базу.",
+     "ставить": "rental.order.wizard.line / Оренда → Замовлення → Повернення"
+    },
+    {
+     "q": "Чи можна на місці замінити складову — замість цього столу дати інший?",
+     "чому": "Замінити можна будь-що, бо набір це просто набір рядків. Але після заміни ніхто вже не гарантує, що склад комплекту повний — тому має бути правило, хто дозволяє заміну.",
+     "ставить": "sale.order.line / Оренда → Замовлення"
+    },
+    {
+     "q": "Чи є в наборі витратне, що не повертається — паливо, мішки, засоби?",
+     "чому": "Такі позиції не мають повертатися й не мають висіти боргом за клієнтом. Якщо їх завести як речі напрокат, кожна оренда закриватиметься з «неповерненим».",
+     "ставить": "product.template.rent_ok / sale.order.line"
+    }
+   ]
   },
   "rnt-3-4": {
    "sid": "rnt-3-4",
@@ -31093,7 +32981,7 @@
    "вид": "місця",
    "текст": "подання графіка під адміністратора",
    "де": "ir.ui.view",
-   "стан": "explored",
+   "стан": "done",
    "знайдено": {
     "моделі": [
      {
@@ -31151,7 +33039,38 @@
     ],
     "меню": "Rental → Schedule (712); чинне саморобне Rental → Графік оренди (807)"
    },
-   "питання": []
+   "питання": [
+    {
+     "q": "Кому потрібне окреме робоче місце — адміністратору прокату, комірнику, керівнику — і скільки людей працює в ньому одночасно?",
+     "чому": "Від переліку людей залежить, скільки різних екранів і доступів робимо. Домалювати ще одну роль потім дешевше, ніж переробити спільний екран, яким усі незадоволені.",
+     "ставить": "ir.ui.menu / Налаштування → Користувачі"
+    },
+    {
+     "q": "Що адміністратор має бачити відразу при відкритті — що видати сьогодні, що прийняти сьогодні, що прострочено?",
+     "чому": "Ці добірки готуються заздалегідь. Якщо не домовитись, кожен щоранку вибиратиме фільтри руками й половину днів робитиме це неправильно.",
+     "ставить": "ir.actions.act_window / Оренда → Замовлення → До виконання сьогодні"
+    },
+    {
+     "q": "Приймальник має бачити суми й ціни в замовленні, чи тільки речі й строки?",
+     "чому": "Ховати колонки з грошима треба вирішити до навчання людей. Після того, як усі звикли до одного екрана, зміна викликає більше опору, ніж користі.",
+     "ставить": "ir.ui.view / права доступу"
+    },
+    {
+     "q": "У вас одна точка видачі чи кілька — і чи має адміністратор однієї точки бачити оренди іншої?",
+     "чому": "Розділити доступ за точками видачі неможливо: або всі бачать усе, або точки розводяться на окремі юрособи, а це зовсім інша конструкція бази. Знати це треба до старту, а не після відкриття другої точки.",
+     "ставить": "res.company / права доступу"
+    },
+    {
+     "q": "Добірки, які ви налаштуєте, мають бути спільні для всієї команди чи в кожного свої?",
+     "чому": "Збережена добірка за замовчуванням належить тому, хто її зробив. Спільну треба позначати окремо, інакше решта команди її просто не побачить і вирішить, що нічого не налаштовано.",
+     "ставить": "ir.filters / Оренда → Замовлення"
+    },
+    {
+     "q": "Чи потрібен окремий пункт меню під це робоче місце — і як він має називатися вашими словами?",
+     "чому": "Назва пункту меню — це те, чим люди користуються щодня. Уже наявний пункт «Графік оренди» відкриває список замовлень, тому назви треба звірити, щоб не було двох схожих із різним змістом.",
+     "ставить": "ir.ui.menu / ir.actions.act_window · Оренда"
+    }
+   ]
   },
   "mnt-1-1": {
    "sid": "mnt-1-1",
