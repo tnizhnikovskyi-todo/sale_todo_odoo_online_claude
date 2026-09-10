@@ -1,0 +1,2166 @@
+{
+ "блок": "hr",
+ "позиції": {
+  "hr-1-1": {
+   "моделі": [
+    {
+     "модель": "hr.employee (Employee) — картка співробітника",
+     "поля": [
+      {
+       "назва": "name",
+       "підпис": "Employee Name",
+       "тип": "char",
+       "обовʼязковість": "ні (на рівні поля; обовʼязковість лише у формі)"
+      },
+      {
+       "назва": "company_id",
+       "підпис": "Company",
+       "тип": "many2one res.company",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "version_id",
+       "підпис": "Version",
+       "тип": "many2one hr.version",
+       "обовʼязковість": "ТАК (створюється автоматично)"
+      },
+      {
+       "назва": "employee_type",
+       "підпис": "Employee Type",
+       "тип": "selection",
+       "обовʼязковість": "ТАК",
+       "варіанти": "динамічний selection — рядків у ir.model.fields.selection НЕМАЄ; на записах стенда значення 'employee'. Перелік звіряти в UI, у КП конкретний список не обіцяти"
+      },
+      {
+       "назва": "marital",
+       "підпис": "Marital Status",
+       "тип": "selection",
+       "обовʼязковість": "ТАК",
+       "варіанти": "так само динамічний, у метаданих порожньо"
+      },
+      {
+       "назва": "department_id",
+       "підпис": "Department",
+       "тип": "many2one hr.department",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "parent_id",
+       "підпис": "Manager",
+       "тип": "many2one hr.employee",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "coach_id",
+       "підпис": "Coach",
+       "тип": "many2one hr.employee",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "job_id",
+       "підпис": "Job",
+       "тип": "many2one hr.job",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "job_title",
+       "підпис": "Job Title",
+       "тип": "char",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "work_email / work_phone / mobile_phone",
+       "підпис": "Work Email / Work Phone / Work Mobile",
+       "тип": "char",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "work_location_id",
+       "підпис": "Work Location",
+       "тип": "many2one hr.work.location",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "resource_calendar_id",
+       "підпис": "Working Hours",
+       "тип": "many2one resource.calendar",
+       "обовʼязковість": "ні (порожнє = графік компанії)"
+      },
+      {
+       "назва": "tz",
+       "підпис": "Timezone",
+       "тип": "selection",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "user_id",
+       "підпис": "User",
+       "тип": "many2one res.users",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "barcode",
+       "підпис": "Badge ID",
+       "тип": "char",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "pin",
+       "підпис": "PIN",
+       "тип": "char",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "category_ids",
+       "підпис": "Tags",
+       "тип": "many2many hr.employee.category",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "identification_id",
+       "підпис": "Identification No",
+       "тип": "char",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "birthday / children / spouse_complete_name",
+       "підпис": "Birthday / Dependent Children / Spouse Legal Name",
+       "тип": "date / integer / char",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "private_street / private_email / private_phone",
+       "підпис": "Private Street / Private Email / Private Phone",
+       "тип": "char",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "emergency_contact",
+       "підпис": "Emergency Contact",
+       "тип": "char",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "certificate / study_field",
+       "підпис": "Certificate Level / Field of Study",
+       "тип": "selection / char",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "permit_no / visa_no",
+       "підпис": "Work Permit No / Visa No",
+       "тип": "char",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "additional_note",
+       "підпис": "Additional Note",
+       "тип": "text",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "employee_properties",
+       "підпис": "Properties",
+       "тип": "properties",
+       "обовʼязковість": "ні (див. hr-2-4)"
+      },
+      {
+       "назва": "document_count",
+       "підпис": "Document Count",
+       "тип": "integer",
+       "обовʼязковість": "обчислюване (див. hr-3-3)"
+      },
+      {
+       "назва": "departure_reason_id / departure_date",
+       "підпис": "Departure Reason / Departure Date",
+       "тип": "many2one hr.departure.reason / date",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "active",
+       "підпис": "Active",
+       "тип": "boolean",
+       "обовʼязковість": "ні (звільнений іде в архів)"
+      },
+      {
+       "назва": "leave_manager_id",
+       "підпис": "Time Off Approver",
+       "тип": "many2one res.users",
+       "обовʼязковість": "ні (див. hr-2-2)"
+      }
+     ]
+    },
+    {
+     "модель": "hr.employee.public (Public Employee) — публічна проєкція картки, те, що бачать звичайні користувачі",
+     "поля": [
+      {
+       "назва": "—",
+       "підпис": "дзеркало картки без приватного блоку",
+       "тип": "—",
+       "обовʼязковість": "—"
+      }
+     ]
+    },
+    {
+     "модель": "hr.job (Job Position)",
+     "поля": [
+      {
+       "назва": "name",
+       "підпис": "Job Position",
+       "тип": "char",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "department_id",
+       "підпис": "Department",
+       "тип": "many2one hr.department",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "description",
+       "підпис": "Job Description",
+       "тип": "html",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "no_of_recruitment / expected_employees",
+       "підпис": "Target / Total Forecasted Employees",
+       "тип": "integer",
+       "обовʼязковість": "ні (тема найму, hr_recruitment не встановлений)"
+      }
+     ]
+    },
+    {
+     "модель": "hr.employee.category (Tags)",
+     "поля": [
+      {
+       "назва": "name",
+       "підпис": "Tag Name",
+       "тип": "char",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "color",
+       "підпис": "Color Index",
+       "тип": "integer",
+       "обовʼязковість": "ні"
+      }
+     ]
+    },
+    {
+     "модель": "hr.work.location",
+     "поля": [
+      {
+       "назва": "name",
+       "підпис": "Work Location",
+       "тип": "char",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "address_id",
+       "підпис": "Work Address",
+       "тип": "many2one res.partner",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "company_id",
+       "підпис": "Company",
+       "тип": "many2one res.company",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "location_type",
+       "підпис": "(підпис у базі помилковий — 'Cover Image')",
+       "тип": "selection",
+       "обовʼязковість": "ТАК",
+       "варіанти": "home «Home», office «Office», other «Other»"
+      }
+     ]
+    }
+   ],
+   "рішення": [
+    "Який мінімальний набір даних у картці: тільки робочі (посада, підрозділ, робоча пошта/телефон) чи й приватні (адреса, дата народження, документ, сімейний стан, діти)",
+    "Хто бачить приватний блок картки, а хто — лише публічну частину (hr.employee.public); групи «Officer: Manage all employees» (68) і «Administrator» (69)",
+    "Чи заводимо користувача (user_id) кожному співробітнику — це і ліцензія, і доступ до самообслуговування",
+    "Посади: вести довідник hr.job чи писати вільним текстом job_title",
+    "Чи потрібні теги співробітників (category_ids) як розріз для масової видачі днів і звітів",
+    "Чи потрібні робочі місця (hr.work.location: офіс/дім/інше з адресою-контрагентом)",
+    "Який ідентифікатор використовує клієнт: штатного «табельного номера» немає — тільки barcode «Badge ID», pin, «Identification No» або власна властивість",
+    "Що робимо при звільненні: причина (hr.departure.reason) + дата, картка в архів",
+    "Чи ведемо коуча/наставника (coach_id) окремо від керівника (parent_id)"
+   ],
+   "залежності": [
+    "company_id обовʼязкове → мультиюрособи (hr-3-2)",
+    "version_id обовʼязкове → hr.version, тобто «версії умов найму» існують завжди (hr-3-3)",
+    "resource_calendar_id → графіки роботи (hr-3-1); порожнє = типовий графік компанії",
+    "employee_properties → визначення властивостей на res.company (hr-2-4)",
+    "parent_id / leave_manager_id → маршрут узгодження відпусток (hr-2-2)",
+    "department_id → структура підрозділів (hr-1-2) і всі групування у звітах (hr-2-3)"
+   ],
+   "пастки": [
+    "У Odoo 19 контракт не окрема сутність: hr.employee.version_id ОБОВʼЯЗКОВЕ і веде на hr.version «Employee Contract». Разом із ним у картці зʼявляються зарплатні поля wage «Wage» і structure_type_id «Salary Structure Type» — ми їх не налаштовуємо, але вони видимі",
+    "hr.version.hr_responsible_id «HR Responsible» — ОБОВʼЯЗКОВЕ поле (res.users)",
+    "employee_type і marital обовʼязкові, але їхні варіанти не зберігаються в метаданих (динамічний selection) — конкретний перелік у КП не обіцяти",
+    "Окремого поля «табельний номер» немає; на стенді його зробили властивістю tabelnyj_nomer",
+    "name не обовʼязкове на рівні поля — через API картку можна створити без ПІБ",
+    "ЄДРПОУ/РНОКПП не валідуються (base_vat поза контуром)",
+    "На стенді 3 співробітники і в жодного не заповнені parent_id і leave_manager_id — типова діра: без них узгодження «за керівником» не має адресата"
+   ],
+   "межі": [
+    "Кадрові накази, трудові книжки, штатний розпис, табель — не налаштовуємо",
+    "Зарплата: hr_payroll НЕ встановлений (uninstalled), hr_work_entry теж — поля wage/structure_type_id лишаються порожніми",
+    "hr_attendance (відмітки приходу/виходу) НЕ встановлений — обліку робочого часу за відмітками немає",
+    "hr_recruitment не встановлений — найм і вакансії поза контуром"
+   ],
+   "меню": "Employees → Employees (дія 776: hr.employee, kanban,list,form,activity,graph,pivot, домен [('company_id','in',allowed_company_ids)], пункт під групою 68); Employees → Directory (773); Employees → Departments (782); Employees → Configuration (група 69)"
+  },
+  "hr-1-2": {
+   "моделі": [
+    {
+     "модель": "hr.department (Department)",
+     "поля": [
+      {
+       "назва": "name",
+       "підпис": "Department Name",
+       "тип": "char",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "parent_id",
+       "підпис": "Parent Department",
+       "тип": "many2one hr.department",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "child_ids",
+       "підпис": "Child Departments",
+       "тип": "one2many hr.department",
+       "обовʼязковість": "обчислюване"
+      },
+      {
+       "назва": "complete_name",
+       "підпис": "Complete Name",
+       "тип": "char",
+       "обовʼязковість": "обчислюване («Сервіс / Виїзна бригада»)"
+      },
+      {
+       "назва": "manager_id",
+       "підпис": "Manager",
+       "тип": "many2one hr.employee",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "company_id",
+       "підпис": "Company",
+       "тип": "many2one res.company",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "member_ids",
+       "підпис": "Members",
+       "тип": "one2many hr.employee",
+       "обовʼязковість": "обчислюване"
+      },
+      {
+       "назва": "total_employee",
+       "підпис": "Total Employee",
+       "тип": "integer",
+       "обовʼязковість": "обчислюване"
+      },
+      {
+       "назва": "master_department_id",
+       "підпис": "Master Department",
+       "тип": "many2one hr.department",
+       "обовʼязковість": "обчислюване (корінь гілки)"
+      },
+      {
+       "назва": "color",
+       "підпис": "Color Index",
+       "тип": "integer",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "active",
+       "підпис": "Active",
+       "тип": "boolean",
+       "обовʼязковість": "ні"
+      }
+     ]
+    },
+    {
+     "модель": "стан стенда",
+     "поля": [
+      {
+       "назва": "5 підрозділів",
+       "підпис": "Administration, Адміністрація, Продажі, Сервіс, Сервіс / Виїзна бригада",
+       "тип": "ієрархія на 2 рівні",
+       "обовʼязковість": "manager_id не заповнений у жодного; є дубль англійського дефолтного «Administration» і створеної «Адміністрація»"
+      }
+     ]
+    }
+   ],
+   "рішення": [
+    "Скільки рівнів ієрархії і за яким принципом ділять: функція, локація, юрособа, бригада",
+    "Чи є в кожного підрозділу керівник і чи він же затверджує відпустки",
+    "Чи потрібні окремі підрозділи в кожній юрособі (company_id на підрозділі)",
+    "Що робимо з дефолтним англійським підрозділом «Administration» — перейменувати чи архівувати і створити свої",
+    "Чи всі співробітники мають бути в підрозділі (від цього залежить, чи зійдуться звіти)",
+    "Чи використовуємо кольори підрозділів у канбані"
+   ],
+   "залежності": [
+    "manager_id → hr.employee (hr-1-1)",
+    "department_id як розріз у hr.leave, у звітах (hr-2-3) і в майстрах масової видачі (hr-1-3, hr-1-4)",
+    "hr.leave.mandatory.day.department_ids — обовʼязкові робочі дні можна звузити до підрозділів (hr-1-5)",
+    "company_id → мультиюрособи (hr-3-2)"
+   ],
+   "пастки": [
+    "Керівник підрозділу (hr.department.manager_id) НЕ дорівнює узгоджувачу відпусток: узгодження йде по hr.employee.parent_id / leave_manager_id, а не по підрозділу",
+    "department_id у співробітника не обовʼязкове → люди без підрозділу випадають з групувань і звітів",
+    "company_id на підрозділі не обовʼязкове → підрозділ без компанії видно в усіх юрособах",
+    "Дефолтні записи приїжджають англійською — після впровадження в довіднику зʼявляються дублі укр/англ (як на стенді)"
+   ],
+   "межі": [
+    "Штатний розпис і кількість ставок — не наш контур",
+    "hr.job.no_of_recruitment «Target» — це про найм, а не про штатку"
+   ],
+   "меню": "Employees → Departments (пункт 484, дія 782, група 1 «Internal User» — тобто пункт видно всім внутрішнім користувачам)"
+  },
+  "hr-1-3": {
+   "моделі": [
+    {
+     "модель": "hr.leave (Time Off) — заявка на відсутність",
+     "поля": [
+      {
+       "назва": "holiday_status_id",
+       "підпис": "Time Off Type",
+       "тип": "many2one hr.leave.type",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "employee_id",
+       "підпис": "Employee",
+       "тип": "many2one hr.employee",
+       "обовʼязковість": "ТАК (лише один співробітник на заявку)"
+      },
+      {
+       "назва": "request_date_from / request_date_to",
+       "підпис": "Request Start Date / Request End Date",
+       "тип": "date",
+       "обовʼязковість": "ні (те, що вводить користувач)"
+      },
+      {
+       "назва": "date_from / date_to",
+       "підпис": "Start Date / End Date",
+       "тип": "datetime",
+       "обовʼязковість": "ні (обчислюються з request_* і графіка)"
+      },
+      {
+       "назва": "number_of_days / number_of_hours",
+       "підпис": "Duration (Days) / Duration (Hours)",
+       "тип": "float",
+       "обовʼязковість": "обчислювані"
+      },
+      {
+       "назва": "duration_display",
+       "підпис": "Requested",
+       "тип": "char",
+       "обовʼязковість": "обчислюване"
+      },
+      {
+       "назва": "request_unit_half",
+       "підпис": "Half-Day",
+       "тип": "boolean",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "request_unit_hours",
+       "підпис": "Specific Time",
+       "тип": "boolean",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "request_date_from_period",
+       "підпис": "Date Period Start",
+       "тип": "selection",
+       "обовʼязковість": "ні",
+       "варіанти": "am «Morning», pm «Afternoon»"
+      },
+      {
+       "назва": "request_hour_from",
+       "підпис": "Hour from",
+       "тип": "float",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "state",
+       "підпис": "Status",
+       "тип": "selection",
+       "обовʼязковість": "ні",
+       "варіанти": "confirm «To Approve», validate1 «Second Approval», validate «Approved», refuse «Refused», cancel «Cancelled»"
+      },
+      {
+       "назва": "name",
+       "підпис": "Description",
+       "тип": "char",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "notes",
+       "підпис": "Reasons",
+       "тип": "text",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "supported_attachment_ids",
+       "підпис": "Attach File",
+       "тип": "many2many ir.attachment",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "validation_type / can_approve / leave_type_request_unit",
+       "підпис": "Validation Type / Can Approve / Duration Type",
+       "тип": "selection / boolean / selection",
+       "обовʼязковість": "обчислювані з типу"
+      },
+      {
+       "назва": "department_id / employee_company_id",
+       "підпис": "Department / Employee Company",
+       "тип": "many2one",
+       "обовʼязковість": "обчислювані з картки"
+      }
+     ]
+    },
+    {
+     "модель": "hr.leave.generate.multi.wizard — майстер масового введення відсутностей",
+     "поля": [
+      {
+       "назва": "allocation_mode",
+       "підпис": "Allocation Mode",
+       "тип": "selection",
+       "обовʼязковість": "ТАК",
+       "варіанти": "employee «By Employee», company «By Company», department «By Department», category «By Employee Tag»"
+      },
+      {
+       "назва": "holiday_status_id",
+       "підпис": "Time Off Type",
+       "тип": "many2one",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "company_id",
+       "підпис": "Company",
+       "тип": "many2one",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "date_from / date_to",
+       "підпис": "Start Date / End Date",
+       "тип": "date",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "employee_ids / department_id / category_id",
+       "підпис": "Employees / Department / Employee Tag",
+       "тип": "many2many / many2one",
+       "обовʼязковість": "ні (залежить від режиму)"
+      }
+     ]
+    }
+   ],
+   "рішення": [
+    "Хто вводить заявку: сам співробітник у самообслуговуванні чи кадровик за всіх (employee_requests на типі)",
+    "Одиниця заявки: цілі дні, півдня чи години — задається типом відсутності, а не заявкою",
+    "Чи вимагаємо підтвердний документ і чи прикріплюють скан до заявки",
+    "Чи потрібне обовʼязкове поле «причина» (штатно не обовʼязкове)",
+    "Чи дозволяємо заявки заднім числом і за кого їх вводить кадровик",
+    "Чи буде масове введення (простій, корпоративний вихідний, карантин) — через майстер по компанії/підрозділу/тегу",
+    "Що робимо з відкликанням уже затвердженої відпустки"
+   ],
+   "залежності": [
+    "Тип відсутності (hr-2-1) задає одиницю виміру й маршрут узгодження",
+    "Графік роботи (hr-3-1) визначає, скільки днів/годин порахується",
+    "Затверджена відсутність створює запис resource.calendar.leaves (поле holiday_id) — тобто лягає в календар ресурсу і впливає на планування",
+    "Залишок днів (hr-1-4) списується тільки для типів із requires_allocation"
+   ],
+   "пастки": [
+    "У Odoo 19 на hr.leave НЕМАЄ полів holiday_type, mode_company_id, category_id, employee_ids — перевірено запитом до метаданих. Масова відсутність на підрозділ або компанію робиться ТІЛЬКИ окремим майстром; старі інструкції з «Mode: By Department» на самій заявці не діють",
+    "Тривалість рахується за графіком співробітника, а не календарними днями — «24 дні» у клієнта і number_of_days в Odoo можуть не збігтися",
+    "Державні свята не віднімаються, поки їх не внесено в графік: на стенді resource.calendar.leaves ПОРОЖНЯ, жодного свята немає",
+    "На типі є прапорець include_public_holidays_in_duration з підписом «Ignore Public Holidays» — назва поля і підпис протилежні за змістом, легко налаштувати навпаки",
+    "number_of_days обчислюване — руками не проставити, «поставити 24 дні» не вийде",
+    "Заявка завжди на одного співробітника (employee_id — many2one)"
+   ],
+   "межі": [
+    "Оплата відпустки, середній заробіток, компенсація при звільненні — не рахуємо",
+    "Е-лікарняний і обмін із реєстрами — ні; лікарняний живе лише як тип відсутності",
+    "Заява на відпустку як підписаний документ — способи підписання поза контуром"
+   ],
+   "меню": "Time Off → My Time → My Time Off (пункт 777, дія 1261); Time Off → Management → Time Off (пункт 781, дія 1262 «All Time Off»: list,kanban,gantt,form,calendar,activity, домен по allowed_company_ids, контекст search_default_waiting_for_me / current_year). Розділ Management під групою 120 «Time Off Responsible»"
+  },
+  "hr-1-4": {
+   "моделі": [
+    {
+     "модель": "hr.leave.allocation (Time Off Allocation) — видані дні",
+     "поля": [
+      {
+       "назва": "holiday_status_id",
+       "підпис": "Time Off Type",
+       "тип": "many2one hr.leave.type",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "employee_id",
+       "підпис": "Employee",
+       "тип": "many2one hr.employee",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "allocation_type",
+       "підпис": "Allocation Type",
+       "тип": "selection",
+       "обовʼязковість": "ТАК",
+       "варіанти": "regular «Regular Allocation», accrual «Accrual Allocation»"
+      },
+      {
+       "назва": "date_from",
+       "підпис": "Start Date",
+       "тип": "date",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "date_to",
+       "підпис": "End Date",
+       "тип": "date",
+       "обовʼязковість": "ні (порожнє = безстроково)"
+      },
+      {
+       "назва": "number_of_days",
+       "підпис": "Number of Days",
+       "тип": "float",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "duration_display",
+       "підпис": "Allocated (Days/Hours)",
+       "тип": "char",
+       "обовʼязковість": "обчислюване"
+      },
+      {
+       "назва": "leaves_taken",
+       "підпис": "Time off Taken",
+       "тип": "float",
+       "обовʼязковість": "обчислюване"
+      },
+      {
+       "назва": "max_leaves",
+       "підпис": "Max Leaves",
+       "тип": "float",
+       "обовʼязковість": "обчислюване"
+      },
+      {
+       "назва": "accrual_plan_id",
+       "підпис": "Accrual Plan",
+       "тип": "many2one hr.leave.accrual.plan",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "state",
+       "підпис": "Status",
+       "тип": "selection",
+       "обовʼязковість": "ні",
+       "варіанти": "confirm «To Approve», validate1 «Second Approval», validate «Approved», refuse «Refused»"
+      },
+      {
+       "назва": "manager_id / notes",
+       "підпис": "Manager / Reasons",
+       "тип": "many2one hr.employee / text",
+       "обовʼязковість": "ні"
+      }
+     ]
+    },
+    {
+     "модель": "hr.leave.accrual.plan (Accrual Plan)",
+     "поля": [
+      {
+       "назва": "name",
+       "підпис": "Name",
+       "тип": "char",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "time_off_type_id",
+       "підпис": "Time Off Type",
+       "тип": "many2one hr.leave.type",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "level_ids",
+       "підпис": "Milestones",
+       "тип": "one2many hr.leave.accrual.level",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "transition_mode",
+       "підпис": "Transition Mode",
+       "тип": "selection",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "carryover_date",
+       "підпис": "Carry-Over Time",
+       "тип": "selection",
+       "обовʼязковість": "ТАК",
+       "варіанти": "year_start «At the start of the year», allocation «At the allocation date», other «Custom date»"
+      },
+      {
+       "назва": "accrued_gain_time",
+       "підпис": "Accrued Gain Time",
+       "тип": "selection",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "is_based_on_worked_time",
+       "підпис": "Is Based On Worked Time",
+       "тип": "boolean",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "company_id",
+       "підпис": "Company",
+       "тип": "many2one res.company",
+       "обовʼязковість": "ні"
+      }
+     ]
+    },
+    {
+     "модель": "hr.leave.accrual.level (Accrual Plan Level)",
+     "поля": [
+      {
+       "назва": "frequency",
+       "підпис": "Frequency",
+       "тип": "selection",
+       "обовʼязковість": "ТАК",
+       "варіанти": "hourly «Hourly», daily «Daily», weekly «Weekly», bimonthly «Twice a month», monthly «Monthly», biyearly «Twice a year», yearly «Yearly»"
+      },
+      {
+       "назва": "added_value",
+       "підпис": "Added Value",
+       "тип": "float",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "added_value_type",
+       "підпис": "Added Value Type",
+       "тип": "selection",
+       "обовʼязковість": "ТАК",
+       "варіанти": "day «Day(s)», hour «Hour(s)»"
+      },
+      {
+       "назва": "start_type / start_count",
+       "підпис": "Start Type / Start Count",
+       "тип": "selection / integer",
+       "обовʼязковість": "start_type ТАК (через скільки після старту працює рівень)"
+      },
+      {
+       "назва": "maximum_leave",
+       "підпис": "Maximum Leave",
+       "тип": "float",
+       "обовʼязковість": "ні (стеля накопичення)"
+      },
+      {
+       "назва": "action_with_unused_accruals",
+       "підпис": "Action With Unused Accruals",
+       "тип": "selection",
+       "обовʼязковість": "ТАК",
+       "варіанти": "lost «Lost», all «Carried over»"
+      },
+      {
+       "назва": "postpone_max_days",
+       "підпис": "Postpone Max Days",
+       "тип": "integer",
+       "обовʼязковість": "ні"
+      }
+     ]
+    },
+    {
+     "модель": "hr.leave.allocation.generate.multi.wizard — масова видача",
+     "поля": [
+      {
+       "назва": "allocation_mode",
+       "підпис": "Allocation Mode",
+       "тип": "selection",
+       "обовʼязковість": "ТАК",
+       "варіанти": "employee, company, department, category"
+      },
+      {
+       "назва": "allocation_type",
+       "підпис": "Allocation Type",
+       "тип": "selection",
+       "обовʼязковість": "ТАК",
+       "варіанти": "regular «Regular Allocation», accrual «Based on Accrual Plan»"
+      },
+      {
+       "назва": "holiday_status_id / company_id / date_from",
+       "підпис": "Time Off Type / Company / Start Date",
+       "тип": "many2one, date",
+       "обовʼязковість": "ТАК"
+      }
+     ]
+    },
+    {
+     "модель": "hr.leave.type (у частині залишків)",
+     "поля": [
+      {
+       "назва": "requires_allocation",
+       "підпис": "Requires allocation",
+       "тип": "boolean",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "allows_negative",
+       "підпис": "Allow Negative Cap",
+       "тип": "boolean",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "max_allowed_negative",
+       "підпис": "Maximum Excess Amount",
+       "тип": "integer",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "max_leaves",
+       "підпис": "Maximum Allowed",
+       "тип": "float",
+       "обовʼязковість": "ні"
+      }
+     ]
+    }
+   ],
+   "рішення": [
+    "Чи взагалі ведемо залишок для цього типу (requires_allocation): для щорічної — так, для лікарняного зазвичай ні",
+    "Скільки днів на рік і з якої дати; разова видача на рік чи накопичення щомісяця (regular vs accrual)",
+    "Що робиться з невикористаними днями наприкінці періоду: згорають (lost), переносяться повністю (all) чи переносяться з лімітом (postpone_max_days)",
+    "Коли настає перенесення: на початку року, у дату видачі чи в задану дату (carryover_date)",
+    "Чи дозволяємо піти «в мінус» і на скільки днів (allows_negative + max_allowed_negative)",
+    "Хто затверджує саму видачу днів (allocation_validation_type) — це окремо від затвердження відпустки",
+    "Чи всім однаково (масова видача по компанії/підрозділу/тегу) чи індивідуально (стаж, пільгові категорії, інваліди, неповнолітні)",
+    "Чи потрібні додаткові дні за вислугу — це або окремі рівні accrual-плану, або окремий тип відсутності"
+   ],
+   "залежності": [
+    "Працює тільки для типів із requires_allocation=true (hr-2-1)",
+    "Accrual-план привʼязується до типу (time_off_type_id) і нараховує за плановим завданням",
+    "Майстер масової видачі вимагає company_id — тобто в мультиюрособі видача окремо по кожній (hr-3-2)",
+    "Списання йде із заявок (hr-1-3): leaves_taken рахується з затверджених hr.leave"
+   ],
+   "пастки": [
+    "Залишок = сума затверджених нарахувань мінус узяте (leaves_taken). Окремого поля «залишок днів» на картці для довільного типу немає — тільки в поданнях і в дії «Balance»",
+    "Українські 24 дні щорічної не лягають в Odoo одним налаштуванням: або разова видача на рік, або accrual-план; «дні за стаж» — окремі рівні або окремий тип",
+    "Нарахування accrual виконує планове завдання платформи; жодних власних cron ми не додаємо",
+    "carryover_date і action_with_unused_accruals задаються на плані/рівні, а не глобально — легко отримати різну поведінку в різних типах",
+    "Дефолтні типи на стенді уже мають різні налаштування: Paid Time Off — requires_allocation=true, Sick Time Off — false",
+    "Видача теж проходить узгодження (state), тобто «видали, а днів немає» — це незатверджений allocation"
+   ],
+   "межі": [
+    "Грошова компенсація невикористаних днів і резерв відпусток в обліку — поза контуром",
+    "Перенесення залишків із попередньої системи — це міграція даних, окрема позиція"
+   ],
+   "меню": "Time Off → Management → Allocations (пункт 782, дія 1269, kanban,list,form,activity); Time Off → Configuration → Accrual Plans (пункт 789, дія 1270, група 122 «Administrator»); Time Off → Reporting → Balance (пункт 786, ir.actions.server 1278, група 122)"
+  },
+  "hr-1-5": {
+   "моделі": [
+    {
+     "модель": "hr.leave — штатні подання (усі mode=primary, наявні на стенді)",
+     "поля": [
+      {
+       "назва": "hr.leave.view.calendar",
+       "підпис": "календар",
+       "тип": "calendar",
+       "обовʼязковість": "штатне"
+      },
+      {
+       "назва": "hr.leave.gantt",
+       "підпис": "гант",
+       "тип": "gantt",
+       "обовʼязковість": "штатне (enterprise, є на Odoo Online)"
+      },
+      {
+       "назва": "hr.leave.view.kanban / hr.holidays.view.list / hr.leave.view.activity / hr.holidays.graph",
+       "підпис": "канбан, список, активності, графік",
+       "тип": "kanban/list/activity/graph",
+       "обовʼязковість": "штатні"
+      },
+      {
+       "назва": "hr.holidays.filter, hr.holidays.view.search.manager",
+       "підпис": "пошукові подання",
+       "тип": "search",
+       "обовʼязковість": "штатні"
+      }
+     ]
+    },
+    {
+     "модель": "hr.leave.report.calendar (Time Off Calendar) — окрема модель під спільний календар",
+     "поля": [
+      {
+       "назва": "hr.leave.report.calendar.view",
+       "підпис": "календар",
+       "тип": "calendar",
+       "обовʼязковість": "штатне"
+      },
+      {
+       "назва": "hr.leave.report.calendar.year.view",
+       "підпис": "річний календар",
+       "тип": "calendar",
+       "обовʼязковість": "штатне"
+      },
+      {
+       "назва": "hr.leave.report.calendar.view.gantt",
+       "підпис": "гант",
+       "тип": "gantt",
+       "обовʼязковість": "штатне"
+      },
+      {
+       "назва": "дія 1276 «All Time Off»",
+       "підпис": "Overview",
+       "тип": "act_window",
+       "обовʼязковість": "view_mode gantt,calendar; домен [('employee_id.active','=',True)]; контекст search_default_my_team=1, current_year, validate, approve, hide_employee_name=1"
+      }
+     ]
+    },
+    {
+     "модель": "resource.calendar.leaves (Public Holidays / глобальні відсутності)",
+     "поля": [
+      {
+       "назва": "name",
+       "підпис": "Reason",
+       "тип": "char",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "date_from / date_to",
+       "підпис": "Start Date / End Date",
+       "тип": "datetime",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "calendar_id",
+       "підпис": "Working Hours",
+       "тип": "many2one resource.calendar",
+       "обовʼязковість": "ні (порожнє = всі графіки)"
+      },
+      {
+       "назва": "company_id",
+       "підпис": "Company",
+       "тип": "many2one",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "resource_id",
+       "підпис": "Resource",
+       "тип": "many2one resource.resource",
+       "обовʼязковість": "ні (порожнє = глобальне свято)"
+      },
+      {
+       "назва": "time_type",
+       "підпис": "Time Type",
+       "тип": "selection",
+       "обовʼязковість": "ні",
+       "варіанти": "leave «Time Off», other «Other»"
+      },
+      {
+       "назва": "holiday_id",
+       "підпис": "Time Off Request",
+       "тип": "many2one hr.leave",
+       "обовʼязковість": "ні (звʼязок із затвердженою заявкою)"
+      }
+     ]
+    },
+    {
+     "модель": "hr.leave.mandatory.day (Mandatory Day — дні, коли відпустку не дають)",
+     "поля": [
+      {
+       "назва": "name",
+       "підпис": "Name",
+       "тип": "char",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "start_date / end_date",
+       "підпис": "Start Date / End Date",
+       "тип": "date",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "company_id",
+       "підпис": "Company",
+       "тип": "many2one",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "department_ids",
+       "підпис": "Departments",
+       "тип": "many2many hr.department",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "resource_calendar_id",
+       "підпис": "Working Hours",
+       "тип": "many2one",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "color",
+       "підпис": "Color",
+       "тип": "integer",
+       "обовʼязковість": "ні"
+      }
+     ]
+    }
+   ],
+   "рішення": [
+    "Що показує спільний календар: усю компанію, свою команду чи підрозділ (це фільтр за замовчуванням у дії)",
+    "Чи бачать співробітники, хто саме відсутній, чи лише сам факт (у штатних діях є контекст hide_employee_name)",
+    "Кольори за типами відсутностей (color на hr.leave.type)",
+    "Чи вносимо державні свята, чиї саме і на які графіки; хто щороку оновлює список",
+    "Чи потрібні «обовʼязкові робочі дні» (mandatory days) — періоди, коли відпустку не дають (сезон, інвентаризація, звітність)",
+    "Кому потрібен гант, а кому досить календаря на місяць"
+   ],
+   "залежності": [
+    "Свята вносяться в конкретний графік (hr-3-1) або глобально; без цього тривалість рахується без свят",
+    "Кольори беруться з типів (hr-2-1)",
+    "Затверджені заявки (hr-1-3) потрапляють у календар через resource.calendar.leaves",
+    "mandatory day привʼязаний до компанії (hr-3-2) і може звужуватися підрозділами (hr-1-2)"
+   ],
+   "пастки": [
+    "На стенді НЕ заведено жодного державного свята (resource.calendar.leaves з порожнім resource_id — 0 записів). Українські свята не приїжджають самі: це ручний список щороку, і його треба внести в кожен графік",
+    "Дефолтний огляд «All Time Off» показує лише свою команду й поточний рік — «нічого не видно» одразу після впровадження це фільтр, а не помилка",
+    "Спільний календар живе на окремій моделі hr.leave.report.calendar; правити треба її подання, а не hr.leave",
+    "Mandatory day вимагає company_id — у кожній юрособі свій запис",
+    "Свято, внесене в один графік, не діє для співробітників з іншим графіком"
+   ],
+   "межі": [
+    "Виробничий календар у розумінні норми годин місяця для табеля — не робимо",
+    "Синхронізація з зовнішніми календарями клієнта (обмін даними) — поза контуром"
+   ],
+   "меню": "Time Off → Overview (пункт 779, дія 1276); Time Off → Configuration → Public Holidays (пункт 790, дія 1258) і → Mandatory Days (пункт 791, дія 1271) — обидва під групою 122 «Administrator»"
+  },
+  "hr-2-1": {
+   "моделі": [
+    {
+     "модель": "hr.leave.type (Time Off Type)",
+     "поля": [
+      {
+       "назва": "name",
+       "підпис": "Time Off Type",
+       "тип": "char",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "requires_allocation",
+       "підпис": "Requires allocation",
+       "тип": "boolean",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "employee_requests",
+       "підпис": "Allow Employee Requests",
+       "тип": "boolean",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "leave_validation_type",
+       "підпис": "Time Off Validation",
+       "тип": "selection",
+       "обовʼязковість": "ні",
+       "варіанти": "no_validation «None needed», hr «By Time Off Officer», manager «By Employee's Approver», both «By Employee's Approver and Time Off Officer»"
+      },
+      {
+       "назва": "allocation_validation_type",
+       "підпис": "Approval",
+       "тип": "selection",
+       "обовʼязковість": "ні",
+       "варіанти": "ті самі чотири значення"
+      },
+      {
+       "назва": "request_unit",
+       "підпис": "Duration Type",
+       "тип": "selection",
+       "обовʼязковість": "ТАК",
+       "варіанти": "day «Day», half_day «Half-Day», hour «Hours»"
+      },
+      {
+       "назва": "time_type",
+       "підпис": "Kind of Time Off",
+       "тип": "selection",
+       "обовʼязковість": "ні",
+       "варіанти": "leave «Absence», other «Worked Time»"
+      },
+      {
+       "назва": "company_id",
+       "підпис": "Company",
+       "тип": "many2one res.company",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "country_id",
+       "підпис": "Country",
+       "тип": "many2one res.country",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "responsible_ids",
+       "підпис": "Notify HR",
+       "тип": "many2many res.users",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "support_document",
+       "підпис": "Supporting Document",
+       "тип": "boolean",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "unpaid",
+       "підпис": "Is Unpaid",
+       "тип": "boolean",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "include_public_holidays_in_duration",
+       "підпис": "Ignore Public Holidays",
+       "тип": "boolean",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "create_calendar_meeting",
+       "підпис": "Display Time Off in Calendar",
+       "тип": "boolean",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "allows_negative / max_allowed_negative",
+       "підпис": "Allow Negative Cap / Maximum Excess Amount",
+       "тип": "boolean / integer",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "max_leaves",
+       "підпис": "Maximum Allowed",
+       "тип": "float",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "color / icon_id / sequence / active",
+       "підпис": "Color / Cover Image / Sequence / Active",
+       "тип": "integer / many2one ir.attachment / integer / boolean",
+       "обовʼязковість": "ні"
+      }
+     ]
+    },
+    {
+     "модель": "стан стенда — 7 типів",
+     "поля": [
+      {
+       "назва": "дефолтні (англійські, company_id порожній)",
+       "підпис": "Paid Time Off (allocation+, both), Sick Time Off (allocation−, hr), Unpaid (hour, both), Compensatory Days (allocation+, manager), Extra Time Off (half_day, no_validation), Extra Hours (hour, manager)",
+       "тип": "—",
+       "обовʼязковість": "—"
+      },
+      {
+       "назва": "створений",
+       "підпис": "«Щорічна відпустка (24 дні)» — day, manager, requires_allocation=true, привʼязаний до компанії 1",
+       "тип": "—",
+       "обовʼязковість": "—"
+      }
+     ]
+    }
+   ],
+   "рішення": [
+    "Перелік типів під клієнта: щорічна, за свій рахунок, лікарняний, відгул, навчальна, декретна, донорські дні",
+    "Одиниця для кожного типу: цілі дні, півдня чи години",
+    "Чи потрібен по цьому типу залишок днів (requires_allocation)",
+    "Чи може співробітник сам подавати цей тип, чи тільки кадровик (employee_requests)",
+    "Це «відсутність» чи «відпрацьований час» (time_type) — відгули й понаднормові поводяться інакше",
+    "Чи вимагати підтвердний документ (support_document)",
+    "Хто отримує сповіщення по типу (responsible_ids «Notify HR»)",
+    "Чи показувати відсутність у календарі співробітника (create_calendar_meeting)",
+    "Що робимо з шістьма англійськими дефолтними типами: перейменувати чи архівувати й створити свої",
+    "Чи різні типи в різних юрособах (company_id) чи спільні"
+   ],
+   "залежності": [
+    "requires_allocation → облік залишків (hr-1-4)",
+    "leave_validation_type / allocation_validation_type → маршрут узгодження (hr-2-2)",
+    "company_id → мультиюрособи (hr-3-2)",
+    "request_unit разом із графіком (hr-3-1) дає фактичну тривалість заявки (hr-1-3)"
+   ],
+   "пастки": [
+    "Дефолтні типи приїжджають англійською і БЕЗ привʼязки до компанії (company_id порожній) — видно в усіх юрособах одразу",
+    "unpaid «Is Unpaid» нічого не рахує — це лише позначка, оплати в контурі немає",
+    "include_public_holidays_in_duration має підпис «Ignore Public Holidays» — назва поля і підпис протилежні; налаштовувати за перевіркою поведінки, а не за назвою",
+    "time_type=other «Worked Time» використовується для відгулів і понаднормових і інакше виглядає у звітах",
+    "На типі є max_leaves «Maximum Allowed» окремо від стелі в accrual-плані — два різні ліміти в різних місцях",
+    "Одиниця (request_unit) задається на типі, а не на заявці: «пів дня» для щорічної й «години» для відгулу — це два різні типи"
+   ],
+   "межі": [
+    "Віднесення типу відсутності до статті витрат і нарахування оплати — ні",
+    "Відповідність типів статтям КЗпП і кадровим наказам — не наша зона"
+   ],
+   "меню": "Time Off → Configuration → Time Off Types (пункт 788, дія 1265: list,kanban,form; група 122 «Administrator»)"
+  },
+  "hr-2-2": {
+   "моделі": [
+    {
+     "модель": "hr.leave.type — маршрут",
+     "поля": [
+      {
+       "назва": "leave_validation_type",
+       "підпис": "Time Off Validation",
+       "тип": "selection",
+       "обовʼязковість": "ні",
+       "варіанти": "no_validation «None needed», hr «By Time Off Officer», manager «By Employee's Approver», both «By Employee's Approver and Time Off Officer»"
+      },
+      {
+       "назва": "allocation_validation_type",
+       "підпис": "Approval",
+       "тип": "selection",
+       "обовʼязковість": "ні",
+       "варіанти": "ті самі — окремий маршрут для видачі днів"
+      },
+      {
+       "назва": "responsible_ids",
+       "підпис": "Notify HR",
+       "тип": "many2many res.users",
+       "обовʼязковість": "ні"
+      }
+     ]
+    },
+    {
+     "модель": "hr.employee — виконавці",
+     "поля": [
+      {
+       "назва": "leave_manager_id",
+       "підпис": "Time Off Approver",
+       "тип": "many2one res.users",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "parent_id",
+       "підпис": "Manager",
+       "тип": "many2one hr.employee",
+       "обовʼязковість": "ні"
+      }
+     ]
+    },
+    {
+     "модель": "hr.leave — стани й права",
+     "поля": [
+      {
+       "назва": "state",
+       "підпис": "Status",
+       "тип": "selection",
+       "обовʼязковість": "ні",
+       "варіанти": "confirm → validate1 «Second Approval» → validate «Approved»; refuse, cancel"
+      },
+      {
+       "назва": "can_approve / validation_type",
+       "підпис": "Can Approve / Validation Type",
+       "тип": "boolean / selection",
+       "обовʼязковість": "обчислювані"
+      }
+     ]
+    },
+    {
+     "модель": "res.groups (у Odoo 19 категорія групи — res.groups.privilege, поля category_id БІЛЬШЕ НЕМАЄ)",
+     "поля": [
+      {
+       "назва": "120",
+       "підпис": "Time Off Responsible",
+       "тип": "група",
+       "обовʼязковість": "дає доступ до розділу Management"
+      },
+      {
+       "назва": "121",
+       "підпис": "Officer: Manage all requests",
+       "тип": "група",
+       "обовʼязковість": "кадровик по відсутностях"
+      },
+      {
+       "назва": "122",
+       "підпис": "Administrator (Time Off)",
+       "тип": "група",
+       "обовʼязковість": "налаштування і Balance"
+      },
+      {
+       "назва": "68 / 69",
+       "підпис": "Officer: Manage all employees / Administrator (Employees)",
+       "тип": "група",
+       "обовʼязковість": "доступ до карток"
+      }
+     ]
+    },
+    {
+     "модель": "hr.holidays.cancel.leave",
+     "поля": [
+      {
+       "назва": "—",
+       "підпис": "майстер скасування вже затвердженої відсутності",
+       "тип": "wizard",
+       "обовʼязковість": "—"
+      }
+     ]
+    }
+   ],
+   "рішення": [
+    "Хто затверджує відпустку: безпосередній керівник, кадровик, обидва послідовно чи ніхто",
+    "Чи різний маршрут для різних типів (можна: налаштовується на кожному типі окремо)",
+    "Хто конкретно є «Approver» для кожного співробітника і чи це той самий, що керівник",
+    "Хто затверджує видачу днів — окремий маршрут від затвердження відпустки",
+    "Хто в копії/сповіщеннях (responsible_ids)",
+    "Кого призначаємо в групи Officer і Administrator — і скільки таких людей",
+    "Що робимо, коли керівник у відпустці: заміна узгоджувача вручну чи затверджує кадровик",
+    "Як скасовують уже затверджену відпустку і хто має на це право"
+   ],
+   "залежності": [
+    "Маршрут задається на типі (hr-2-1), а виконавці — на картці співробітника (hr-1-1)",
+    "«both» дає проміжний стан validate1 — двоступеневе узгодження",
+    "Права керівника бачити підлеглих спираються на parent_id, а не на підрозділ (hr-1-2)"
+   ],
+   "пастки": [
+    "«By Employee's Approver» бере hr.employee.leave_manager_id, а НЕ керівника підрозділу. На стенді це поле порожнє в усіх трьох співробітників — заявка не має адресата",
+    "leave_manager_id вказує на res.users → узгоджувач мусить мати обліковий запис (тобто ліцензію)",
+    "Рівнів узгодження максимум два, і другий — завжди кадровик. Ланцюжка «керівник → директор → кадровик» штатно немає",
+    "Скасувати затверджену відпустку — окремий майстер, а не проста зміна дат",
+    "Маршрут не залежить від тривалості: «до 3 днів — керівник, більше — директор» штатно не виражається"
+   ],
+   "межі": [
+    "Погодження наказом і підписання заяви — способи підписання документів поза контуром (рішення 05.09.2026)",
+    "Ескалація за строком (не відповів за 2 дні — пішло вище) — це автоматизація поза штатною поведінкою модуля"
+   ],
+   "меню": "Time Off → Management (пункт 780, група 120); маршрут — Time Off → Configuration → Time Off Types; виконавці — картка співробітника; групи — Settings → Users & Companies"
+  },
+  "hr-2-3": {
+   "моделі": [
+    {
+     "модель": "hr.leave.report (Time Off Summary / Report)",
+     "поля": [
+      {
+       "назва": "employee_id / department_id / company_id",
+       "підпис": "Employee / Department / Company",
+       "тип": "many2one",
+       "обовʼязковість": "розрізи"
+      },
+      {
+       "назва": "holiday_status_id",
+       "підпис": "Time Off Type",
+       "тип": "many2one hr.leave.type",
+       "обовʼязковість": "розріз"
+      },
+      {
+       "назва": "leave_type",
+       "підпис": "Request Type",
+       "тип": "selection",
+       "обовʼязковість": "розділяє відсутність і видачу днів"
+      },
+      {
+       "назва": "number_of_days / number_of_hours",
+       "підпис": "Number of Days / Number of Hours",
+       "тип": "float",
+       "обовʼязковість": "міри"
+      },
+      {
+       "назва": "state / date_from / name",
+       "підпис": "Status / Start Date / Description",
+       "тип": "selection / datetime / char",
+       "обовʼязковість": "—"
+      },
+      {
+       "назва": "подання",
+       "підпис": "list, graph, pivot (report.hr.holidays.report.leave_all.*)",
+       "тип": "—",
+       "обовʼязковість": "штатні"
+      }
+     ]
+    },
+    {
+     "модель": "hr.leave.employee.type.report (Time Off Summary / Report — за типами)",
+     "поля": [
+      {
+       "назва": "employee_id / department_id / company_id",
+       "підпис": "Employee / Department / Company",
+       "тип": "many2one",
+       "обовʼязковість": "розрізи"
+      },
+      {
+       "назва": "leave_type",
+       "підпис": "Time Off Type",
+       "тип": "many2one hr.leave.type",
+       "обовʼязковість": "тут це звʼязок, а не selection"
+      },
+      {
+       "назва": "number_of_days / number_of_hours",
+       "підпис": "Number of Days / Number of Hours",
+       "тип": "float",
+       "обовʼязковість": "міри"
+      },
+      {
+       "назва": "active_employee",
+       "підпис": "Active Employee",
+       "тип": "boolean",
+       "обовʼязковість": "фільтр"
+      }
+     ]
+    },
+    {
+     "модель": "hr.holidays.summary.employee",
+     "поля": [
+      {
+       "назва": "—",
+       "підпис": "друкований зведений звіт по співробітниках",
+       "тип": "звіт",
+       "обовʼязковість": "—"
+      }
+     ]
+    },
+    {
+     "модель": "дія «Balance»",
+     "поля": [
+      {
+       "назва": "ir.actions.server 1278",
+       "підпис": "Time Off → Reporting → Balance",
+       "тип": "server action",
+       "обовʼязковість": "група 122"
+      }
+     ]
+    }
+   ],
+   "рішення": [
+    "У яких розрізах дивляться: співробітник, підрозділ, тип, місяць, юрособа",
+    "За який період і чи потрібен рік до року",
+    "Що саме цікавить: узяті дні, залишки чи те й те (це різні джерела)",
+    "Чи потрібен друкований зведений звіт (для підпису/паперу)",
+    "Чи робимо збережене подання-фільтр для кадровика замість щоденного перебору фільтрів",
+    "Чи показувати всі юрособи одночасно",
+    "Хто має доступ до розділу Reporting"
+   ],
+   "залежності": [
+    "Якість звіту = якість довідника підрозділів (hr-1-2) і типів (hr-2-1)",
+    "Залишки живуть окремо — дія «Balance» (hr-1-4)",
+    "Дні рахуються за графіком (hr-3-1)"
+   ],
+   "пастки": [
+    "Три різні джерела: hr.leave.report, hr.leave.employee.type.report і «Balance». Цифри в них рахуються по-різному (узяте / за типом / залишок) — клієнт побачить три різні відповіді на питання «скільки»",
+    "«by Employee» і «by Type» — окремі пункти меню з окремими діями, це не один звіт із перемикачем",
+    "Дні рахуються за графіком співробітника: сума днів по підрозділу з різними графіками не дорівнює «людино-дням»",
+    "Будь-яка нова обчислювана колонка у звіті = поле на моделі = Python = поза периметром",
+    "Співробітники без підрозділу не потраплять у групування по підрозділах"
+   ],
+   "межі": [
+    "Табель обліку робочого часу (форма П-5) і звітність у держоргани — ні",
+    "Вивантаження у зовнішні системи клієнта — поза контуром"
+   ],
+   "меню": "Time Off → Reporting → by Employee (пункт 784, дія 1264), → by Type (пункт 785, дія 1274), → Balance (пункт 786, група 122). Розділ Reporting під групою 121 «Officer: Manage all requests». Employees → Reporting (пункт 483, група 68)"
+  },
+  "hr-2-4": {
+   "моделі": [
+    {
+     "модель": "res.company — визначення набору",
+     "поля": [
+      {
+       "назва": "employee_properties_definition",
+       "підпис": "визначення властивостей картки співробітника",
+       "тип": "properties_definition",
+       "обовʼязковість": "ні"
+      }
+     ]
+    },
+    {
+     "модель": "hr.employee — значення",
+     "поля": [
+      {
+       "назва": "employee_properties",
+       "підпис": "Properties",
+       "тип": "properties",
+       "обовʼязковість": "ні"
+      }
+     ]
+    },
+    {
+     "модель": "стан стенда",
+     "поля": [
+      {
+       "назва": "компанія 1 «Тодо — демо-стенд Odoo Online»",
+       "підпис": "визначено дві властивості: tabelnyj_nomer «Табельний номер» (char) і propusk_vydano «Перепустку видано» (boolean)",
+       "тип": "—",
+       "обовʼязковість": "—"
+      },
+      {
+       "назва": "компанії 2 і 3",
+       "підпис": "визначення порожні — набір властивостей у них інший (порожній)",
+       "тип": "—",
+       "обовʼязковість": "—"
+      }
+     ]
+    }
+   ],
+   "рішення": [
+    "Які дані клієнт додатково веде про співробітника: табельний номер, номер перепустки, розмір спецодягу, дата медогляду, номер трудового договору, дата останнього інструктажу",
+    "Тип кожної властивості: текст, число, дата, прапорець, вибір зі списку, посилання на запис довідника",
+    "Чи потрібно бачити ці дані в списку співробітників і фільтрувати по них",
+    "Хто заповнює ці поля і чи є вони обовʼязковими за процесом (технічно обовʼязковість не задається)",
+    "Чи однаковий набір для всіх юросіб клієнта"
+   ],
+   "залежності": [
+    "Визначення живе на res.company → у мультиюрособі (hr-3-2) в кожної компанії свій набір",
+    "Щоб властивість показати в списку кадровика — своє подання (hr-3-4)"
+   ],
+   "пастки": [
+    "Це properties, а не поля моделі: набір визначається на компанії, значення — на картці. При зміні компанії співробітника набір змінюється",
+    "По properties обмежені групування й фільтри порівняно зі звичайними полями; у звітах про відсутності (hr.leave.report) їх немає взагалі",
+    "Обчислюваних значень тут не буде: обчислювані поля на моделі = Python, поза периметром",
+    "Три компанії — три окремі набори, узгодженість тримається лише вручну (на стенді набір є тільки в компанії 1)",
+    "Валідації формату немає: ані РНОКПП, ані маски номера"
+   ],
+   "межі": [
+    "Власні поля з формулами й перевірками, автоматичне заповнення — ні",
+    "Зберігання персональних даних понад те, що клієнт готовий тримати в хмарі, — питання клієнта, не наше налаштування"
+   ],
+   "меню": "Картка співробітника — вкладка з властивостями; сам набір додається кнопкою на картці й зберігається в res.company"
+  },
+  "hr-3-1": {
+   "моделі": [
+    {
+     "модель": "resource.calendar (графік роботи)",
+     "поля": [
+      {
+       "назва": "name",
+       "підпис": "Name",
+       "тип": "char",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "tz",
+       "підпис": "Timezone",
+       "тип": "selection",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "company_id",
+       "підпис": "Company",
+       "тип": "many2one res.company",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "hours_per_day",
+       "підпис": "Average Hour per Day",
+       "тип": "float",
+       "обовʼязковість": "обчислюване з рядків"
+      },
+      {
+       "назва": "full_time_required_hours",
+       "підпис": "Full Time Equivalent",
+       "тип": "float",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "two_weeks_calendar",
+       "підпис": "Calendar in 2 weeks mode",
+       "тип": "boolean",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "flexible_hours",
+       "підпис": "Flexible Hours",
+       "тип": "boolean",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "attendance_ids",
+       "підпис": "Working Time",
+       "тип": "one2many resource.calendar.attendance",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "global_leave_ids",
+       "підпис": "Global Time Off",
+       "тип": "one2many resource.calendar.leaves",
+       "обовʼязковість": "ні (сюди йдуть свята)"
+      }
+     ]
+    },
+    {
+     "модель": "resource.calendar.attendance (рядок графіка)",
+     "поля": [
+      {
+       "назва": "name",
+       "підпис": "Name",
+       "тип": "char",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "dayofweek",
+       "підпис": "Day of Week",
+       "тип": "selection",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "hour_from / hour_to",
+       "підпис": "Work from / Work to",
+       "тип": "float",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "day_period",
+       "підпис": "Day Period",
+       "тип": "selection",
+       "обовʼязковість": "ТАК",
+       "варіанти": "morning «Morning», lunch «Break», afternoon «Afternoon», full_day «Full Day»"
+      },
+      {
+       "назва": "week_type",
+       "підпис": "Week Number",
+       "тип": "selection",
+       "обовʼязковість": "ні (лише в двотижневому режимі)"
+      },
+      {
+       "назва": "display_type / sequence",
+       "підпис": "Display Type / Sequence",
+       "тип": "selection / integer",
+       "обовʼязковість": "ні"
+      }
+     ]
+    },
+    {
+     "модель": "привʼязка",
+     "поля": [
+      {
+       "назва": "hr.employee.resource_calendar_id",
+       "підпис": "Working Hours",
+       "тип": "many2one",
+       "обовʼязковість": "ні (порожнє = графік компанії)"
+      },
+      {
+       "назва": "hr.employee.is_flexible",
+       "підпис": "Is Flexible",
+       "тип": "boolean",
+       "обовʼязковість": "обчислюване"
+      },
+      {
+       "назва": "res.company.resource_calendar_id",
+       "підпис": "типовий графік компанії",
+       "тип": "many2one",
+       "обовʼязковість": "—"
+      }
+     ]
+    },
+    {
+     "модель": "стан стенда — 4 графіки",
+     "поля": [
+      {
+       "назва": "«Standard 40 hours/week» (компанія 1), «Стандартні 40 годин/тиждень» (компанії 2 і 3)",
+       "підпис": "Europe/Kiev, 8 год/день, FTE 40",
+       "тип": "—",
+       "обовʼязковість": "—"
+      },
+      {
+       "назва": "«Зміна 2/2 по 12 годин» (компанія 1)",
+       "підпис": "12 год/день, але рядків лише два: Пн 08–20 і Вт 08–20",
+       "тип": "—",
+       "обовʼязковість": "це наближення, а не реальна ротація"
+      }
+     ]
+    }
+   ],
+   "рішення": [
+    "Скільки різних графіків у клієнта: офіс 5/2, зміни, неповний день, гнучкий",
+    "Години початку й кінця, чи є обідня перерва окремим рядком",
+    "Часовий пояс кожного графіка",
+    "Чи є двотижневий цикл (парний/непарний тиждень) — це єдина штатна циклічність понад тиждень",
+    "Скільки годин вважати повною ставкою (FTE) і скільки годин у робочому дні — від цього залежить перерахунок годин у дні у відсутностях",
+    "Який графік типовий для компанії і в кого індивідуальні винятки",
+    "Чи є люди на гнучкому графіку (flexible_hours) — тривалість відсутностей рахується інакше"
+   ],
+   "залежності": [
+    "Тривалість заявок (hr-1-3) і залишків у днях/годинах (hr-1-4) рахується за графіком",
+    "Свята вносяться саме в графік (hr-1-5)",
+    "У мультиюрособі графік свій у кожної компанії (hr-3-2) — на стенді три однакові дублі",
+    "Табелі часу за проєктами (hr_timesheet встановлений) теж спираються на графік"
+   ],
+   "пастки": [
+    "resource.calendar — це ТИЖНЕВА сітка (максимум двотижневий цикл через two_weeks_calendar). Ротація 2/2, 3/3, «доба через три» штатно НЕ виражається: на стенді графік «Зміна 2/2 по 12 годин» довелося звести до двох днів (Пн і Вт по 12 годин) — це наближення, у КП змінність із ротацією обіцяти не можна",
+    "tz обовʼязковий і задається на графіку, а не на співробітнику: неправильний пояс зсуває межі днів у відсутностях",
+    "hours_per_day обчислюється з рядків і використовується для перерахунку годин у дні — зміна графіка заднім числом змінює вже пораховані тривалості",
+    "Графік привʼязаний до компанії: при трьох юрособах — три однакові графіки-дублі (як на стенді)",
+    "Порожній resource_calendar_id у співробітника означає графік компанії, а не «немає графіка»"
+   ],
+   "межі": [
+    "Ротація бригад, нічні й святкові доплати, норма годин місяця — поза контуром",
+    "hr_attendance (відмітки приходу/виходу) НЕ встановлений: фактично відпрацьований час за прохідною не ведемо",
+    "Табель обліку робочого часу — ні"
+   ],
+   "меню": "Employees → Configuration (пункт 485, група 69) — довідник графіків лежить у цій гілці (підпункти Configuration на стенді: Settings, Employee, Resume, Recruitment); графік також видно й міняють просто на картці співробітника"
+  },
+  "hr-3-2": {
+   "моделі": [
+    {
+     "модель": "де саме зберігається «різне правило»",
+     "поля": [
+      {
+       "назва": "hr.leave.type.company_id",
+       "підпис": "Company",
+       "тип": "many2one",
+       "обовʼязковість": "ні — порожнє означає «видно всім юрособам»"
+      },
+      {
+       "назва": "hr.department.company_id",
+       "підпис": "Company",
+       "тип": "many2one",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "hr.employee.company_id",
+       "підпис": "Company",
+       "тип": "many2one",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "resource.calendar.company_id",
+       "підпис": "Company",
+       "тип": "many2one",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "hr.leave.mandatory.day.company_id",
+       "підпис": "Company",
+       "тип": "many2one",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "hr.leave.accrual.plan.company_id",
+       "підпис": "Company",
+       "тип": "many2one",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "res.company.employee_properties_definition",
+       "підпис": "свій набір власних полів у кожної компанії",
+       "тип": "properties_definition",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "майстри масової видачі",
+       "підпис": "company_id",
+       "тип": "many2one",
+       "обовʼязковість": "ТАК — видача окремо в кожній юрособі"
+      }
+     ]
+    },
+    {
+     "модель": "стан стенда — 3 компанії",
+     "поля": [
+      {
+       "назва": "«Тодо — демо-стенд Odoo Online», «Тодо — філія Львів», «ТОВ «Друга Юрособа (демо)»»",
+       "підпис": "у кожної свій графік роботи і своя тека документів; країна Ukraine в усіх",
+       "тип": "—",
+       "обовʼязковість": "—"
+      },
+      {
+       "назва": "типи відсутностей",
+       "підпис": "6 дефолтних без компанії (видно всім) + «Щорічна відпустка (24 дні)» тільки в компанії 1",
+       "тип": "—",
+       "обовʼязковість": "—"
+      }
+     ]
+    }
+   ],
+   "рішення": [
+    "Що саме різне між частинами компанії: типи відсутностей, кількість днів, графіки, маршрут узгодження, набір власних полів",
+    "Це різні юрособи чи підрозділи однієї — від цієї відповіді залежить, чи взагалі можна розділити правила",
+    "Чи бачить кадровик усі юрособи одразу чи перемикається між ними",
+    "Які типи спільні для всіх, а які тільки для однієї юрособи",
+    "Чи однакові графіки в різних юрособах (чи створювати дублі)",
+    "Хто з людей працює одразу на кілька юросіб і як це оформлено"
+   ],
+   "залежності": [
+    "Типи (hr-2-1), графіки (hr-3-1), обовʼязкові дні (hr-1-5), accrual-плани (hr-1-4), властивості (hr-2-4) — усе це прив'язується до компанії",
+    "Підрозділи (hr-1-2) самі по собі жодних правил не несуть"
+   ],
+   "пастки": [
+    "ГОЛОВНЕ: у Odoo правила відсутностей прив'язані до КОМПАНІЇ, а не до підрозділу. «Різні правила по підрозділах» усередині однієї юрособи штатно робляться тільки різними типами відсутностей плюс дисципліною, хто який вибирає — обмеження «цей тип лише для цього підрозділу» немає",
+    "Тип без company_id видно в усіх юрособах — дефолтні англійські типи витікають у кожну компанію",
+    "Штатні дії обмежені allowed_company_ids: те, що видно, залежить від перемикача компаній угорі, а не від прав",
+    "Набір власних полів свій у кожної компанії — на стенді визначення є тільки в компанії 1, у двох інших порожньо",
+    "Обовʼязкові робочі дні заводяться на компанію (company_id обовʼязкове), department_ids лише звужує всередині неї",
+    "У кожної компанії свій графік-дубль: правку «40 годин → 38» доведеться повторити тричі"
+   ],
+   "межі": [
+    "Окремих прав «на підрозділ» у Odoo немає — так само, як немає прав «на склад». Розділення тільки через юрособи або через належність керівнику",
+    "Розподіл витрат на персонал між юрособами — це облік, поза контуром"
+   ],
+   "меню": "Settings → Users & Companies → Companies; Time Off → Configuration (типи, свята, обовʼязкові дні — записи окремі в кожній компанії)"
+  },
+  "hr-3-3": {
+   "моделі": [
+    {
+     "модель": "res.company — налаштування кадрових документів",
+     "поля": [
+      {
+       "назва": "documents_hr_settings",
+       "підпис": "Documents Hr Settings",
+       "тип": "boolean",
+       "обовʼязковість": "ні (на стенді true в усіх трьох компаніях)"
+      },
+      {
+       "назва": "documents_employee_folder_id",
+       "підпис": "Employees Folder",
+       "тип": "many2one documents.document",
+       "обовʼязковість": "ні (на стенді автоматично створені теки «Employees - <компанія>»)"
+      },
+      {
+       "назва": "documents_hr_contracts_tags",
+       "підпис": "теги для документів за трудовими умовами",
+       "тип": "many2many documents.tag",
+       "обовʼязковість": "ні"
+      }
+     ]
+    },
+    {
+     "модель": "documents.document",
+     "поля": [
+      {
+       "назва": "name",
+       "підпис": "Name",
+       "тип": "char",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "type",
+       "підпис": "Type",
+       "тип": "selection",
+       "обовʼязковість": "ТАК",
+       "варіанти": "folder «Folder», binary «File», url «URL»"
+      },
+      {
+       "назва": "folder_id",
+       "підпис": "Folder",
+       "тип": "many2one documents.document",
+       "обовʼязковість": "ні (теки вкладаються одна в одну)"
+      },
+      {
+       "назва": "access_internal",
+       "підпис": "Internal Users Rights",
+       "тип": "selection",
+       "обовʼязковість": "ТАК",
+       "варіанти": "view «Viewer», edit «Editor», none «None»"
+      },
+      {
+       "назва": "access_via_link",
+       "підпис": "Link Access Rights",
+       "тип": "selection",
+       "обовʼязковість": "ТАК",
+       "варіанти": "view, edit, none"
+      },
+      {
+       "назва": "is_access_via_link_hidden",
+       "підпис": "Link Access Hidden",
+       "тип": "boolean",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "owner_id / partner_id / company_id",
+       "підпис": "Owner / Contact / Company",
+       "тип": "many2one",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "tag_ids",
+       "підпис": "Tags",
+       "тип": "many2many documents.tag",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "alias_name",
+       "підпис": "Alias Name",
+       "тип": "char",
+       "обовʼязковість": "ні (тека приймає документи поштою)"
+      },
+      {
+       "назва": "res_model / res_id",
+       "підпис": "Resource Model / Resource ID",
+       "тип": "char / many2one_reference",
+       "обовʼязковість": "ні (звʼязок із карткою співробітника)"
+      }
+     ]
+    },
+    {
+     "модель": "hr.employee",
+     "поля": [
+      {
+       "назва": "document_count",
+       "підпис": "Document Count",
+       "тип": "integer",
+       "обовʼязковість": "обчислюване — лічильник документів на картці"
+      }
+     ]
+    },
+    {
+     "модель": "hr.version (Employee Contract) — «версії умов найму»",
+     "поля": [
+      {
+       "назва": "date_version",
+       "підпис": "Date Version",
+       "тип": "date",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "hr_responsible_id",
+       "підпис": "HR Responsible",
+       "тип": "many2one res.users",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "contract_date_start / contract_date_end",
+       "підпис": "Contract Start Date / Contract End Date",
+       "тип": "date",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "contract_type_id / contract_template_id",
+       "підпис": "Contract Type / Contract Template",
+       "тип": "many2one hr.contract.type / hr.version",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "job_id / department_id / resource_calendar_id",
+       "підпис": "Job / Department / Working Hours",
+       "тип": "many2one",
+       "обовʼязковість": "ні — саме ці умови й версіонуються"
+      },
+      {
+       "назва": "wage / structure_type_id",
+       "підпис": "Wage / Salary Structure Type",
+       "тип": "monetary / many2one",
+       "обовʼязковість": "ні — зарплатні поля, ми їх не налаштовуємо"
+      },
+      {
+       "назва": "sign_request_ids",
+       "підпис": "Requested Signatures",
+       "тип": "many2many sign.request",
+       "обовʼязковість": "ні"
+      }
+     ]
+    },
+    {
+     "модель": "стан стенда",
+     "поля": [
+      {
+       "назва": "тека «Кадрові документи» (id 53)",
+       "підпис": "створена вручну, access_internal=none, власник — адміністратор; з автоматичними теками «Employees - <компанія>» не пов'язана",
+       "тип": "—",
+       "обовʼязковість": "—"
+      }
+     ]
+    }
+   ],
+   "рішення": [
+    "Які документи зберігаємо: заяви, довідки, договори, скани документів, медогляди, накази від клієнта",
+    "Структура тек: одна кадрова тека на всіх чи по теці на співробітника",
+    "Хто бачить кадрові теки (access_internal: none / view / edit) і чи можна ділитися посиланням назовні (access_via_link)",
+    "Чи використовуємо теги для видів документів",
+    "Чи фіксуємо зміни умов (посада, підрозділ, графік) окремими версіями і з якої дати",
+    "Хто «HR Responsible» — поле обовʼязкове",
+    "Чи потрібен прийом документів на пошту теки (alias_name)",
+    "Хто завантажує документи: кадровик за всіх чи співробітник сам"
+   ],
+   "залежності": [
+    "Тека співробітників задається на компанії → три компанії, три теки (hr-3-2)",
+    "hr.version — обовʼязкова частина картки (hr-1-1): версії існують, навіть якщо ними не користуються",
+    "Права в Документах не збігаються з групами Employees (hr-2-2)",
+    "Підписання веде на Sign (sign_request_ids) — поза контуром"
+   ],
+   "пастки": [
+    "«Employees Folder» створюється автоматично на кожну компанію; вручну створена тека «Кадрові документи» з нею не пов'язана — на стенді вже дві паралельні структури",
+    "Права в Документах власні (access_internal / access_via_link / owner_id) і НЕ успадковують кадрові групи: тека може бути відкрита всім внутрішнім користувачам, якщо не поставити none",
+    "Посилання на документ (access_via_link) працює поза правами Odoo — для сканів паспортів це окреме рішення клієнта",
+    "hr.version тягне зарплатні поля (wage, structure_type_id) і обовʼязкове hr_responsible_id — заповнювати доведеться навіть без обліку зарплати",
+    "Контролю строків (медогляд, дозвіл на роботу, кінець договору) немає — це просто файли й дати без нагадувань за замовчуванням"
+   ],
+   "межі": [
+    "Кадрові накази й трудові книжки — не робимо",
+    "Підписання документів (спосіб підписання) — поза контуром за рішенням 05.09.2026",
+    "Обмін із держреєстрами й ЕЦП — ні"
+   ],
+   "меню": "Documents → тека «Employees - <компанія>»; картка співробітника — лічильник документів; Employees → Configuration → Settings (пункт 496, дія 784) — прапорець documents_hr_settings"
+  },
+  "hr-3-4": {
+   "моделі": [
+    {
+     "модель": "ir.ui.view",
+     "поля": [
+      {
+       "назва": "mode",
+       "підпис": "View inheritance mode",
+       "тип": "selection",
+       "обовʼязковість": "ТАК",
+       "варіанти": "primary (самостійне подання) / extension (правка існуючого)"
+      },
+      {
+       "назва": "inherit_id",
+       "підпис": "Inherited View",
+       "тип": "many2one ir.ui.view",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "priority",
+       "підпис": "Sequence",
+       "тип": "integer",
+       "обовʼязковість": "ТАК"
+      },
+      {
+       "назва": "active",
+       "підпис": "Active",
+       "тип": "boolean",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "group_ids",
+       "підпис": "Groups",
+       "тип": "many2many res.groups",
+       "обовʼязковість": "ні — за приміткою блоку через API НЕ пишеться"
+      }
+     ]
+    },
+    {
+     "модель": "ir.actions.act_window",
+     "поля": [
+      {
+       "назва": "name / res_model / view_mode",
+       "підпис": "назва пункту, модель, набір подань",
+       "тип": "char / char / char",
+       "обовʼязковість": "—"
+      },
+      {
+       "назва": "view_id",
+       "підпис": "конкретне подання для першого режиму",
+       "тип": "many2one ir.ui.view",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "domain",
+       "підпис": "жорсткий фільтр",
+       "тип": "char",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "context",
+       "підпис": "фільтр і групування за замовчуванням (search_default_*, group_by)",
+       "тип": "char",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "search_view_id",
+       "підпис": "пошукове подання",
+       "тип": "many2one ir.ui.view",
+       "обовʼязковість": "ні"
+      }
+     ]
+    },
+    {
+     "модель": "ir.ui.menu",
+     "поля": [
+      {
+       "назва": "name / parent_id / sequence",
+       "підпис": "назва, місце в дереві, порядок",
+       "тип": "char / many2one / integer",
+       "обовʼязковість": "—"
+      },
+      {
+       "назва": "action",
+       "підпис": "дія пункту",
+       "тип": "reference",
+       "обовʼязковість": "ні"
+      },
+      {
+       "назва": "group_ids",
+       "підпис": "Groups",
+       "тип": "many2many res.groups",
+       "обовʼязковість": "ні — ПИШЕТЬСЯ, саме тут ховаємо пункт"
+      }
+     ]
+    },
+    {
+     "модель": "res.groups (Odoo 19)",
+     "поля": [
+      {
+       "назва": "privilege_id",
+       "підпис": "Privilege",
+       "тип": "many2one res.groups.privilege",
+       "обовʼязковість": "ні — ЗАМІСТЬ category_id, якого більше немає"
+      },
+      {
+       "назва": "implied_ids / comment / name",
+       "підпис": "Implied Groups / Comment / Name",
+       "тип": "many2many / text / char",
+       "обовʼязковість": "—"
+      },
+      {
+       "назва": "наявні групи",
+       "підпис": "68 Officer: Manage all employees, 69 Administrator (Employees), 120 Time Off Responsible, 121 Officer: Manage all requests, 122 Administrator (Time Off)",
+       "тип": "—",
+       "обовʼязковість": "—"
+      }
+     ]
+    },
+    {
+     "модель": "стан стенда — робоче місце вже зібране",
+     "поля": [
+      {
+       "назва": "меню 810 «Робоче місце кадровика»",
+       "підпис": "під Employees, sequence 90, group_ids [68]",
+       "тип": "ir.ui.menu",
+       "обовʼязковість": "—"
+      },
+      {
+       "назва": "дія 1347",
+       "підпис": "hr.employee, view_mode list,form, view_id 4895, context {'group_by': ['department_id']}, домену НЕМАЄ",
+       "тип": "ir.actions.act_window",
+       "обовʼязковість": "—"
+      },
+      {
+       "назва": "подання 4895 «hr.employee.list.kadrovyk.todo»",
+       "підпис": "mode primary, без inherit_id, список полів: name, department_id, job_title, resource_calendar_id, work_email",
+       "тип": "ir.ui.view",
+       "обовʼязковість": "—"
+      }
+     ]
+    }
+   ],
+   "рішення": [
+    "Кому робимо робоче місце: кадровику, керівнику підрозділу, обом",
+    "Які колонки він бачить у списку і за чим групує (на стенді — підрозділ)",
+    "Який фільтр стоїть за замовчуванням (тільки активні, тільки своя юрособа, тільки свій підрозділ)",
+    "Чи потрібне окреме місце для заявок на відсутність (список «на мене») окремо від карток",
+    "Де стоїть пункт меню: усередині Employees чи окремою верхньою вкладкою",
+    "За якою групою ховаємо пункт і чи треба прибрати зайві штатні пункти в цієї ролі"
+   ],
+   "залежності": [
+    "Група в меню береться зі штатних (68/69/120/121/122) — нових груп не вигадуємо",
+    "Подання спирається на поля картки, зокрема на власні властивості (hr-2-4)",
+    "Групування по підрозділах вимагає заповненого department_id (hr-1-2)"
+   ],
+   "пастки": [
+    "Фільтр за замовчуванням задається КОНТЕКСТОМ дії (search_default_*), а не самим поданням; у дії 1347 на стенді є тільки group_by, готового фільтра немає",
+    "Обмежити видимість можна на меню (ir.ui.menu.group_ids пишеться), але не на поданні через API (ir.ui.view.group_ids за приміткою блоку не пишеться) — «своє подання лише для кадровика» тримається на меню",
+    "У Odoo 19 категорія групи — res.groups.privilege; поля category_id НЕМАЄ (перевірено: запит із category_id повертає помилку). Старі інструкції й скрипти з category_id не працюють",
+    "Штатні дії hr.employee мають домен по allowed_company_ids, а власна дія 1347 домену не має — у мультиюрособі вона покаже всіх, поки домен не додати",
+    "Пункт меню бачать усі, у кого є вказана група: «робоче місце тільки для однієї людини» = окрема група, а не окремий пункт"
+   ],
+   "межі": [
+    "Кастомні модулі, успадкування моделей, XML-правки друкованих бланків — ніколи",
+    "Обчислювані колонки в списку = поле на моделі = Python, поза периметром",
+    "Окремий застосунок як такий не робимо — це меню + дія + подання"
+   ],
+   "меню": "Employees → «Робоче місце кадровика» (пункт 810, дія 1347, група 68 «Officer: Manage all employees»)"
+  }
+ },
+ "запитів_до_бази": 42
+}
