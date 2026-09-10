@@ -267,6 +267,31 @@ def check_subst():
     with _cx.redirect_stdout(буф2):
         код2 = ec.main(['x', 'data/client-profile-example.json', '--всі'])
     out.append((код2 == 0, 'на чистому плані сторож мовчить'))
+
+    # «Перевірити» без жодного очікування: гілка-запобіжник, яка на нинішніх
+    # рецептах не спрацьовує жодного разу. Саме тому їй потрібен тест — невживана
+    # гілка інакше згниє непоміченою, і наступний рецепт із голою перевіркою
+    # поїде до виконавця з невисловленою умовою.
+    import tempfile as _tf, os as _os
+    _d = _tf.mkdtemp()
+    prof_t = json.load(io.open('data/client-profile-example.json', encoding='utf-8'))
+    prof_t['набір'] = {'base': 1}
+    rec_t = json.load(io.open('data/recipes.json', encoding='utf-8'))
+    rec_t['позиції']['base']['1']['компанія з реквізитами']['кроки'] = [
+        {'дія': 'перевірити', 'модель': 'res.company', 'домен': [['id', '=', 1]]}]
+    пп = _os.path.join(_d, 'prof_bare.json'); рр = _os.path.join(_d, 'rec_bare.json')
+    json.dump(prof_t, io.open(пп, 'w', encoding='utf-8'), ensure_ascii=False)
+    json.dump(rec_t, io.open(рр, 'w', encoding='utf-8'), ensure_ascii=False)
+    справж = ec.RECIPES
+    буфб = io.StringIO()
+    try:
+        ec.RECIPES = рр
+        with _cx.redirect_stdout(буфб):
+            ec.main(['x', пп])
+    finally:
+        ec.RECIPES = справж
+    out.append(('за замовчуванням: запис мусить існувати' in буфб.getvalue(),
+                'гола «перевірити» друкує свою умову явно'))
     return out
 
 def check_coverage():
