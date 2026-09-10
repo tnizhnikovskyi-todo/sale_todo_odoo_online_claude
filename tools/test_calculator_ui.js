@@ -229,18 +229,33 @@ function expected(sel) {
   // Клавіатура: роль tablist обіцяє читалці, що стрілка перемкне вкладку.
   // До 10.09 обробника не було — Tab проводив крізь чотири кнопки, стрілки
   // не робили нічого, і обіцянка ролі була порожньою.
-  await p.focus('#tab-calc');
+  // Вкладки читаємо з DOM, а не називаємо іменами: «Повний перелік» сховано
+  // (рішення 10.09.2026), і тест із зашитим `tab-spec` після цього перевіряв би
+  // сторінку, до якої користувач більше не має входу.
+  const вкладки = await p.evaluate(() => Array.from(document.querySelectorAll('[role="tab"]'))
+    .filter(t => !t.hidden).map(t => t.id));
+  ok('видимих вкладок три, «Повного переліку» серед них немає',
+     вкладки.length === 3 && !вкладки.includes('tab-spec'), вкладки.join(', '));
+  // Сховано, а не видалено: розмітка й побудований вміст сторінки на місці.
+  const схована = await p.evaluate(() => ({
+    вкладка: document.getElementById('tab-spec').hidden,
+    сторінка: document.getElementById('page-spec').hidden,
+    рядків: (document.getElementById('spec-body') || { children: [] }).children.length,
+  }));
+  ok('«Повний перелік» сховано, але не видалено',
+     схована.вкладка && схована.сторінка && схована.рядків > 0, JSON.stringify(схована));
+  await p.focus('#' + вкладки[0]);
   await p.keyboard.press('ArrowRight');
   await p.waitForTimeout(300);
-  const посл = await p.evaluate(() => ({
-    сторінка: document.getElementById('page-spec').hidden === false,
-    вибрана: document.getElementById('tab-spec').getAttribute('aria-selected'),
-    tabindexАктивної: document.getElementById('tab-spec').tabIndex,
-    tabindexІншої: document.getElementById('tab-calc').tabIndex,
-  }));
-  ok('стрілка вправо перемикає вкладку і переносить фокус',
+  const посл = await p.evaluate((ids) => ({
+    сторінка: document.getElementById(ids[1].replace('tab-', 'page-')).hidden === false,
+    вибрана: document.getElementById(ids[1]).getAttribute('aria-selected'),
+    tabindexАктивної: document.getElementById(ids[1]).tabIndex,
+    tabindexІншої: document.getElementById(ids[0]).tabIndex,
+  }), вкладки);
+  ok('стрілка вправо перемикає на наступну ВИДИМУ вкладку і переносить фокус',
      посл.сторінка && посл.вибрана === 'true' && посл.tabindexАктивної === 0
-     && посл.tabindexІншої === -1, JSON.stringify(посл));
+     && посл.tabindexІншої === -1, вкладки[1] + ' | ' + JSON.stringify(посл));
   await p.keyboard.press('Home');
   await p.waitForTimeout(300);
   const дім = await p.evaluate(() => document.getElementById('page-calc').hidden === false);

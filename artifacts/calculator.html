@@ -9809,9 +9809,15 @@ select.chip{padding-right:8px}
   // ---------- сторінки ----------
   var PAGES = { calc:['tab-calc','page-calc','sub-calc'], spec:['tab-spec','page-spec','sub-spec'],
                 qual:['tab-qual','page-qual','sub-qual'], form:['tab-form','page-form','sub-form'] };
+  // Сторінки, СХОВАНІ від користувача, але не видалені: розмітка, стилі, дані й
+  // код лишаються на місці, вимикається тільки вхід — вкладка, вміст і стрілки.
+  // «Повний перелік» — внутрішній довідник аналітика, у публікації для сейла він
+  // не потрібен (рішення 10.09.2026). Повернути = прибрати id із цього списку.
+  var СХОВАНІ = ['spec'];
+  function схована(p){ return СХОВАНІ.indexOf(p) >= 0; }
   var RESETLBL = { calc:'Почати заново', spec:'Очистити пошук', qual:'Почати заново', form:'Очистити анкету' };
   function showPage(p){
-    if(!PAGES[p]) p = 'calc';
+    if(!PAGES[p] || схована(p)) p = 'calc';
     Object.keys(PAGES).forEach(function(k){
       var on = k === p, ref = PAGES[k];
       $(ref[0]).setAttribute('aria-selected', on ? 'true' : 'false');
@@ -9843,7 +9849,7 @@ select.chip{padding-right:8px}
   // оголошує «вкладка 2 з 4» і людина чекає, що стрілка перемкне. Без
   // обробника Tab проводив крізь усі чотири кнопки, а стрілки не робили нічого.
   // Home і End — до першої й останньої, як у штатних вкладках.
-  var ПОРЯДОК = ['calc', 'spec', 'qual', 'form'];
+  var ПОРЯДОК = ['calc', 'spec', 'qual', 'form'].filter(function(p){ return !схована(p); });
   $('tab-calc').parentNode.addEventListener('keydown', function(e){
     var зараз = ПОРЯДОК.indexOf(state.page);
     if(зараз < 0) return;
@@ -10938,6 +10944,13 @@ select.chip{padding-right:8px}
   load();
   $('cli').value = state.client;
   $('until').value = state.until;
+  // Вхід на сховану сторінку закритий з трьох боків: кнопка вкладки, вміст і
+  // підзаголовок. Клавіатуру закриває ПОРЯДОК, а прямий showPage('spec') —
+  // сама showPage. Читалка теж не побачить: hidden прибирає з дерева доступності,
+  // тому «вкладка 2 з 3», а не «з 4».
+  СХОВАНІ.forEach(function(p){
+    (PAGES[p] || []).forEach(function(id){ var el = $(id); if(el) el.hidden = true; });
+  });
   showPage(state.page);
   render();
   casesRender();
