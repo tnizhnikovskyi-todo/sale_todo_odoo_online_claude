@@ -92,7 +92,20 @@ def subst(v, prof, missing, elem=None, idx=None, args=None):
             if mm.group(1) not in prof:
                 missing.append(mm.group(1))
                 return mm.group(0)
-            return str(prof[mm.group(1)])
+            знач = prof[mm.group(1)]
+            # Підстановка складеного значення В СЕРЕДИНУ рядка — завжди помилка.
+            # Спіймано дорого: рецепт написали як «$клієнт.контроль_міграції.назва»,
+            # підстановка розпізнала лише перший сегмент, віддала весь словник, і
+            # str() від нього поїхав у arch подання разом із фігурними дужками.
+            # Валідатор мовчав — поле «контроль_міграції» у профілі справді є.
+            # Вкладених шляхів мова не має: профіль пласкии, як «рм_crm_назва».
+            if isinstance(знач, (dict, list)):
+                missing.append('%s: складене значення (%s) підставляється в середину '
+                               'рядка «%s». Вкладених шляхів $клієнт.поле.підполе мова не '
+                               'має — розкласти профіль на пласкі поля'
+                               % (mm.group(1), type(знач).__name__, v[:60]))
+                return mm.group(0)
+            return str(знач)
         return CLIENT.sub(rep, v)
     if isinstance(v, dict):
         return {k: subst(x, prof, missing, elem, idx, args) for k, x in v.items()}
