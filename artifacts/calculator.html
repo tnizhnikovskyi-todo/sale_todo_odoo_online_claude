@@ -70,14 +70,18 @@ h1{
 .chip:hover{background:var(--surface-2);color:var(--ink)}
 .chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-.grid{display:grid;grid-template-columns:1fr;gap:22px;align-items:start}
+/* minmax(0,1fr), а не 1fr: колонка з `1fr` розтягується під вміст, і таблиця з
+   `min-width` тягла ЦІЛУ сторінку в горизонтальну прокрутку — на 400 px це було
+   182 px прокрутки ще до того, як колонка рівня стала ширшою. Обгортка таблиці
+   має свій `overflow-x:auto`, але вона нічого не обрізала, бо сама розтягувалась. */
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:22px;align-items:start}
 @media (min-width:940px){.grid{grid-template-columns:minmax(0,1fr) 300px;gap:26px}}
 
 /* ---------- table ---------- */
 .tblwrap{
   border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow-x:auto;
 }
-table{border-collapse:collapse;width:100%;min-width:560px;font-size:13.5px}
+table{border-collapse:collapse;width:100%;min-width:660px;font-size:13.5px}
 thead th{
   font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;
   text-transform:uppercase;color:var(--muted);font-weight:500;text-align:left;
@@ -116,9 +120,10 @@ td.name input[type="checkbox"]{accent-color:var(--accent);flex:none;margin:0;pos
   margin:2px 0 0 25px;font-size:12px;line-height:1.4;color:var(--muted);
 }
 .crit .txt{flex:1 1 auto}
-.morewrap{display:flex;justify-content:center;margin:7px 0 0 0}
+.morewrap{display:flex;align-items:center;gap:8px}
+.morewrap select.lv{flex:1 1 auto;min-width:0}
 .more{
-  appearance:none;cursor:pointer;width:auto;
+  appearance:none;cursor:pointer;width:auto;flex:0 0 auto;
   font-family:inherit;font-size:13px;line-height:1.2;
   padding:7px 16px;border:1px solid var(--accent);border-radius:6px;
   background:var(--surface);color:var(--accent);
@@ -128,7 +133,7 @@ td.name input[type="checkbox"]{accent-color:var(--accent);flex:none;margin:0;pos
 .more[aria-expanded="true"]{background:var(--accent);color:var(--surface)}
 .more:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-td.act{width:150px}
+td.act{width:250px}
 select.lv{
   width:100%;font-family:inherit;font-size:12.5px;
   padding:5px 7px;border:1px solid var(--line-strong);border-radius:5px;
@@ -9480,14 +9485,14 @@ select.chip{padding-right:8px}
       });
       sel.value = state.lv[m.id];
       sel.addEventListener('change', function(){ state.lv[m.id] = +sel.value; render(); });
-      td2.appendChild(sel);
-      // «Детально» стоїть під перемикачем рівня — там, куди сейл і так дивиться,
-      // коли обирає рівень. Раніше це було дрібне посилання праворуч від ознаки:
-      // найважчий елемент на екрані для ока, хоча натискають його на кожній
-      // позиції розмови. Кнопка лишається компактною, по центру колонки, і не
-      // тягнеться на всю ширину.
+      // «Детально» стоїть ПОРУЧ із перемикачем рівня, в одному рядку — там, куди
+      // сейл і так дивиться, коли обирає рівень. Раніше це було дрібне посилання
+      // праворуч від ознаки: найважчий елемент на екрані для ока, хоча натискають
+      // його на кожній позиції розмови. Кнопка компактна й на ширину колонки не
+      // тягнеться.
       var mwrap = document.createElement('div');
       mwrap.className = 'morewrap';
+      mwrap.appendChild(sel);
       var more = document.createElement('button');
       more.type = 'button'; more.className = 'more';
       more.textContent = 'Детально';

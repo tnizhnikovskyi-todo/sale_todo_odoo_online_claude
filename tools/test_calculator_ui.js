@@ -420,19 +420,21 @@ function expected(sel) {
   // колонці), і роботу: підпис у два боки й розкриття рядка порівняння.
   const детально = await p.evaluate(() => {
     const b = document.querySelector('.more');
-    const r = b.getBoundingClientRect();
-    const блок = b.closest('td').getBoundingClientRect();
+    const sel = b.closest('td').querySelector('select.lv');
+    const r = b.getBoundingClientRect(), rs = sel.getBoundingClientRect();
     const cs = getComputedStyle(b);
     return {
       текст: b.textContent, ширина: Math.round(r.width), висота: Math.round(r.height),
       шрифт: parseFloat(cs.fontSize), рамка: parseFloat(cs.borderTopWidth),
-      зсувВідЦентру: Math.abs(Math.round(r.left + r.width / 2 - (блок.left + блок.width / 2))),
+      // «поруч», а не «під»: центри по вертикалі збігаються, кнопка правіше селекта
+      різницяЦентрів: Math.abs(Math.round((r.top + r.height / 2) - (rs.top + rs.height / 2))),
+      правіше: Math.round(r.left - rs.right),
     };
   });
-  ok('«Детально» — компактна кнопка по центру колонки рівня',
+  ok('«Детально» — компактна кнопка ПОРУЧ із перемикачем рівня',
      детально.текст === 'Детально' && детально.ширина >= 80 && детально.ширина <= 120
        && детально.висота >= 28 && детально.шрифт >= 12 && детально.рамка >= 1
-       && детально.зсувВідЦентру <= 2,
+       && детально.різницяЦентрів <= 2 && детально.правіше >= 0 && детально.правіше <= 20,
      JSON.stringify(детально));
   const розкрито = await p.evaluate(() => {
     document.querySelector('.more').click();
@@ -446,6 +448,29 @@ function expected(sel) {
      JSON.stringify(розкрито));
   await p.evaluate(() => document.querySelector('.more').click());
   await p.waitForTimeout(200);
+
+  // --- 5а3. телефонна ширина: сторінка не їде вбік ------------------------
+  // Знайдено 10.09.2026 при розширенні колонки рівня: на 400 px горизонтально
+  // прокручувалась ЦІЛА сторінка — 182 px, і так було ще до правки. Обгортка
+  // таблиці має свій overflow-x, але вона нічого не обрізала, бо колонка гріда
+  // стояла як `1fr` і розтягувалась під вміст. Прокручуватись мусить таблиця,
+  // а не документ.
+  await p.setViewportSize({ width: 400, height: 900 });
+  await p.waitForTimeout(300);
+  const телефон = await p.evaluate(() => {
+    const t = document.querySelector('table'), w = t.parentElement;
+    return {
+      документ: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      обгортка: Math.round(w.clientWidth), таблиця: Math.round(t.scrollWidth),
+      overflow: getComputedStyle(w).overflowX,
+    };
+  });
+  ok('на телефонній ширині сторінка не прокручується вбік, а таблиця може',
+     телефон.документ === 0 && телефон.overflow === 'auto'
+       && телефон.обгортка < телефон.таблиця,
+     JSON.stringify(телефон));
+  await p.setViewportSize({ width: 1280, height: 900 });
+  await p.waitForTimeout(300);
 
   // --- 5б2. набір клієнта несе вибір «межі по позиціях» ---------------------
   // Вибір належить конкретному клієнтові, тому мусить їхати з набором. Пастка тут
