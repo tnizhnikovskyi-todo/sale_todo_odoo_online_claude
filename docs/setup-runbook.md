@@ -102,7 +102,7 @@
 | довідник контрагентів | `res.partner` |  |
 | налаштування пошти й повідомлень | `mail.alias.domain`, `res.users`<br>поля: `res.users.notification_type` |  |
 | нумерація документів: префікс, рік, лічильник | `ir.sequence` | Налаштування → Технічні → Послідовності |
-| двофакторна автентифікація для всіх працівників | `ir.config_parameter` | Налаштування → Права доступу |
+| двофакторна аутентифікація для всіх працівників | `ir.config_parameter` | Налаштування → Права доступу |
 | оглядова сесія 1 година із записом | — |  |
 
 #### Рівень 2
@@ -656,7 +656,7 @@
 
 | Пункт | Де в Odoo | Шлях у меню |
 |---|---|---|
-| карта виїздів за день у порядку планового часу (лінія маршруту — за наявності токена MapBox у клієнта) | `ir.ui.view`, `ir.actions.act_window`, `ir.actions.act_window.view`, `ir.ui.menu` |  |
+| карта виїздів за день у порядку планового часу (лінія маршруту — за наявності токена MapBox у Замовника) | `ir.ui.view`, `ir.actions.act_window`, `ir.actions.act_window.view`, `ir.ui.menu` |  |
 | мобільний доступ виконавця | — |  |
 | фото й підпис клієнта на місці | — |  |
 | поля наряду під тип роботи | `project.project`, `ir.model.fields`, `ir.ui.view`<br>поля: `project.project.task_properties_definition` |  |
@@ -669,7 +669,7 @@
 |---|---|---|
 | планування виїздів по карті з урахуванням адрес (вручну) | `project.task`<br>поля: `project.task.sequence` | allow_resequence="true" у поданні карти → project.task.sequence |
 | облік запчастин у наряді | — |  |
-| підрядники — як користувачі з ліцензією Odoo (оплачує клієнт) або доступ до задач через Project Sharing без призначення виконавцем | `project.project`, `project.task`<br>поля: `project.project.privacy_visibility`, `project.task.user_ids` |  |
+| підрядники — як користувачі з ліцензією Odoo (оплачує Замовник) або доступ до задач через Project Sharing без призначення виконавцем | `project.project`, `project.task`<br>поля: `project.project.privacy_visibility`, `project.task.user_ids` |  |
 | мобільне подання виконавця | `ir.ui.view` |  |
 
 ### Планування
@@ -748,7 +748,7 @@
 | Пункт | Де в Odoo | Шлях у меню |
 |---|---|---|
 | автоматична маршрутизація | `helpdesk.tag`, `helpdesk.team`<br>поля: `helpdesk.tag.assignment`, `helpdesk.team.assign_method` | helpdesk.tag.assignment (мітка → виконавці) |
-| база знань (застосунок Knowledge) і типові відповіді; структура — ми, контент — клієнт | `knowledge.article` |  |
+| база знань (застосунок Knowledge) і типові відповіді; структура — ми, контент — Замовник | `knowledge.article` |  |
 | звітність за виконанням SLA | `helpdesk.sla`, `helpdesk.sla.status`<br>поля: `helpdesk.sla.report.analysis` |  |
 | окреме робоче місце команди: свій пункт меню, своє подання черги й свій фільтр | `ir.ui.view`, `ir.actions.act_window`, `ir.ui.menu`<br>поля: `ir.actions.act_window.view_id`, `ir.ui.menu.group_ids`, `ir.ui.view.group_ids` |  |
 | кнопки типових дій у заявці | `ir.actions.server` |  |
