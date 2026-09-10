@@ -360,6 +360,29 @@ def check_validator():
         cr.PROFILE = справжній_проф
     out.append((код5 != 0 and 'латинськ' in буф5.getvalue(),
                 'латиниця серед кирилиці спіймана й названа'))
+
+    # Рецепт, який тільки перевіряє. Знайдено звітом «кроки проти годин»:
+    # «Склад» показав 48 годин при 4 кроках-послугах, і причина була не в ціні,
+    # а в чотирьох рецептах із єдиного «перевірити».
+    отр6 = _copy.deepcopy(свіжі)
+    б = отр6['позиції']['stk']['1']['прихід від постачальника']
+    б['кроки'] = [x for x in б['кроки'] if x.get('дія') != 'послуга']
+    отрута6 = os.path.join(d, 'poison_thin.json')
+    json.dump(отр6, io.open(отрута6, 'w', encoding='utf-8'), ensure_ascii=False)
+    буф6 = io.StringIO()
+    try:
+        cr.RECIPES = отрута6
+        with _c.redirect_stdout(буф6):
+            cr.main()
+    finally:
+        cr.RECIPES = справжній
+    out.append(('тільки перевіряє' in буф6.getvalue(),
+                'рецепт без запису й без передачі названо вголос'))
+    буф7 = io.StringIO()
+    with _c.redirect_stdout(буф7):
+        cr.main()
+    out.append(('тільки перевіряє' not in буф7.getvalue(),
+                'на чистих рецептах правило про «тільки перевіряє» мовчить'))
     out.append((cr.main() == 0, 'на чистих рецептах валідатор мовчить'))
     return out
 
