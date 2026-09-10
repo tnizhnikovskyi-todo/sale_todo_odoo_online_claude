@@ -133,10 +133,17 @@ def main():
     rec = json.load(io.open(RECIPES, encoding='utf-8'))
 
     have = set()
+    generated = set()
     for pid, levels in rec['позиції'].items():
         for lk, items in levels.items():
-            for txt in items:
+            for txt, body in items.items():
                 have.add((pid, lk, txt))
+                # Рецепти виду «штатна поведінка» дописує генератор
+                # (tools/gen_standard_recipes.py). Рахувати їх разом із рукописними
+                # означало б завищувати готовність: у них немає конфігурації, тільки
+                # перевірка застосунку й показ процесу.
+                if isinstance(body, dict) and body.get('джерело'):
+                    generated.add((pid, lk, txt))
 
     names = {}
     order = []
@@ -191,6 +198,8 @@ def main():
     w('|---|---:|')
     w('| Пунктів усього | %d |' % (done + len(rows)))
     w('| Уже описано рецептами | **%d** |' % done)
+    w('| з них рукописних | %d |' % (done - len(generated)))
+    w('| з них згенерованих (вид «штатна поведінка») | %d |' % len(generated))
     w('| Лишилося | %d |' % len(rows))
     w('')
     w('## Головне: залишок — це різні види роботи, а не один список')
@@ -270,7 +279,8 @@ def main():
     w('')
 
     io.open(OUT, 'w', encoding='utf-8').write('\n'.join(L) + '\n')
-    print('OK: %s — описано %d, лишилося %d' % (OUT, done, len(rows)))
+    print('OK: %s — описано %d (рукописних %d, згенерованих %d), лишилося %d'
+          % (OUT, done, done - len(generated), len(generated), len(rows)))
     for kd in ('конфігурація', 'штатна поведінка', 'послуга', 'без адреси в карті',
                'не в базі: інструмент сейла'):
         print('    %-28s лишилося %3d, описано %3d' % (kd, by_kind[kd], kind_done[kd]))

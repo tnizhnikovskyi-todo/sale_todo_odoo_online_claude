@@ -26,6 +26,7 @@ import sys
 RECIPES = 'data/recipes.json'
 PRICE = 'data/price.json'
 CMAP = 'data/config-map.json'
+VERIFY = 'data/verify.json'
 PROFILE = 'data/client-profile-example.json'
 
 ACTIONS = {
@@ -160,6 +161,40 @@ def base_facts(rec):
     return views, xmlids, others
 
 
+def stale_generated(rec, cmap, vrfy):
+    """Згенеровані рецепти, які вже не відповідають своєму виду.
+
+    Рецепт виду «штатна поведінка» каже: конфігурації тут немає, лише перевірка
+    застосунку й показ процесу. Якщо пункт згодом став конфігураційним — наприклад
+    у журнал дописали адресу, і карта побачила модель — такий рецепт **занижує
+    роботу**: план виглядає повним, а налаштування ніхто не зробить. Тому вид
+    перечитується щоразу, і розбіжність називається вголос.
+    """
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('rg', 'tools/report_recipe_gaps.py')
+    rg = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(rg)
+    bad = []
+    for pid, lvs in rec['позиції'].items():
+        for lk, items in lvs.items():
+            for txt, body in items.items():
+                if not (isinstance(body, dict) and body.get('джерело')):
+                    continue
+                rows = (cmap['позиції'].get(pid, {}).get('рівні', {}) or {}).get(lk, [])
+                row = next((r for r in rows if r['пункт'] == txt), None)
+                if not row:
+                    continue
+                st = ((vrfy['позиції'].get(pid) or {}).get(lk) or {}).get('пункти', {})
+                z = (st.get(txt) or {}).get('звірка') or {}
+                kind = rg.kind(row['моделі'], z.get('є'), pid, row.get('модулі'))
+                if kind != 'штатна поведінка':
+                    bad.append('%s р.%s «%s»: рецепт згенерований як «штатна поведінка», '
+                               'а пункт тепер «%s» — згенерований рецепт занижує роботу, '
+                               'його треба замінити рукописним'
+                               % (pid, lk, txt[:44], kind))
+    return bad
+
+
 def main():
     rec = json.load(io.open(RECIPES, encoding='utf-8'))
     price = json.load(io.open(PRICE, encoding='utf-8'))
@@ -167,6 +202,8 @@ def main():
     prof = json.load(io.open(PROFILE, encoding='utf-8'))
     templates = rec.get('шаблони') or {}
     errs_early = []
+    vrfy = json.load(io.open(VERIFY, encoding='utf-8'))
+    errs_early += stale_generated(rec, cmap, vrfy)
 
     known_models = set(ALLOW_EXTRA)
     for blk in cmap['позиції'].values():
