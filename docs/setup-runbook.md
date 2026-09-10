@@ -102,7 +102,7 @@
 | довідник контрагентів | `res.partner` |  |
 | налаштування пошти й повідомлень | `mail.alias.domain`, `res.users`<br>поля: `res.users.notification_type` |  |
 | нумерація документів: префікс, рік, лічильник | `ir.sequence` | Налаштування → Технічні → Послідовності |
-| двофакторна автентифікація для адміністраторів | `ir.config_parameter` | Налаштування → Права доступу |
+| двофакторна автентифікація для всіх працівників | `ir.config_parameter` | Налаштування → Права доступу |
 | оглядова сесія 1 година із записом | — |  |
 
 #### Рівень 2
@@ -519,7 +519,7 @@
 
 | Пункт | Де в Odoo | Шлях у меню |
 |---|---|---|
-| довідник постачальників | `res.partner` |  |
+| відбір і мітки постачальників | `res.partner` |  |
 | замовлення постачальнику | `purchase.order`, `stock.picking` | purchase.order → button_confirm → stock.picking типу «прихід» |
 | приймання товару | `stock.picking`<br>поля: `stock.picking.button_validate` |  |
 | ціни постачальників | `product.supplierinfo` |  |
@@ -898,7 +898,7 @@
 | Пункт | Де в Odoo | Шлях у меню |
 |---|---|---|
 | план-факт до P&L штатно; бюджети за напрямами — модуль Budget Management | `budget.analytic`, `budget.line` |  |
-| кілька валют у документах і звітах; курс — імпортом, автозавантаження немає | `res.currency.rate`, `res.company`<br>поля: `res.company.currency_provider` |  |
+| кілька валют у документах і звітах; курс — вручну або імпортом: автозавантаження в Odoo є, але офіційного курсу НБУ серед джерел немає | `res.currency.rate`, `res.company`<br>поля: `res.company.currency_provider` |  |
 | багатовимірна аналітика | `account.analytic.plan` |  |
 | власні списки для звірки | `ir.ui.view` |  |
 | поля бюджетних статей | `ir.model.fields`, `ir.ui.view` |  |
