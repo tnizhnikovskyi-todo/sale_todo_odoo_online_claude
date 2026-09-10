@@ -449,6 +449,44 @@ function expected(sel) {
   await p.evaluate(() => document.querySelector('.more').click());
   await p.waitForTimeout(200);
 
+  // Розкриття «Детально» не мусить перебудовувати ЦІЛУ таблицю. При автоматичній
+  // розкладці рядок порівняння (colspan=3 із трьома колонками складу робіт)
+  // переміряв усі колонки: 10.09.2026 один клік зсував розкладку в усіх 27
+  // рядках (перша колонка 449 → 432 px, ціна 113 → 130). Ширини тепер задані
+  // <colgroup> + table-layout:fixed, а кнопка має однакову ширину під «Детально»
+  // і «Згорнути» — інакше смикався селект рівня в тому самому рядку.
+  // Отрути показали, що механізмів тут ТРИ незалежних, і кожен ловиться окремо:
+  // прибрати min-width кнопки — зсув на 3 px у своєму ж рядку; прибрати colgroup
+  // АБО fixed — нічого (другий тримає); прибрати обидва — зсув у всіх 27 рядках.
+  const розкладка = () => p.evaluate(() => {
+    const рядки = Array.from(document.querySelectorAll('tr')).filter(r => r.querySelector('.more'));
+    return рядки.map(r => {
+      const s = r.querySelector('select.lv').getBoundingClientRect();
+      const c = r.querySelectorAll('td');
+      return [s.width, c[0].getBoundingClientRect().width,
+              c[1].getBoundingClientRect().width, c[2].getBoundingClientRect().width]
+             .map(x => Math.round(x)).join('/');
+    });
+  });
+  const доКліку = await розкладка();
+  await p.evaluate(() => {
+    const рядки = Array.from(document.querySelectorAll('tr')).filter(r => r.querySelector('.more'));
+    рядки[4].querySelector('.more').click();
+  });
+  await p.waitForTimeout(300);
+  const післяКліку = await розкладка();
+  const зсунулись = доКліку.filter((v, i) => v !== післяКліку[i]);
+  ok('розкриття «Детально» не зсуває розкладку інших рядків',
+     доКліку.length > 20 && зсунулись.length === 0,
+     'рядків ' + доКліку.length + ', зсунулось ' + зсунулись.length
+       + (зсунулись.length ? ': ' + доКліку.map((v, i) => v === післяКліку[i] ? null
+           : i + ': ' + v + ' → ' + післяКліку[i]).filter(Boolean).slice(0, 2).join(' | ') : ''));
+  await p.evaluate(() => {
+    const рядки = Array.from(document.querySelectorAll('tr')).filter(r => r.querySelector('.more'));
+    рядки[4].querySelector('.more').click();
+  });
+  await p.waitForTimeout(200);
+
   // --- 5а3. телефонна ширина: сторінка не їде вбік ------------------------
   // Знайдено 10.09.2026 при розширенні колонки рівня: на 400 px горизонтально
   // прокручувалась ЦІЛА сторінка — 182 px, і так було ще до правки. Обгортка

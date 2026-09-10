@@ -81,7 +81,15 @@ h1{
 .tblwrap{
   border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow-x:auto;
 }
-table{border-collapse:collapse;width:100%;min-width:660px;font-size:13.5px}
+/* table-layout:fixed + <colgroup> — щоб розкриття «Детально» не перебудовувало
+   ВСЮ таблицю. При автоматичній розкладці рядок порівняння (colspan=3 із трьома
+   колонками складу робіт) переміряв усі колонки: один клік зсував розкладку в
+   усіх 27 рядках (перша колонка 449 → 432 px, ціна 113 → 130).
+   Отрутами перевірено, що **кожен із двох механізмів достатній сам** — прибрати
+   треба обидва, щоб стрибок повернувся. Лишені обидва навмисно: colgroup задає
+   ширини явно (інакше fixed бере їх із першого рядка), а fixed гарантує, що
+   вміст комірок на ширини не впливає. */
+table{border-collapse:collapse;width:100%;min-width:660px;font-size:13.5px;table-layout:fixed}
 thead th{
   font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;
   text-transform:uppercase;color:var(--muted);font-weight:500;text-align:left;
@@ -89,7 +97,7 @@ thead th{
   white-space:nowrap;position:sticky;top:0;z-index:2;
 }
 thead th.n{text-align:right}
-tbody td{padding:7px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody td{padding:7px 12px;border-bottom:1px solid var(--line);vertical-align:middle;overflow-wrap:break-word}
 tbody tr.grp td{
   background:var(--surface-2);border-bottom:1px solid var(--line-strong);
   font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;
@@ -125,7 +133,7 @@ td.name input[type="checkbox"]{accent-color:var(--accent);flex:none;margin:0;pos
 .more{
   appearance:none;cursor:pointer;width:auto;flex:0 0 auto;
   font-family:inherit;font-size:13px;line-height:1.2;
-  padding:7px 16px;border:1px solid var(--accent);border-radius:6px;
+  padding:7px 16px;min-width:96px;border:1px solid var(--accent);border-radius:6px;
   background:var(--surface);color:var(--accent);
   transition:background .12s,color .12s;
 }
@@ -611,6 +619,11 @@ select.chip{padding-right:8px}
     <div>
       <div class="tblwrap">
         <table>
+          <colgroup>
+            <col>
+            <col style="width:250px">
+            <col style="width:120px">
+          </colgroup>
           <thead>
             <tr>
               <th>Позиція та ознака рівня</th>
