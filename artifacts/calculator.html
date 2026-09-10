@@ -256,6 +256,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
 .small{font-size:12.5px;color:var(--muted);margin:0}
 /* ---------- сторінки ---------- */
 .page[hidden]{display:none!important}
+.tab[hidden]{display:none!important}
 .tabs{display:flex;flex-wrap:wrap;gap:6px}
 .tab{
   appearance:none;cursor:pointer;border:1px solid var(--line-strong);background:var(--surface);
@@ -515,7 +516,7 @@ select.chip{padding-right:8px}
   <div class="bar">
     <div class="tabs" role="tablist" aria-label="Сторінки інструмента">
       <button class="tab" type="button" role="tab" id="tab-calc" aria-selected="true" aria-controls="page-calc">Склад робіт і ціна</button>
-      <button class="tab" type="button" role="tab" id="tab-spec" aria-selected="false" aria-controls="page-spec">Повний перелік</button>
+      <button class="tab" type="button" role="tab" id="tab-spec" aria-selected="false" aria-controls="page-spec" hidden>Повний перелік</button>
       <button class="tab" type="button" role="tab" id="tab-qual" aria-selected="false" aria-controls="page-qual">Чек-лист кваліфікації</button>
       <button class="tab" type="button" role="tab" id="tab-form" aria-selected="false" aria-controls="page-form">Анкета для клієнта</button>
     </div>
@@ -5180,8 +5181,12 @@ select.chip{padding-right:8px}
   var PAGES = { calc:['tab-calc','page-calc','sub-calc'], spec:['tab-spec','page-spec','sub-spec'],
                 qual:['tab-qual','page-qual','sub-qual'], form:['tab-form','page-form','sub-form'] };
   var RESETLBL = { calc:'Почати заново', spec:'Очистити пошук', qual:'Почати заново', form:'Очистити анкету' };
+  // Сховані сторінки: розмітка, дані й код лишаються на місці, закрито тільки вхід —
+  // кнопку вкладки, стрілки й збережений у браузері стан. Щоб повернути сторінку,
+  // прибрати її ключ звідси, більше нічого не треба (рішення 10.09.2026).
+  var СХОВАНІ = { spec:true };
   function showPage(p){
-    if(!PAGES[p]) p = 'calc';
+    if(!PAGES[p] || СХОВАНІ[p]) p = 'calc';
     Object.keys(PAGES).forEach(function(k){
       var on = k === p, ref = PAGES[k];
       $(ref[0]).setAttribute('aria-selected', on ? 'true' : 'false');
@@ -5201,6 +5206,7 @@ select.chip{padding-right:8px}
   $('tab-spec').addEventListener('click', function(){ showPage('spec'); });
   $('tab-qual').addEventListener('click', function(){ showPage('qual'); });
   $('tab-form').addEventListener('click', function(){ showPage('form'); });
+  Object.keys(СХОВАНІ).forEach(function(k){ if(PAGES[k]) $(PAGES[k][0]).hidden = true; });
 
   // ---------- чек-лист кваліфікації ----------
   // розділи: блоки з data/qualification.json (скринінг, готовність) + напрями прайсу
