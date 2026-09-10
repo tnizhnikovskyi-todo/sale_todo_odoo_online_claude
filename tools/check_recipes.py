@@ -560,6 +560,80 @@ def форма_значень(rec):
     return errs
 
 
+def перевірка_без_створення(rec, prof):
+    """Точна перевірка кількості запису, якого план ніде не створює.
+
+    Дзеркало правила `named_but_not_created`: те стежить за пошуками, це — за
+    перевірками. Крок «очікувати рівно 1» після кроку, який цей запис створює, —
+    правильна пара; такий самий крок БЕЗ створення означає, що ми перевіряємо
+    чужий запис і на демо-базі він знайдеться (заводили руками), а в клієнта ні.
+
+    Правило працює на РОЗГОРНУТОМУ плані, бо створення часто живе всередині
+    «для_кожного» й шаблону, і на рецептах його не видно.
+
+    ДВА ВИНЯТКИ, обидва знайдені першим же прогоном — інакше правило кричало б
+    на шість правильних кроків:
+      • `ir.model` — моделі ніхто не створює, і саме це перевіряють пункти виду
+        «штатна поведінка»: застосунок став, модель на місці;
+      • значення-СПИСОК у домені (`["name", "in", [...]]`) — запис створюється
+        циклом «для_кожного» по тому самому переліку, тому збіг шукається по
+        кожному елементу окремо.
+    """
+    # Емітер імпортується МОДУЛЕМ, а не запускається підпроцесом — і це не
+    # оптимізація. Підпроцес читає data/recipes.json з диска, тому правило не
+    # бачило б підмінений RECIPES: власна отрута не спрацювала саме через це й
+    # показала, що перевірка перевіряє не те, що їй дали.
+    import importlib.util as _iu, tempfile as _tf, os as _os, json as _js
+    import contextlib as _cl
+    _sp = _iu.spec_from_file_location('_ec_inline', 'tools/emit_config_calls.py')
+    _ec = _iu.module_from_spec(_sp)
+    _sp.loader.exec_module(_ec)
+    fd, шлях = _tf.mkstemp(suffix='.json'); _os.close(fd)
+    _ec.RECIPES = RECIPES
+    _ec.PROFILE = PROFILE if hasattr(_ec, 'PROFILE') else None
+    буф = io.StringIO()
+    try:
+        with _cl.redirect_stdout(буф):
+            код = _ec.main(['x', PROFILE, '--всі', '--json', шлях])
+    except Exception:
+        return []
+    if код != 0:
+        return []          # емітер сам поскаржиться в іншому місці
+    кроки = _js.load(io.open(шлях, encoding='utf-8'))['кроки']
+    скаляр = lambda v: isinstance(v, (str, int, float, bool))
+    створює = set()
+    for st in кроки:
+        if st.get('дія') == 'створити':
+            m = st.get('модель')
+            for f, v in (st.get('значення') or {}).items():
+                if скаляр(v):
+                    створює.add((m, f, v))
+            for c in st.get('якщо_немає') or []:
+                if isinstance(c, list) and len(c) == 3 and скаляр(c[2]):
+                    створює.add((m, c[0], c[2]))
+    warns = []
+    for st in кроки:
+        if st.get('дія') != 'перевірити' or st.get('очікувати_кількість') is None:
+            continue
+        m, d = st.get('модель'), st.get('домен')
+        if m == 'ir.model' or not isinstance(d, list):
+            continue
+        ок = False
+        for c in d:
+            if not (isinstance(c, list) and len(c) == 3):
+                continue
+            значення = c[2] if isinstance(c[2], list) else [c[2]]
+            if any(скаляр(v) and (m, c[0], v) in створює for v in значення):
+                ок = True
+                break
+        if not ок:
+            warns.append('%s р.%s «%s»: перевірка «рівно %s» на %s, якого план ніде не '
+                         'створює. На демо-базі запис є (заводили руками), у клієнта — ні'
+                         % (st.get('_позиція'), st.get('_рівень'), (st.get('_пункт') or '')[:34],
+                            st.get('очікувати_кількість'), m))
+    return warns
+
+
 def периметр(rec):
     """Чи не пише план у базу клієнта того, чого ми не продаємо."""
     errs = []
@@ -609,6 +683,7 @@ def main():
     errs_early += форма_значень(rec)
     warns_early = named_but_not_created(rec, prof)
     warns_early += тільки_перевіряє(rec)
+    warns_early += перевірка_без_створення(rec, prof)
 
     known_models = set(ALLOW_EXTRA)
     for blk in cmap['позиції'].values():
