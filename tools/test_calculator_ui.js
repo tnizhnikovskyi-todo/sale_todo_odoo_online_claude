@@ -141,7 +141,13 @@ function expected(sel) {
     '<meta name="viewport" content="width=device-width,initial-scale=1">' + frag);
 
   const b = await chromium.launch({ executablePath: exe });
-  const p = await b.newPage();
+  // КП більше не показується на сторінці — кнопка кладе його в буфер. Тому тест
+  // читає САМЕ буфер: інакше він перевіряв би не те, що отримає Замовник.
+  // Дозволи на буфер видаються контексту; file:// у Chromium — secure context,
+  // тому обидва формати справді читаються (перевірено).
+  const ctx = await b.newContext();
+  try { await ctx.grantPermissions(['clipboard-read', 'clipboard-write']); } catch (e) { /* нижче скажемо вголос */ }
+  const p = await ctx.newPage();
   const errs = [];
   p.on('pageerror', e => errs.push('pageerror: ' + e.message));
   p.on('console', m => {
@@ -197,27 +203,51 @@ function expected(sel) {
   e = expected(st.sel);
   await p.click('#sum-btn');
   await p.waitForTimeout(400);
-  const kp = await p.evaluate(() => {
-    const t = document.getElementById('sum-out');
-    const r = document.getElementById('sum-rich');
-    return {
-      hidden: t.hidden, text: t.value || '',
-      richHidden: r.hidden,
-      richHTML: r.innerHTML || '',
-      жирні: Array.from(r.querySelectorAll('b')).map(b => b.textContent),
+  const kp = await p.evaluate(async () => {
+    const out = {
+      предпросмотр: !!document.getElementById('sum-rich'),
+      скопійовано: !document.getElementById('copied').hidden,
+      відкат: !document.getElementById('sum-fallback').hidden,
+      поле: !document.getElementById('sum-out').hidden,
+      text: '', html: '', жирні: [], буферЧитається: false,
     };
+    try {
+      for (const it of await navigator.clipboard.read()) {
+        for (const t of it.types) {
+          const s = await (await it.getType(t)).text();
+          if (t === 'text/plain') out.text = s;
+          if (t === 'text/html') out.html = s;
+        }
+      }
+      out.буферЧитається = true;
+      const d = document.createElement('div');
+      d.innerHTML = out.html;
+      out.жирні = Array.from(d.querySelectorAll('b')).map(b => b.textContent);
+    } catch (e) { out.помилкаБуфера = String(e).slice(0, 90); }
+    return out;
   });
+  if (!kp.буферЧитається) {
+    console.error('НЕ ПЕРЕВІРЕНО: буфер не читається (' + kp.помилкаБуфера
+      + ') — перевірки вмісту КП пропущені, це не «пройшло».');
+    process.exit(2);
+  }
   // у КП числа з нерозривними пробілами — порівнюємо без пробілів узагалі
   const flat = kp.text.replace(/[\s  ]/g, '');
-  // Показується ФОРМАТОВАНИЙ підсумок, а голий текст лежить поруч за перемикачем:
-  // жирний заголовок у plain-тексті неможливий (для кирилиці немає навіть
-  // Unicode-жирного), тому КП живе у двох виглядах з одного джерела.
-  ok('КП зібралося', !kp.richHidden && kp.text.length > 500,
-     'довжина ' + kp.text.length + ' · форматований сховано: ' + kp.richHidden);
-  ok('заголовки розділів у форматованому КП — жирні',
-     kp.жирні.includes('ЩО НЕ ВХОДИТЬ') && kp.жирні.includes('ОПЛАТА')
-       && kp.жирні.includes('ПРИЙМАННЯ') && /<b>/.test(kp.richHTML),
-     'жирних ' + kp.жирні.length + ': ' + kp.жирні.slice(0, 6).join(' | '));
+  // Предпросмотру на сторінці немає (рішення 10.09.2026): натиснув — і КП у
+  // буфері. Перевіряємо і те, що зникло, і те, що доїхало: обидва формати кладуться
+  // одночасно, бо жирний заголовок у plain-тексті неможливий (для кирилиці немає
+  // навіть Unicode-жирного), а мессенджеру потрібен саме голий текст.
+  ok('натиснув — КП у буфері, на сторінці нічого не показується',
+     !kp.предпросмотр && kp.скопійовано && !kp.відкат && !kp.поле
+       && kp.text.length > 500,
+     'предпросмотр: ' + kp.предпросмотр + ' · скопійовано: ' + kp.скопійовано
+       + ' · відкат: ' + kp.відкат + ' · довжина ' + kp.text.length);
+  ok('у буфері обидва формати, заголовки розділів жирні',
+     kp.html.length > kp.text.length && /<b>/.test(kp.html)
+       && kp.жирні.includes('ЩО НЕ ВХОДИТЬ') && kp.жирні.includes('ОПЛАТА')
+       && kp.жирні.includes('ПРИЙМАННЯ'),
+     'text/plain ' + kp.text.length + ' · text/html ' + kp.html.length
+       + ' · жирних ' + kp.жирні.length + ': ' + kp.жирні.slice(0, 5).join(' | '));
   ok('пункти переліку жирними не стали',
      !kp.жирні.some(t => /^[-•]/.test(t) || /^\d\./.test(t) || /^Разом/.test(t)),
      kp.жирні.filter(t => /^[-•\d]/.test(t)).join(' | ') || 'таких немає');
@@ -229,17 +259,33 @@ function expected(sel) {
      !/^- (База|CRM): /m.test(kp.text) && /^- Перелік не вичерпний:/m.test(kp.text),
      (kp.text.split('\n').filter(l => /^- (База|CRM): /.test(l))[0] || 'меж немає')
        .slice(0, 90));
-  const межіУвімкнено = await p.evaluate(() => {
+  // Помічник: натиснути кнопку й прочитати те, що справді лягло в буфер.
+  const зБуфера = async () => {
+    await p.click('#sum-btn');
+    await p.waitForTimeout(400);
+    return p.evaluate(async () => {
+      for (const it of await navigator.clipboard.read()) {
+        for (const t of it.types) if (t === 'text/plain') return (await (await it.getType(t)).text());
+      }
+      return '';
+    });
+  };
+  const галочка = await p.evaluate(() => {
     const c = document.getElementById('sum-bounds');
     if (!c.checked) c.click();
-    // галочка мусить перезібрати вже показане КП сама: інакше на екрані лежав би
-    // текст, який більше не відповідає галочці, і сейл відправив би саме його
-    return { checked: c.checked, txt: document.getElementById('sum-out').value || '' };
+    // У буфері вже лежить КП, зібране БЕЗ меж. Показане «Скопійовано» після зміни
+    // галочки було б неправдою, тому воно гасне: сейл бачить, що треба натиснути
+    // ще раз. Це заміна старому «перезбирає саме»: перезбирати нічого — на
+    // сторінці КП більше не показується, а мовчки підміняти буфер не можна.
+    return { checked: c.checked, скопійовано: !document.getElementById('copied').hidden };
   });
-  await p.waitForTimeout(400);
-  ok('галочка одразу перезбирає вже показане КП',
-     межіУвімкнено.checked && /^- (База|CRM): /m.test(межіУвімкнено.txt),
-     'у тексті після кліку меж по позиціях: '
+  await p.waitForTimeout(300);
+  ok('зміна галочки гасить «Скопійовано» — у буфері вже інший текст',
+     галочка.checked && галочка.скопійовано === false, JSON.stringify(галочка));
+  const межіУвімкнено = { txt: await зБуфера() };
+  ok('після повторного натискання межі по позиціях у буфері є',
+     /^- (База|CRM): /m.test(межіУвімкнено.txt),
+     'рядків меж: '
        + межіУвімкнено.txt.split('\n').filter(l => /^- (База|CRM): /.test(l)).length);
 
   // Межі позицій виходять ОДНИМ розділом у кінці (рішення 10.09.2026), а не під

@@ -255,26 +255,12 @@ tfoot td.n{font-size:15px}
   background:var(--surface-2);color:var(--ink-2);
 }
 #sum-out[hidden],#qnote-out[hidden]{display:none!important}
-/* Форматований підсумок: те саме, що ляже в лист Замовнику. Шрифт пропорційний
-   навмисно — монospace тут брехав би про вигляд у Word і в пошті. */
-#sum-rich{
-  width:100%;margin-top:10px;max-height:420px;overflow:auto;
-  font-size:12px;line-height:1.55;padding:10px;
-  border:1px solid var(--line-strong);border-radius:7px;
-  background:var(--surface-2);color:var(--ink-2);
-}
-#sum-rich[hidden]{display:none!important}
-#sum-rich b{color:var(--ink)}
-.lnk{
-  background:none;border:0;padding:0;margin-top:7px;cursor:pointer;
-  font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--accent);
-  border-bottom:1px dotted var(--accent);
-}
-.lnk[hidden]{display:none!important}
+/* Предпросмотру КП на сторінці немає (рішення 10.09.2026): кнопка кладе текст у
+   буфер, і все. Поле нижче — тільки відкат на випадок, коли браузер у буфер не
+   пустив; інакше сейл лишився б без тексту взагалі. */
 .opt2{display:flex;gap:7px;align-items:flex-start;cursor:pointer;font-size:12px;color:var(--ink-2);margin-bottom:5px}
 .opt2 input{margin-top:2px;flex:0 0 auto}
 .hint2{font-size:11px;line-height:1.45;color:var(--ink-3);margin:0 0 9px 0}
-.lnk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .copied{
   font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--allow);margin-top:7px;display:block;
 }
@@ -673,8 +659,7 @@ select.chip{padding-right:8px}
         <p class="hint2">Типово в КП іде тільки загальний перелік і приписка, що він не вичерпний. Галочка додає межі кожної обраної позиції — це для клієнтів, з якими межі краще зафіксувати письмово.</p>
         <button class="sumbtn" type="button" id="sum-btn">Зібрати текст для КП</button>
         <span class="copied" id="copied" hidden>Скопійовано в буфер</span>
-        <div id="sum-rich" hidden aria-label="Підсумок для КП"></div>
-        <button class="lnk" type="button" id="sum-plain-btn" hidden aria-expanded="false">показати як звичайний текст</button>
+        <p class="hint2" id="sum-fallback" hidden>Браузер не дав доступу до буфера — виділіть текст нижче й скопіюйте вручну.</p>
         <textarea id="sum-out" readonly hidden aria-label="Текст підсумку"></textarea>
       </div>
 
@@ -10562,30 +10547,29 @@ select.chip{padding-right:8px}
       ok.hidden = false;
       setTimeout(function(){ ok.hidden = true; }, 2600);
     };
+    var відкат = function(){
+      $('sum-fallback').hidden = false;
+      copyOut(txt, out, ok);
+    };
     if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
       navigator.clipboard.write([new ClipboardItem({
         'text/html': new Blob([html], { type: 'text/html' }),
         'text/plain': new Blob([txt], { type: 'text/plain' })
-      })]).then(успіх).catch(function(){ copyOut(txt, out, ok); });
+      })]).then(успіх).catch(відкат);
     } else {
-      copyOut(txt, out, ok);
+      відкат();
     }
   }
 
   $('sum-bounds').addEventListener('change', function(){
     state.kpbounds = this.checked;
     save();
-    // Якщо КП уже зібране, воно мусить перезібратися: інакше на екрані лежить
-    // текст, який більше не відповідає галочці, і сейл відправить саме його.
-    if(!$('sum-rich').hidden) $('sum-btn').click();
-  });
-
-  $('sum-plain-btn').addEventListener('click', function(){
-    var t = $('sum-out'), сховано = t.hidden;
-    t.hidden = !сховано;
-    this.setAttribute('aria-expanded', сховано ? 'true' : 'false');
-    this.textContent = сховано ? 'сховати звичайний текст' : 'показати як звичайний текст';
-    if(сховано){ t.focus(); t.select(); }
+    // У буфері вже може лежати КП, зібране з іншою галочкою, і показане
+    // «Скопійовано» після цього — неправда. Тому воно гасне разом із відкатом:
+    // сейл побачить, що треба натиснути ще раз.
+    $('copied').hidden = true;
+    $('sum-fallback').hidden = true;
+    $('sum-out').hidden = true;
   });
 
   $('qnote-btn').addEventListener('click', function(){
@@ -11192,10 +11176,7 @@ select.chip{padding-right:8px}
     state.kpbounds = false;
     $('sum-bounds').checked = false;
     $('sum-out').hidden = true;
-    $('sum-rich').hidden = true;
-    $('sum-plain-btn').hidden = true;
-    $('sum-plain-btn').textContent = 'показати як звичайний текст';
-    $('sum-plain-btn').setAttribute('aria-expanded', 'false');
+    $('sum-fallback').hidden = true;
     $('copied').hidden = true;
     $('qnote-out').hidden = true;
     $('qcopied').hidden = true;
@@ -11208,11 +11189,8 @@ select.chip{padding-right:8px}
   });
 
   $('sum-btn').addEventListener('click', function(){
-    var txt = summary(), html = richHTML(txt);
-    $('sum-rich').innerHTML = html;
-    $('sum-rich').hidden = false;
-    $('sum-plain-btn').hidden = false;
-    copyRich(txt, html, $('sum-out'), $('copied'));
+    var txt = summary();
+    copyRich(txt, richHTML(txt), $('sum-out'), $('copied'));
   });
 
   load();
