@@ -247,6 +247,26 @@ def check_subst():
     ec.subst('поля: $елемент.опції', {}, m, elem={'опції': [1, 2]}, idx=1)
     out.append((any('складене значення' in x for x in m),
                 'складений $елемент у середину рядка → сказано вголос'))
+
+    # Сторож усього плану: жодної незамінемої підстановки в готовому плані.
+    # Вимикаємо заміну $елемент усередині рядка — тобто повертаємо поведінку,
+    # яка мовчки клала «$елемент.назва» в arch подання, — і перевіряємо, що
+    # емітер тепер відмовляється друкувати такий план.
+    import re as _re, contextlib as _cx
+    справжній_item = ec.ITEM_IN
+    буф = io.StringIO()
+    try:
+        ec.ITEM_IN = _re.compile(r'(?!x)x')
+        with _cx.redirect_stdout(буф):
+            код = ec.main(['x', 'data/client-profile-example.json', '--всі'])
+    finally:
+        ec.ITEM_IN = справжній_item
+    out.append((код != 0 and 'НЕЗАМІНЕНА ПІДСТАВКА' in буф.getvalue(),
+                'план із незаміненою підставкою емітер друкувати відмовляється'))
+    буф2 = io.StringIO()
+    with _cx.redirect_stdout(буф2):
+        код2 = ec.main(['x', 'data/client-profile-example.json', '--всі'])
+    out.append((код2 == 0, 'на чистому плані сторож мовчить'))
     return out
 
 def check_coverage():
