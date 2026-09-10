@@ -116,11 +116,11 @@ td.name input[type="checkbox"]{accent-color:var(--accent);flex:none;margin:0;pos
   margin:2px 0 0 25px;font-size:12px;line-height:1.4;color:var(--muted);
 }
 .crit .txt{flex:1 1 auto}
-.morewrap{display:flex;justify-content:center;margin:9px 0 3px 0}
+.morewrap{display:flex;justify-content:center;margin:7px 0 0 0}
 .more{
-  appearance:none;cursor:pointer;
+  appearance:none;cursor:pointer;width:auto;
   font-family:inherit;font-size:13px;line-height:1.2;
-  padding:8px 22px;border:1px solid var(--accent);border-radius:6px;
+  padding:7px 16px;border:1px solid var(--accent);border-radius:6px;
   background:var(--surface);color:var(--accent);
   transition:background .12s,color .12s;
 }
@@ -9465,18 +9465,6 @@ select.chip{padding-right:8px}
       ctxt.className = 'txt'; ctxt.id = 'cr-' + m.id;
       crit.appendChild(ctxt);
       td1.appendChild(crit);
-      // Кнопка «Детально» стоїть ОКРЕМИМ рядком по центру блоку позиції, а не
-      // дрібним посиланням праворуч від ознаки: її натискають на кожній позиції,
-      // про яку говорять із клієнтом, а знайти її очима було найважче на екрані.
-      var mwrap = document.createElement('div');
-      mwrap.className = 'morewrap';
-      var more = document.createElement('button');
-      more.type = 'button'; more.className = 'more';
-      more.textContent = 'Детально';
-      more.setAttribute('aria-expanded', 'false');
-      more.setAttribute('aria-controls', 'd-' + m.id);
-      mwrap.appendChild(more);
-      td1.appendChild(mwrap);
       tr.appendChild(td1);
 
       // рівень
@@ -9492,7 +9480,22 @@ select.chip{padding-right:8px}
       });
       sel.value = state.lv[m.id];
       sel.addEventListener('change', function(){ state.lv[m.id] = +sel.value; render(); });
-      td2.appendChild(sel); tr.appendChild(td2);
+      td2.appendChild(sel);
+      // «Детально» стоїть під перемикачем рівня — там, куди сейл і так дивиться,
+      // коли обирає рівень. Раніше це було дрібне посилання праворуч від ознаки:
+      // найважчий елемент на екрані для ока, хоча натискають його на кожній
+      // позиції розмови. Кнопка лишається компактною, по центру колонки, і не
+      // тягнеться на всю ширину.
+      var mwrap = document.createElement('div');
+      mwrap.className = 'morewrap';
+      var more = document.createElement('button');
+      more.type = 'button'; more.className = 'more';
+      more.textContent = 'Детально';
+      more.setAttribute('aria-expanded', 'false');
+      more.setAttribute('aria-controls', 'd-' + m.id);
+      mwrap.appendChild(more);
+      td2.appendChild(mwrap);
+      tr.appendChild(td2);
 
       // ціна
       var td3 = document.createElement('td');
