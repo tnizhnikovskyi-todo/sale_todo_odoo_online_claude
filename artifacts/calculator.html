@@ -254,6 +254,9 @@ tfoot td.n{font-size:15px}
   border-bottom:1px dotted var(--accent);
 }
 .lnk[hidden]{display:none!important}
+.opt2{display:flex;gap:7px;align-items:flex-start;cursor:pointer;font-size:12px;color:var(--ink-2);margin-bottom:5px}
+.opt2 input{margin-top:2px;flex:0 0 auto}
+.hint2{font-size:11px;line-height:1.45;color:var(--ink-3);margin:0 0 9px 0}
 .lnk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .copied{
   font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--allow);margin-top:7px;display:block;
@@ -644,6 +647,8 @@ select.chip{padding-right:8px}
 
       <div class="card">
         <h2>Підсумок</h2>
+        <label class="opt2" for="sum-bounds"><input type="checkbox" id="sum-bounds"><span>додати «не входить» по кожній позиції</span></label>
+        <p class="hint2">Типово в КП іде тільки загальний перелік і приписка, що він не вичерпний. Галочка додає межі кожної обраної позиції — це для клієнтів, з якими межі краще зафіксувати письмово.</p>
         <button class="sumbtn" type="button" id="sum-btn">Зібрати текст для КП</button>
         <span class="copied" id="copied" hidden>Скопійовано в буфер</span>
         <div id="sum-rich" hidden aria-label="Підсумок для КП"></div>
@@ -891,11 +896,12 @@ select.chip{padding-right:8px}
       return state.sel[x.on] && (state.lv[x.on] + 1) >= x.lv;
     });
   }
-  // Межі позицій («не входить» кожної позиції) у КП. true — одним розділом у кінці,
-  // false — у КП їх немає взагалі (сейл каже їх вголос на зустрічі, друга сторінка
-  // друкує їх як «сказати відразу»). Рішення про це — власника, тому воно одним
-  // словом, а не правкою рендера.
-  var МЕЖІ_ПОЗИЦІЙ = true;
+  // Межі позицій («не входить» кожної позиції) у КП — вибір СЕЙЛА на кожного
+  // клієнта, а не властивість інструмента: типово в КП іде тільки загальний
+  // перелік із припискою «не вичерпний», а галочка «додати «не входить» по кожній
+  // позиції» дописує межі обраних позицій. Вибір лежить у стані й їде разом із
+  // набором клієнта (CASESCALARS) — інакше на другому клієнті сейл згадав би про
+  // нього вже після відправки КП.
   // Частка діагностики, яка зараховується у вартість проєкту (рішення 10.09.2026).
   // Було 100 %, і це давало випадок, у якому залік зʼїдав увесь проєкт: діагностика
   // рівня 3 (€1 000) при наборі «тільки База» рівня 1 (€800) перекривала його цілком.
@@ -9351,7 +9357,7 @@ select.chip{padding-right:8px}
   // sel — що позначено; lv — індекс рівня; manual — позначив сам сейл; auto — додано через залежність (ким)
   // qa — відповіді скринінгу; qr — закриті пункти готовності; no — позиції, про які спитали й вони не потрібні
   // open — розкриті розділи чек-листа; page — активна сторінка
-  var state = { sel:{}, lv:{}, manual:{}, auto:{}, qa:{}, qr:{}, no:{}, probe:{}, open:{ scr:true }, page:'calc', client:'', until:'' };
+  var state = { sel:{}, lv:{}, manual:{}, auto:{}, qa:{}, qr:{}, no:{}, probe:{}, open:{ scr:true }, page:'calc', client:'', until:'', kpbounds:false };
 
   // Дата й строк дії у вихідних текстах. Без них два КП того самого клієнта не
   // відрізнити й не підшити в CRM, а рядок «ціни фіксовані на строк дії пропозиції»
@@ -9788,7 +9794,7 @@ select.chip{padding-right:8px}
         // Межі позиції не друкуються тут: вони збираються й виходять ОДНИМ розділом
         // у кінці (рішення 10.09.2026). Під кожною позицією вони розривали перелік
         // складу робіт і читалися як стіна тексту.
-        if(МЕЖІ_ПОЗИЦІЙ) (m.bounds || []).forEach(function(t, i){
+        if(state.kpbounds) (m.bounds || []).forEach(function(t, i){
           if(межаЗнята(m.id, i)) return;
           if(!межі[t]) { межі[t] = []; порядокМеж.push(t); }
           межі[t].push(m.n);
@@ -9853,7 +9859,7 @@ select.chip{padding-right:8px}
   var CASEFIELDS = ['sel', 'lv', 'manual', 'auto', 'no', 'qa', 'probe', 'open'];
   // Строк дії належить конкретному КП, тому їде разом із набором клієнта. Це рядок,
   // а не обʼєкт, тож у caseApply для нього окрема гілка.
-  var CASESCALARS = ['until'];
+  var CASESCALARS = ['until', 'kpbounds'];
 
   function casesRead(){
     try {
@@ -9875,9 +9881,11 @@ select.chip{padding-right:8px}
       if(snap[k] && typeof snap[k] === 'object') state[k] = JSON.parse(JSON.stringify(snap[k]));
     });
     CASESCALARS.forEach(function(k){
-      if(typeof snap[k] === 'string'){ state[k] = snap[k]; }
+      var t = typeof snap[k];
+      if(t === 'string' || t === 'boolean'){ state[k] = snap[k]; }
     });
     if($('until')) $('until').value = state.until;
+    if($('sum-bounds')) $('sum-bounds').checked = state.kpbounds;
     MODS.forEach(function(m){
       if(typeof state.sel[m.id] !== 'boolean') state.sel[m.id] = !!m.req;
       if(typeof state.lv[m.id] !== 'number') state.lv[m.id] = 1;
@@ -9963,6 +9971,7 @@ select.chip{padding-right:8px}
       if(PAGES[st.page]) state.page = st.page;
       if(typeof st.client === 'string') state.client = st.client;
       if(typeof st.until === 'string') state.until = st.until;
+      if(typeof st.kpbounds === 'boolean') state.kpbounds = st.kpbounds;
     } catch(e){}
   }
 
@@ -10530,6 +10539,14 @@ select.chip{padding-right:8px}
       copyOut(txt, out, ok);
     }
   }
+
+  $('sum-bounds').addEventListener('change', function(){
+    state.kpbounds = this.checked;
+    save();
+    // Якщо КП уже зібране, воно мусить перезібратися: інакше на екрані лежить
+    // текст, який більше не відповідає галочці, і сейл відправить саме його.
+    if(!$('sum-rich').hidden) $('sum-btn').click();
+  });
 
   $('sum-plain-btn').addEventListener('click', function(){
     var t = $('sum-out'), сховано = t.hidden;
@@ -11140,6 +11157,8 @@ select.chip{padding-right:8px}
         if(btn){ btn.textContent = 'порівняти'; btn.setAttribute('aria-expanded', 'false'); }
       }
     });
+    state.kpbounds = false;
+    $('sum-bounds').checked = false;
     $('sum-out').hidden = true;
     $('sum-rich').hidden = true;
     $('sum-plain-btn').hidden = true;
@@ -11167,6 +11186,7 @@ select.chip{padding-right:8px}
   load();
   $('cli').value = state.client;
   $('until').value = state.until;
+  $('sum-bounds').checked = state.kpbounds;
   // Вхід на сховану сторінку закритий з трьох боків: кнопка вкладки, вміст і
   // підзаголовок. Клавіатуру закриває ПОРЯДОК, а прямий showPage('spec') —
   // сама showPage. Читалка теж не побачить: hidden прибирає з дерева доступності,
