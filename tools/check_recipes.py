@@ -509,6 +509,57 @@ def named_but_not_created(rec, prof):
              'depends': 'залежності обчислення = Python'}
 
 
+def форма_значень(rec):
+    """Чи не пише план у x2many скаляр, а в звичайне поле — команду x2many.
+
+    Клас перевірений на базі 10.09.2026 і на сьогодні ПОРОЖНІЙ: усі 14 полів, у
+    які план пише командами `[[6, false, […]]]`, справді x2many, і жодне поле
+    `*_ids` не отримує скаляра. Правило стоїть не тому, що щось знайшло, а тому
+    що помилка цього класу **тиха**: Odoo прийме `{"group_ids": "$роль"}` як
+    хибне значення й або впаде посеред прогону, або запише не те.
+
+    Чому правило СИНТАКСИЧНЕ, а не за типами з бази. Заморожувати таблицю типів
+    на 359 пар — це велика похідна від бази, яку доведеться оновлювати руками.
+    Форма значення ловить ту саму помилку без жодного знання про базу.
+
+    Чому перевіряється тільки суфікс `_ids`, а не `_id`. Бо `_id` НЕ означає
+    many2one: `ir.filters.model_id` — це `selection`, і туди пишеться назва
+    моделі рядком. Перевірено запитом; правило на `_id` кричало б на правильні дані.
+    """
+    errs = []
+
+    def команда(v):
+        return isinstance(v, list) and v and all(isinstance(x, list) for x in v)
+
+    def кроки(steps, де):
+        for s in steps:
+            if not isinstance(s, dict):
+                continue
+            if s.get('дія') in CHANGING:
+                зн = s.get('значення')
+                if isinstance(зн, dict):
+                    for f, v in зн.items():
+                        if команда(v) and not f.endswith('_ids'):
+                            errs.append('%s: у поле «%s» пишеться команда x2many '
+                                        '(%s…), а суфікса «_ids» у нього немає'
+                                        % (де, f, json.dumps(v[0], ensure_ascii=False)))
+                        if f.endswith('_ids') and not isinstance(v, list):
+                            errs.append('%s: у x2many «%s» пишеться скаляр «%s». '
+                                        'Потрібна команда: [[6, false, [id…]]] або '
+                                        '[[4, id]]' % (де, f, v))
+            if s.get('дія') == 'для_кожного':
+                кроки(s.get('кроки') or [], де)
+
+    for pid, lvs in rec['позиції'].items():
+        for lv, items in lvs.items():
+            for txt, r in items.items():
+                кроки(r.get('кроки') or [], '%s р.%s «%s»' % (pid, lv, txt[:34]))
+    for tname, tpl in (rec.get('шаблони') or {}).items():
+        if isinstance(tpl, dict):
+            кроки(tpl.get('кроки') or [], 'шаблон «%s»' % tname)
+    return errs
+
+
 def периметр(rec):
     """Чи не пише план у базу клієнта того, чого ми не продаємо."""
     errs = []
@@ -555,6 +606,7 @@ def main():
     vrfy = json.load(io.open(VERIFY, encoding='utf-8'))
     errs_early += stale_generated(rec, cmap, vrfy)
     errs_early += периметр(rec)
+    errs_early += форма_значень(rec)
     warns_early = named_but_not_created(rec, prof)
     warns_early += тільки_перевіряє(rec)
 
