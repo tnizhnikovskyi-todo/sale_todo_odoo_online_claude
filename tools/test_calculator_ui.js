@@ -412,6 +412,39 @@ function expected(sel) {
      /1\. Проєкт — 50 %/.test(оплата) && !/Експрес-діагностика/.test(оплата)
        && /2\. Позиція, додана/.test(оплата) && /3\. Ціни в пропозиції/.test(оплата),
      оплата.split('\n').filter(l => /^\d\. /.test(l)).join(' | ').slice(0, 160));
+  // --- 5а2. кнопка «Детально» ----------------------------------------------
+  // Була дрібним посиланням «порівняти» праворуч від ознаки — найважчий елемент
+  // на екрані для ока, хоча натискають його на кожній позиції розмови. Тепер це
+  // справжня кнопка по центру блоку. Перевіряємо і вигляд (розмір, центрування),
+  // і роботу: підпис у два боки й розкриття рядка порівняння.
+  const детально = await p.evaluate(() => {
+    const b = document.querySelector('.more');
+    const r = b.getBoundingClientRect();
+    const блок = b.closest('td').getBoundingClientRect();
+    const cs = getComputedStyle(b);
+    return {
+      текст: b.textContent, ширина: Math.round(r.width), висота: Math.round(r.height),
+      шрифт: parseFloat(cs.fontSize), рамка: parseFloat(cs.borderTopWidth),
+      зсувВідЦентру: Math.abs(Math.round(r.left + r.width / 2 - (блок.left + блок.width / 2))),
+    };
+  });
+  ok('«Детально» — кнопка по центру блоку, а не дрібне посилання',
+     детально.текст === 'Детально' && детально.ширина >= 80 && детально.висота >= 28
+       && детально.шрифт >= 12 && детально.рамка >= 1 && детально.зсувВідЦентру <= 2,
+     JSON.stringify(детально));
+  const розкрито = await p.evaluate(() => {
+    document.querySelector('.more').click();
+    const b = document.querySelector('.more');
+    return { текст: b.textContent, aria: b.getAttribute('aria-expanded'),
+             рядок: !document.querySelector('tr.det').hidden };
+  });
+  await p.waitForTimeout(200);
+  ok('«Детально» розкриває порівняння рівнів і міняє підпис',
+     розкрито.текст === 'Згорнути' && розкрито.aria === 'true' && розкрито.рядок,
+     JSON.stringify(розкрито));
+  await p.evaluate(() => document.querySelector('.more').click());
+  await p.waitForTimeout(200);
+
   // --- 5б2. набір клієнта несе вибір «межі по позиціях» ---------------------
   // Вибір належить конкретному клієнтові, тому мусить їхати з набором. Пастка тут
   // не в UI: набори зберігають скаляри, а фільтр був «тільки рядки» — булеве

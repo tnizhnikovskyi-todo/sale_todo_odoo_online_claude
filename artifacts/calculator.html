@@ -116,13 +116,17 @@ td.name input[type="checkbox"]{accent-color:var(--accent);flex:none;margin:0;pos
   margin:2px 0 0 25px;font-size:12px;line-height:1.4;color:var(--muted);
 }
 .crit .txt{flex:1 1 auto}
+.morewrap{display:flex;justify-content:center;margin:9px 0 3px 0}
 .more{
-  appearance:none;border:0;background:transparent;padding:0;cursor:pointer;
-  font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.06em;
-  color:var(--accent);text-decoration:underline;text-underline-offset:2px;flex:none;
+  appearance:none;cursor:pointer;
+  font-family:inherit;font-size:13px;line-height:1.2;
+  padding:8px 22px;border:1px solid var(--accent);border-radius:6px;
+  background:var(--surface);color:var(--accent);
+  transition:background .12s,color .12s;
 }
-.more:hover{color:var(--ink)}
-.more:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+.more:hover{background:var(--accent);color:var(--surface)}
+.more[aria-expanded="true"]{background:var(--accent);color:var(--surface)}
+.more:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 td.act{width:150px}
 select.lv{
@@ -575,7 +579,7 @@ select.chip{padding-right:8px}
   <header>
     <div class="eyebrow">Департамент odoo.com · інструмент сейла</div>
     <h1>Калькулятор впровадження</h1>
-    <p class="sub" id="sub-calc">Позначте те, що потрібно клієнту, і виберіть рівень по кожній позиції. Під назвою стоїть ознака, за якою рівень визначають, а кнопка «порівняти» розкриває всі три поруч зі складом робіт: видно, що входить у кожен і що додається на наступному. Ціна й строк порахуються самі.</p>
+    <p class="sub" id="sub-calc">Позначте те, що потрібно клієнту, і виберіть рівень по кожній позиції. Під назвою стоїть ознака, за якою рівень визначають, а кнопка «Детально» розкриває всі три рівні поруч зі складом робіт: видно, що входить у кожен і що додається на наступному. Ціна й строк порахуються самі.</p>
     <p class="sub" id="sub-spec" hidden>Усе, що є в прайсі, одним списком: позиція → рівень → пункти складу робіт. Рівні вкладені, тому за замовчуванням під рівнем стоїть тільки те, що на ньому додається; перемикач «накопичено» показує повний склад кожного рівня. Пошук фільтрує пункти по всьому переліку — так швидше перевірити, чи обіцяли ми колись конкретну річ. Сторінка зроблена під друк: у друк ідуть тільки позиції.</p>
     <p class="sub" id="sub-form" hidden>Сторінка, яку відкриває клієнт перед зустріччю: ті самі теми, що в чек-листі, але його словами — без рівнів, цін і наших внутрішніх формулювань. Блоки процесів розкриваються тільки після того, як клієнт позначив, що йому потрібно. Відповіді зберігаються в його браузері; кнопка «Скопіювати відповіді» дає текст, який він надсилає нам.</p>
     <p class="sub" id="sub-qual" hidden>Порядок розмови: спершу скринінг — тринадцять питань, на яких лід або наш, або не наш; далі напрями, де питання ставиться по кожній позиції прайсу, а відповідь клієнта і є ознакою рівня. Розділи відкриваються галочками по одному — на екрані те, про що говорять зараз. У кожному напрямі під питаннями по позиціях стоїть блок «Розкрити глибину»: 10–12 питань, відповіді на які показують рівень і те, про що треба попередити. Ставити всі не обовʼязково — це банк питань, галочка означає «спитали». Обрана відповідь по напряму одразу проставляє позицію й рівень у калькуляторі.</p>
@@ -9459,13 +9463,20 @@ select.chip{padding-right:8px}
       crit.className = 'crit';
       var ctxt = document.createElement('span');
       ctxt.className = 'txt'; ctxt.id = 'cr-' + m.id;
+      crit.appendChild(ctxt);
+      td1.appendChild(crit);
+      // Кнопка «Детально» стоїть ОКРЕМИМ рядком по центру блоку позиції, а не
+      // дрібним посиланням праворуч від ознаки: її натискають на кожній позиції,
+      // про яку говорять із клієнтом, а знайти її очима було найважче на екрані.
+      var mwrap = document.createElement('div');
+      mwrap.className = 'morewrap';
       var more = document.createElement('button');
       more.type = 'button'; more.className = 'more';
-      more.textContent = 'порівняти';
+      more.textContent = 'Детально';
       more.setAttribute('aria-expanded', 'false');
       more.setAttribute('aria-controls', 'd-' + m.id);
-      crit.appendChild(ctxt); crit.appendChild(more);
-      td1.appendChild(crit);
+      mwrap.appendChild(more);
+      td1.appendChild(mwrap);
       tr.appendChild(td1);
 
       // рівень
@@ -9545,7 +9556,7 @@ select.chip{padding-right:8px}
         var open = det.hidden;
         det.hidden = !open;
         more.setAttribute('aria-expanded', open ? 'true' : 'false');
-        more.textContent = open ? 'згорнути' : 'порівняти';
+        more.textContent = open ? 'Згорнути' : 'Детально';
       });
     });
   });
@@ -11154,7 +11165,7 @@ select.chip{padding-right:8px}
       if(det && !det.hidden){
         det.hidden = true;
         var btn = det.previousElementSibling.querySelector('.more');
-        if(btn){ btn.textContent = 'порівняти'; btn.setAttribute('aria-expanded', 'false'); }
+        if(btn){ btn.textContent = 'Детально'; btn.setAttribute('aria-expanded', 'false'); }
       }
     });
     state.kpbounds = false;
