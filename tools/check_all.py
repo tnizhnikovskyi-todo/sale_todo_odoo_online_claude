@@ -39,6 +39,10 @@ GENERATORS = [
 # Звіт «кроки проти годин» пише в stdout, як і план — тому збирається окремо,
 # тим самим способом, що PLAN нижче.
 STEPS = ('tools/report_plan_vs_price.py', 'docs/кроки-проти-годин.md')
+# Перелік полів плану — теж у stdout. Сам він у базу не ходить (ключа API
+# в репозиторії немає), але мусить лишатися актуальним: рецепт правлять,
+# поле міняється, а перелік для звірки застаріває мовчки.
+FIELDS = ('tools/probe_fields.py', 'docs/поля-плану-для-звірки.md')
 VALIDATORS = ['tools/check_recipes.py', 'tools/test_integrity.py']
 # Перевірка в браузері: код 2 означає «немає чим перевіряти», а не «зламано».
 BROWSER = ['node', 'tools/test_calculator_ui.js']
@@ -97,7 +101,7 @@ def main():
 
     # Стан ДО перезбору. Похідний файл, змінений до перевірки, — це або правка
     # руками, або забутий перезбір. Обидва випадки треба назвати, а не затерти.
-    all_outs = [o for _, outs in GENERATORS for o in outs] + [PLAN[2], STEPS[1]]
+    all_outs = [o for _, outs in GENERATORS for o in outs] + [PLAN[2], STEPS[1], FIELDS[1]]
     dirty_before = set(dirty(all_outs))
 
     for gen, outs in GENERATORS:
@@ -119,16 +123,17 @@ def main():
         bad += verdict(gen, [out_path], dirty_before)
         print('  ok  %-30s %d рядків плану' % (gen, len(out.splitlines())))
 
-    gen, out_path = STEPS
-    code, out, err = run_raw(['python3', gen])
-    if code != 0:
-        bad.append('%s упав:\n%s' % (gen, err or out))
-    else:
+    for gen, out_path in (STEPS, FIELDS):
+        code, out, err = run_raw(['python3', gen])
+        if code != 0:
+            bad.append('%s упав:\n%s' % (gen, err or out))
+            continue
         with open(out_path, 'w', encoding='utf-8') as f:
             f.write(out)
         bad += verdict(gen, [out_path], dirty_before)
-        разом = [l for l in out.splitlines() if l.startswith('| **Разом**')]
-        print('  ok  %-30s %s' % (gen, разом[0][:70] if разом else ''))
+        перший = [l for l in out.splitlines() if l.startswith('| **Разом**')
+                  or l.startswith('Моделей ')]
+        print('  ok  %-30s %s' % (gen, (перший[0][:70] if перший else '')))
 
     # План на ВСІ позиції — перевірка покриття, а не документ. Потрібна тому, що
     # профіль-приклад описує реальний набір клієнта, і позиції поза цим набором

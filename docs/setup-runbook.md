@@ -860,7 +860,7 @@
 |---|---|---|
 | MTBF, MTTR і прогноз наступної відмови (штатно); лічильник наробки — власним полем, вручну | `maintenance.equipment` |  |
 | запчастини — списанням зі складу окремим переміщенням (потребує позиції «Склад») | `maintenance.request`, `stock.picking` |  |
-| кілька майданчиків обслуговування | `maintenance.team`, `maintenance.equipment`<br>поля: `maintenance.equipment.location` |  |
+| кілька майданчиків обслуговування | `maintenance.team`, `maintenance.equipment`, `stock.location`<br>поля: `maintenance.equipment.location_id` | maintenance.equipment.location_id → stock.location (НЕ текст: посилання на складську локацію) |
 | подання регламентів і кнопки закриття | `ir.ui.view`, `ir.actions.server` |  |
 
 ### Управлінський облік
