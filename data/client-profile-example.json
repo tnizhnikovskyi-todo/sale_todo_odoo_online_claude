@@ -490,5 +490,12 @@
  "правка_факсиміле_назва": "Рахунок: факсиміле й підписні блоки",
  "правка_факсиміле_розмітка": "<data inherit_id=\"account.report_invoice_document\"><xpath expr=\"//div[@id='total']\" position=\"after\"><div class=\"row mt-4\"><div class=\"col-6\"><img t-if=\"o.company_id.logo\" t-att-src=\"image_data_uri(o.company_id.logo)\" style=\"max-height:3rem;\"/><p style=\"border-top: thin solid;\">Від виконавця / підпис</p></div><div class=\"col-6\"><div style=\"min-height:3rem\"/><p style=\"border-top: thin solid;\">Від замовника / signature</p></div></div></xpath></data>",
  "правка_таблиць_назва": "Рахунок: статична таблиця умов і динамічна по рядках",
- "правка_таблиць_розмітка": "<data inherit_id=\"account.report_invoice_document\"><xpath expr=\"//div[@id='total']\" position=\"after\"><table class=\"table table-sm mt-3\"><tbody><tr><td>Умови поставки / Delivery terms</td><td>Самовивіз</td></tr><tr><td>Строк / Term</td><td>5 робочих днів</td></tr><tr><td>Гарантія / Warranty</td><td>12 місяців</td></tr></tbody></table><table class=\"table table-sm\"><tbody><tr t-foreach=\"o.invoice_line_ids\" t-as=\"l\"><td><span t-field=\"l.name\"/></td><td><span t-field=\"l.quantity\"/></td></tr></tbody></table></xpath></data>"
+ "правка_таблиць_розмітка": "<data inherit_id=\"account.report_invoice_document\"><xpath expr=\"//div[@id='total']\" position=\"after\"><table class=\"table table-sm mt-3\"><tbody><tr><td>Умови поставки / Delivery terms</td><td>Самовивіз</td></tr><tr><td>Строк / Term</td><td>5 робочих днів</td></tr><tr><td>Гарантія / Warranty</td><td>12 місяців</td></tr></tbody></table><table class=\"table table-sm\"><tbody><tr t-foreach=\"o.invoice_line_ids\" t-as=\"l\"><td><span t-field=\"l.name\"/></td><td><span t-field=\"l.quantity\"/></td></tr></tbody></table></xpath></data>",
+ "мова_друку_код": "uk_UA",
+ "правка_двомовна_назва": "Рахунок: двомовні підписи полів",
+ "правка_двомовна_розмітка": "<data inherit_id=\"account.report_invoice_document\"><xpath expr=\"//div[@id='total']\" position=\"after\"><div class=\"row mt-3\"><div class=\"col-4\">Умови поставки / Delivery terms</div><div class=\"col-4\">Гарантія / Warranty</div><div class=\"col-4\">підпис / signature</div></div></xpath></data>",
+ "поле_бланка_рахунка_назва": "x_umova_postavky",
+ "поле_бланка_рахунка_підпис": "Умова поставки",
+ "правка_поля_бланка_назва": "Рахунок: вивід власного поля в бланк",
+ "правка_поля_бланка_розмітка": "<data inherit_id=\"account.report_invoice_document\"><xpath expr=\"//div[@id='informations']\" position=\"after\"><div class=\"row\"><div class=\"col-6\"><strong>Умова поставки:</strong> <span t-field=\"o.x_umova_postavky\"/></div></div></xpath></data>"
 }

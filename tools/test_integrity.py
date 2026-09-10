@@ -231,6 +231,50 @@ def check_subst():
     out.append((r == 'назва: ТОВ!' and not m, 'скаляр у середину рядка працює як був'))
     return out
 
+def check_coverage():
+    """Режим «--всі» емітера: чи справді він бачить позиції ПОЗА набором прикладу.
+
+    Дірка, яку він закриває, була тиха й велика: профіль-приклад описує реальний
+    набір клієнта, і рецепти позицій поза ним («Друковані форми», «Управлінський
+    облік», «Виробництво») емітер не бачив ніколи. А саме емітер ловить помилки
+    підстановки — валідатор їх не бачить, бо поле профілю формально існує. Тобто
+    ціла позиція могла лежати з неробочими рецептами при зелених перевірках.
+
+    Отрута ставиться в «Друковані форми» — позицію, якої в наборі прикладу немає.
+    Файли репозиторію не чіпаються: емітеру підсовується копія в тимчасовому каталозі.
+    """
+    import importlib.util, tempfile, os, copy as _copy
+    sp = importlib.util.spec_from_file_location('ec2', 'tools/emit_config_calls.py')
+    ec = importlib.util.module_from_spec(sp); sp.loader.exec_module(ec)
+    out = []
+    свіжі = json.load(io.open('data/recipes.json', encoding='utf-8'))
+    отруєні = _copy.deepcopy(свіжі)
+    отруєні['позиції']['prt']['1']['перевірка друку']['кроки'].insert(
+        0, {'дія': 'послуга', 'опис': 'отрута $клієнт.поля_якого_точно_немає'})
+    d = tempfile.mkdtemp()
+    шлях_отрути = os.path.join(d, 'poison.json')
+    json.dump(отруєні, io.open(шлях_отрути, 'w', encoding='utf-8'), ensure_ascii=False)
+    справжній = ec.RECIPES
+    try:
+        ec.RECIPES = шлях_отрути
+        код_набір = ec.main(['x', 'data/client-profile-example.json'])
+        код_всі = ec.main(['x', 'data/client-profile-example.json', '--всі'])
+    finally:
+        ec.RECIPES = справжній
+    out.append((код_набір == 0,
+                'звичайний план отрути в позиції поза набором НЕ бачить (це й є дірка)'))
+    out.append((код_всі != 0, '«--всі» отруту бачить і падає'))
+    чисто = ec.main(['x', 'data/client-profile-example.json', '--всі'])
+    out.append((чисто == 0, 'на чистих рецептах «--всі» проходить'))
+    return out
+
+import contextlib
+with contextlib.redirect_stdout(io.StringIO()):
+    _cov = check_coverage()
+for okk, note in _cov:
+    print(('  ok     ' if okk else '  ПРОВАЛ ') + 'покриття: ' + note)
+    res.append(okk)
+
 for okk, note in check_subst():
     print(('  ok     ' if okk else '  ПРОВАЛ ') + 'підстановка: ' + note)
     res.append(okk)

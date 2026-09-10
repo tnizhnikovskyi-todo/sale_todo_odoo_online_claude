@@ -170,7 +170,8 @@ def unroll(st, prof, missing, templates=None):
 
 def main(argv):
     if len(argv) < 2:
-        print('вжиток: python3 tools/emit_config_calls.py <профіль.json> [--json план.json]')
+        print('вжиток: python3 tools/emit_config_calls.py <профіль.json> [--json план.json] [--всі]')
+        print('  --всі: план на ВСІ позиції рівня 3 — перевірка покриття, а не план клієнта')
         return 2
     prof_path = argv[1]
     out_json = None
@@ -199,6 +200,13 @@ def main(argv):
     order = [p for p in topo(items, hard) if not isinstance(p, tuple)]
 
     bought = prof.get('набір') or {}
+    if '--всі' in argv:
+        # Режим покриття, а не плану для клієнта. Потрібен тому, що профіль-приклад
+        # описує РЕАЛЬНИЙ набір, і позиції поза ним емітер ніколи не бачить: рецепти
+        # «Друкованих форм» і «Управлінського обліку» пролежали б неперевіреними, хоча
+        # саме емітер ловить помилки підстановки — валідатор їх не бачить, бо поле
+        # профілю формально є. Тому збірка окремо просить план на ВСІ позиції р.3.
+        bought = {pid: 3 for pid in items}
     if not bought:
         print('У профілі немає поля «набір» — нічого збирати.')
         return 2
