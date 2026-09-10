@@ -56,7 +56,8 @@ ir.filters ir.model ir.model.fields ir.rule ir.sequence ir.ui.menu ir.ui.view
 knowledge.article loyalty.program loyalty.reward loyalty.rule delivery.price.rule
 mail.activity mail.activity.type mail.alias
 mail.alias.domain mail.template maintenance.equipment maintenance.request
-maintenance.team mrp.bom mrp.production mrp.report mrp.workcenter
+maintenance.team mrp.bom mrp.bom.byproduct mrp.bom.line mrp.production mrp.report
+mrp.routing.workcenter mrp.workcenter
 mrp.workcenter.productivity mrp.workorder payment.provider planning.role
 planning.slot pos.config pos.order pos.payment pos.payment.method pos.session
 product.attribute product.attribute.value product.category product.pricelist
