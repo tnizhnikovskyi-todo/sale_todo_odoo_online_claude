@@ -451,7 +451,7 @@
 |---|---|---|
 | варіанти товарів і атрибути | `product.attribute`, `product.template.attribute.line` |  |
 | кілька способів оплати зі стандартного переліку Odoo (українські еквайринги — немає) | `payment.provider` |  |
-| кілька способів доставки з тарифами за правилами (вага / сума / зона); автотарифи й ТТН перевізників — немає | `delivery.carrier` |  |
+| кілька способів доставки з тарифами за правилами (вага / сума / зона); автотарифи й ТТН перевізників — немає | `delivery.carrier`, `delivery.price.rule`<br>поля: `delivery.carrier.delivery_type` | Магазин → Конфігурація → Способи доставки |
 | атрибути й варіанти товару (штатно) | `product.attribute`, `product.product` |  |
 
 #### Рівень 3
@@ -461,7 +461,7 @@
 | Пункт | Де в Odoo | Шлях у меню |
 |---|---|---|
 | наявність зі складів у реальному часі | `product.template` |  |
-| акції та промокоди | `loyalty.program` |  |
+| акції та промокоди | `loyalty.program`, `loyalty.rule`, `loyalty.reward`<br>поля: `loyalty.program.program_type` | Магазин → Знижки й лояльність |
 | самовивіз з кількох точок | `delivery.carrier` |  |
 | окреме робоче місце під замовлення магазину: свій пункт меню, своє подання й свій фільтр | `ir.ui.view`, `ir.actions.act_window`, `ir.ui.menu`<br>поля: `ir.actions.act_window.view_id`, `ir.ui.menu.group_ids`, `ir.ui.view.group_ids` |  |
 | поля логістики в замовленні | `ir.model.fields`, `ir.ui.view` |  |

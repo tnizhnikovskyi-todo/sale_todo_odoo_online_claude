@@ -52,7 +52,8 @@ hr.leave.allocation hr.leave.type
 ir.actions.act_window ir.actions.act_window.view ir.actions.report
 ir.actions.server ir.attachment ir.config_parameter ir.cron ir.default
 ir.filters ir.model ir.model.fields ir.rule ir.sequence ir.ui.menu ir.ui.view
-knowledge.article loyalty.program mail.activity mail.activity.type mail.alias
+knowledge.article loyalty.program loyalty.reward loyalty.rule delivery.price.rule
+mail.activity mail.activity.type mail.alias
 mail.alias.domain mail.template maintenance.equipment maintenance.request
 maintenance.team mrp.bom mrp.production mrp.report mrp.workcenter
 mrp.workcenter.productivity mrp.workorder payment.provider planning.role

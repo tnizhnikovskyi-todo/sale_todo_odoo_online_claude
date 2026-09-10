@@ -2128,7 +2128,7 @@ select.chip{padding-right:8px}
             "кілька способів доставки з тарифами за правилами (вага / сума / зона); автотарифи й ТТН перевізників — немає": {
               "с": "ok",
               "нота": "створено другий спосіб доставки з правилами: до 5 кг — 120 ₴, до 30 кг — 250 ₴, від 3000 ₴ — безкоштовно. Правила рахують за вагою, сумою, кількістю; зона задається країнами й регіонами способу доставки",
-              "де": "delivery.carrier delivery_type = base_on_rule + price_rule_ids",
+              "де": "delivery.carrier.delivery_type = base_on_rule; самі тарифи — окремі записи delivery.price.rule (variable weight/price/quantity, operator, max_value, list_base_price) · Магазин → Конфігурація → Способи доставки",
               "звірка": {
                 "дата": "2026-09-09",
                 "дивились": "delivery.carrier",
@@ -2166,7 +2166,7 @@ select.chip{padding-right:8px}
             "акції та промокоди": {
               "с": "ok",
               "нота": "поставлено застосунок лояльності й створено промокод ОСІНЬ-10: знижка 10 % на замовлення від 500 ₴. Разом із застосунком у базі зʼявилася й штатна програма подарункових карток",
-              "де": "loyalty.program program_type = promo_code + rule_ids (код, мінімальна сума) + reward_ids",
+              "де": "loyalty.program.program_type = promo_code, і до неї ДВА окремі записи: loyalty.rule (code, minimum_amount, mode with_code) і loyalty.reward (reward_type discount, discount, discount_mode percent) · Магазин → Знижки й лояльність",
               "звірка": {
                 "дата": "2026-09-09",
                 "дивились": "loyalty.program",
