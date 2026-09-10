@@ -698,7 +698,7 @@
 | Пункт | Де в Odoo | Шлях у меню |
 |---|---|---|
 | кілька команд і ролей | `planning.role`, `hr.employee`<br>поля: `hr.employee.planning_role_ids` |  |
-| зміни й графіки роботи | `resource.calendar` |  |
+| зміни й графіки роботи | `resource.calendar`, `resource.calendar.attendance` | Налаштування → Технічні → Робочі графіки |
 | планування за ролями, проєктами й замовленнями | `planning.slot` |  |
 | поля навичок і ролей виконавців (штатно) | `planning.role`, `planning.slot`<br>поля: `planning.role.slot_properties_definition`, `planning.slot.slot_properties` | planning.role.slot_properties_definition → planning.slot.slot_properties |
 

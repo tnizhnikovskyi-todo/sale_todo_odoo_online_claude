@@ -72,6 +72,7 @@ sale.subscription.plan sale.temporal.recurrence sign.document sign.item
 sign.request sign.template spreadsheet.dashboard spreadsheet.dashboard.group
 stock.inventory.conflict stock.location stock.lot stock.move stock.move.line
 stock.picking stock.picking.type stock.putaway.rule stock.quant stock.scrap
+resource.calendar resource.calendar.attendance
 stock.warehouse uom.uom utm.campaign utm.source website website.menu
 website.page worksheet.template confirm.stock.sms
 """.split())
