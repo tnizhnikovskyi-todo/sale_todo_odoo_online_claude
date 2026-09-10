@@ -487,6 +487,51 @@ def check_validator():
     out.append(('cron у базі клієнта' not in буф8.getvalue(),
                 'периметр: ЧИТАННЯ штатного cron правило пропускає'))
 
+    # Незвірене ім'я батьківського подання. Це ЄДИНА перевірка, яка ловить не
+    # помилку, а НЕЗНАННЯ: ім'я може бути правильним, але поки його ніхто не
+    # прочитав із бази, воно не має права їхати до клієнта. Приводом стало те,
+    # що ім'я «maintenance.equipment.form» повернулося в шаблон уже ПІСЛЯ того,
+    # як журнал записав правильне «equipment.form».
+    отр9 = _copy.deepcopy(свіжі)
+    отр9['шаблони']['власне_поле']  # шаблон мусить існувати
+    ш = отр9['позиції']['mnt']['1']
+    ключ9 = list(ш)[0]
+    ш[ключ9]['кроки'].append({'дія': 'знайти', 'модель': 'ir.ui.view',
+                              'домен': [['name', '=', 'maintenance.equipment.form'],
+                                        ['type', '=', 'form'], ['inherit_id', '=', False]],
+                              'один': True, 'назвати': 'подання_вигадане'})
+    отрута9 = os.path.join(d, 'poison_view.json')
+    json.dump(отр9, io.open(отрута9, 'w', encoding='utf-8'), ensure_ascii=False)
+    буф9 = io.StringIO()
+    try:
+        cr.RECIPES = отрута9
+        with _c.redirect_stdout(буф9):
+            код9 = cr.main()
+    finally:
+        cr.RECIPES = справжній
+    out.append((код9 != 0 and 'не звірене з базою' in буф9.getvalue(),
+                'незвірене ім\'я батьківського подання валить збірку'))
+
+    # Незвірений зовнішній id — той самий сторож, що для імен подань. Помилка тут
+    # так само тиха: «знайти_xmlid» не впаде на перевірці, він упаде на прогоні
+    # в клієнта.
+    отр10 = _copy.deepcopy(свіжі)
+    ш10 = отр10['позиції']['mnt']['1']
+    ш10[list(ш10)[0]]['кроки'].append(
+        {'дія': 'знайти_xmlid', 'модуль': 'maintenance',
+         "ім'я": 'group_equipment_manager_вигаданий', 'назвати': 'роль_вигадана'})
+    отрута10 = os.path.join(d, 'poison_xmlid.json')
+    json.dump(отр10, io.open(отрута10, 'w', encoding='utf-8'), ensure_ascii=False)
+    буф10 = io.StringIO()
+    try:
+        cr.RECIPES = отрута10
+        with _c.redirect_stdout(буф10):
+            код10 = cr.main()
+    finally:
+        cr.RECIPES = справжній
+    out.append((код10 != 0 and 'не звірене з базою' in буф10.getvalue(),
+                'незвірений зовнішній id валить збірку'))
+
     out.append((cr.main() == 0, 'на чистих рецептах валідатор мовчить'))
     return out
 

@@ -127,6 +127,74 @@ DEREF = re.compile(r'^\$([^.$]+)\.([\w]+)$')
 CLIENT = re.compile(r'\$клієнт\.([\wа-яіїєґ_]+)', re.I | re.U)
 
 
+# Батьківські подання, ЗВІРЕНІ З БАЗОЮ: кожне ім'я дає рівно один запис із
+# «type=form, inherit_id=false». Перелік потрібен тому, що імена подань НЕ
+# підкоряються правилу «модель + .form»: у обладнання коренева форма зветься
+# `equipment.form`, а не `maintenance.equipment.form`.
+#
+# Цей рядок уже раз повертався. 09.09.2026 у журналі записано «виправлено всі
+# пʼять», і серед виправлених було саме це ім'я — а потім у шаблон «власне_поле»
+# приїхала стара версія, і жодна перевірка цього не сказала. Тому підказка стала
+# сторожем: незвірене ім'я — це не «напевно помилка», це «ще не дивилися», і
+# збірка про нього кричить, поки хтось не подивиться.
+#
+# Структурний домен (модель + форма + без батька) імена НЕ замінює: у res.partner
+# таких подань три (звичайна, спрощена, адреса), у account.move — два.
+ЗВІРЕНІ_ПОДАННЯ = {
+    'sale.order.form', 'res.partner.form', 'pos.order.form', 'purchase.order.form',
+    'mrp.bom.form', 'equipment.form', 'account.move.form',
+    'budget.analytic.view.form', 'hr.expense.view.form',
+}
+
+
+# Зовнішні id, ЗВІРЕНІ З БАЗОЮ 10.09.2026 запитом до ir.model.data: усі 40 знайдено.
+# Помилка тут така сама тиха, як в імені подання: «знайти_xmlid» не впаде на
+# перевірці, він упаде на прогоні в клієнта. І це не теорія — у журналі записано,
+# як я вписав xmlid-и там, де шаблон шукає за назвою, і навпаки.
+ЗВІРЕНІ_XMLID = {
+    'account.group_account_user',
+    'account.menu_finance',
+    'base.group_multi_currency',
+    'base.group_user',
+    'contacts.menu_contacts',
+    'crm.crm_menu_root',
+    'delivery.payment_provider_cod',
+    'helpdesk.group_helpdesk_user',
+    'helpdesk.menu_helpdesk_root',
+    'hr.group_hr_user',
+    'hr.menu_hr_root',
+    'industry_fsm.fsm_menu_root',
+    'industry_fsm.group_fsm_user',
+    'maintenance.group_equipment_manager',
+    'maintenance.menu_maintenance_title',
+    'mrp.group_mrp_user',
+    'mrp.menu_mrp_root',
+    'payment.payment_provider_transfer',
+    'planning.group_planning_manager',
+    'planning.planning_menu_root',
+    'point_of_sale.group_pos_manager',
+    'point_of_sale.menu_point_root',
+    'project.group_project_user',
+    'project.menu_main_pm',
+    'purchase.group_purchase_user',
+    'purchase.menu_purchase_root',
+    'sale.mail_template_sale_confirmation',
+    'sale.sale_menu_root',
+    'sale_renting.rental_menu_root',
+    'sale_subscription.email_payment_reminder',
+    'sale_subscription.menu_sale_subscription_root',
+    'sales_team.group_sale_salesman',
+    'sales_team.group_sale_salesman_all_leads',
+    'sign.group_sign_user',
+    'sign.menu_document',
+    'stock.group_production_lot',
+    'stock.group_stock_user',
+    'stock.menu_stock_root',
+    'website.group_website_restricted_editor',
+    'website.menu_website_configuration',
+}
+
+
 def walk_values(v):
     """Усі рядки всередині значень кроку, включно з переліками й словниками."""
     if isinstance(v, str):
@@ -178,6 +246,16 @@ def base_facts(rec):
             if o.get('дія') == 'знайти_xmlid' and isinstance(o.get('модуль'), str) \
                     and not o['модуль'].startswith('$'):
                 xmlids.add('%s.%s' % (o['модуль'], o.get("ім'я")))
+            # Ім'я подання приходить не тільки аргументом шаблону: крок можна
+            # написати й руками. Перша версія збирала лише «подання_батько», і
+            # рукописний «знайти ir.ui.view за name» проїжджав повз перевірку —
+            # спіймано власною отрутою, коли вона не спрацювала.
+            if o.get('модель') == 'ir.ui.view' and isinstance(o.get('домен'), list):
+                for c in o['домен']:
+                    if isinstance(c, list) and len(c) == 3 and c[0] == 'name' \
+                            and c[1] == '=' and isinstance(c[2], str) \
+                            and not c[2].startswith('$'):
+                        views.add(c[2])
             for v in o.values():
                 walk(v)
         elif isinstance(o, list):
@@ -777,15 +855,27 @@ def main():
             total = len(price_items.get(pid, {}).get(lk, set()))
             cov.append('%s р.%s — %d із %d пунктів' % (names.get(pid, pid), lk, len(items), total))
 
+    views, xmlids, others = base_facts(rec)
+    for x in sorted(xmlids - ЗВІРЕНІ_XMLID):
+        errs.append('зовнішній id «%s» не звірене з базою. Прочитайте ir.model.data '
+                    '(module=…, name=…) і, коли запис знайдено, допишіть його '
+                    'у ЗВІРЕНІ_XMLID' % x)
+        print('  • %s' % errs[-1])
+    for v in sorted(views - ЗВІРЕНІ_ПОДАННЯ):
+        errs.append('батьківське подання «%s» не звірене з базою. Імена подань не '
+                    'підкоряються правилу «модель + .form» — прочитайте ir.ui.view '
+                    '(model=…, type=form, inherit_id=false) і, коли ім\'я дає рівно '
+                    'один запис, допишіть його у ЗВІРЕНІ_ПОДАННЯ' % v)
+        print('  • %s' % errs[-1])
     if errs:
         print('ПОМИЛКА: рецепти не проходять перевірку (%d помилок, %d попереджень)'
               % (len(errs), len(warns)))
         return 1
-    views, xmlids, others = base_facts(rec)
     print('Звірити з базою (валідатор цього не бачить):')
-    print('  батьківські подання (шукаються за ІМЕНЕМ, не за xmlid): %s'
+    print('  батьківські подання (звірені з базою, кожне дає рівно один запис): %s'
           % ', '.join(sorted(views)))
-    print('  зовнішні id: %s' % ', '.join(sorted(xmlids)))
+    print('  зовнішні id (звірені з базою, усі знайдено): %s'
+          % ', '.join(sorted(xmlids)))
     if others:
         print('  назви, що приходять штатними (часто англійські): %s'
               % ', '.join(sorted(others)))
