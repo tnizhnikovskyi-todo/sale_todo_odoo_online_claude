@@ -18,6 +18,7 @@
 Запуск:
     python3 tools/probe_recipes.py <профіль.json>
     python3 tools/probe_recipes.py <профіль.json> --json проба.json
+    python3 tools/probe_recipes.py <профіль.json> --всі        # усі 27 позицій
 """
 
 import collections
@@ -32,13 +33,20 @@ EMIT = 'tools/emit_config_calls.py'
 
 def main(argv):
     if len(argv) < 2:
-        print('вжиток: python3 tools/probe_recipes.py <профіль.json> [--json проба.json]')
+        print('вжиток: python3 tools/probe_recipes.py <профіль.json> '
+              '[--json проба.json] [--всі]')
         return 2
     prof = argv[1]
     with tempfile.NamedTemporaryFile('r', suffix='.json', delete=False) as f:
         plan_path = f.name
-    r = subprocess.run(['python3', EMIT, prof, '--json', plan_path],
-                       capture_output=True, text=True)
+    # «--всі» прокидається в емітер, і це не зручність. Без нього проба бачить
+    # лише позиції з набору профілю — тобто рівно ті рецепти, які й так найбільше
+    # прогнані. Домени позицій поза набором («Виробництво», «Друковані форми»,
+    # «Управлінський облік») не перевірялися жодного разу.
+    cmd = ['python3', EMIT, prof, '--json', plan_path]
+    if '--всі' in argv:
+        cmd.append('--всі')
+    r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         print('емітер упав:\n%s' % (r.stderr or r.stdout))
         return 1

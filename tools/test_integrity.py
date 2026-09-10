@@ -505,6 +505,40 @@ for okk, note in check_subst():
     print(('  ok     ' if okk else '  ПРОВАЛ ') + 'підстановка: ' + note)
     res.append(okk)
 
+def check_render():
+    """Чи друкує план ВСЕ, що потрібно для виконання кроку.
+
+    Дірка, знайдена 10.09.2026: дію «властивість» додали пізніше за рендер, і він
+    її не навчився. У плані стояло «**властивість** `project.task`» — і більше
+    нічого: ні назви поля, ні типу, ні батьківського запису, у якому лежить
+    визначення. Виконати такий крок неможливо, а виглядає він рядком серед інших,
+    тому й прожив непоміченим. Валідатор мовчав: рецепт цілий, поламаний ДРУК.
+
+    Тест дивиться на надрукований план, а не на рецепт: перевіряти треба саме те,
+    що бачить виконавець.
+    """
+    import importlib.util, contextlib as _cc
+    sp = importlib.util.spec_from_file_location('ec3', 'tools/emit_config_calls.py')
+    ec = importlib.util.module_from_spec(sp); sp.loader.exec_module(ec)
+    буф = io.StringIO()
+    with _cc.redirect_stdout(буф):
+        ec.main(['x', 'data/client-profile-example.json', '--всі'])
+    рядки = буф.getvalue().splitlines()
+    кроки = [i for i, l in enumerate(рядки) if '**властивість**' in l]
+    out = [(len(кроки) > 0, 'у плані взагалі є кроки «властивість» (інакше тест порожній)')]
+    цілі = all('- поле `' in рядки[i + 1] and 'визначення лежить у' in рядки[i + 2]
+               for i in кроки if i + 2 < len(рядки))
+    out.append((цілі, 'кожна «властивість» друкує поле, тип і батьківський запис'))
+    # Ціна дії: читання визначень + запис + читання назад. За замовчуванням
+    # рахувалась одиниця, і замір фази 0 занижував би вартість пункту втричі.
+    out.append((ec.CALLS_ВЛАСТИВІСТЬ == 3, '«властивість» коштує трьох викликів, не одного'))
+    return out
+
+
+for okk, note in check_render():
+    print(('  ok     ' if okk else '  ПРОВАЛ ') + 'друк: ' + note)
+    res.append(okk)
+
 for okk, note in check_probe():
     print(('  ok     ' if okk else '  ПРОВАЛ ') + 'проба: ' + note)
     res.append(okk)
