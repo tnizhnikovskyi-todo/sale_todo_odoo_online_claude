@@ -82,6 +82,21 @@ for (const g of price['групи']) {
   }
 }
 
+// Пошук на першій сторінці дивиться на ВСІ тексти позиції. Очікування рахується
+// тут, із прайсу, а не вписується числом: інакше кожна правка складу робіт ламала
+// б тест на його власних застарілих числах.
+const НОРМ = t => String(t || '').toLowerCase().replace(/[\u2019\u02bc\u0027]/g, "'");
+const СІНО = {};
+for (const g of price['групи']) {
+  for (const it of g.items) {
+    const ч = [it.n, g['г'] || g.g, it.d, it.q];
+    it.lv.forEach((l, i) => { ч.push(l[0], l[3]); if (i > 0) ч.push(...l[4]); });
+    ч.push(...it.inc, ...(it.bounds || []));
+    СІНО[it.id] = НОРМ(ч.join(' \n '));
+  }
+}
+const ЗБІГИ = q => Object.keys(СІНО).filter(id => СІНО[id].indexOf(НОРМ(q)) >= 0);
+
 const out = [];
 const ok = (name, cond, detail) =>
   out.push({ name, ok: !!cond, detail: detail === undefined ? '' : String(detail) });
@@ -622,6 +637,191 @@ function expected(sel) {
   ok('з «Друкованими формами» та сама межа з КП зникає',
      !вказівник.test(зФормами) && /^- Друковані форми: /m.test(зФормами),
      (зФормами.split('\n').find(l => /^- Друковані форми: /.test(l)) || 'рядка немає').slice(0, 100));
+
+  // --- 5г. пошук по прайсу на першій сторінці -----------------------------
+  // Набір на цей момент: base, sal, inv, prt (лишився з перевірки меж). Це й
+  // потрібно: пошук мусить ХОВАТИ позиції без збігу, але лишати позиції набору —
+  // таблиця тут не довідник, а сам набір, і схований рядок означав би схований
+  // рядок КП.
+  const ЗАПИТ = 'партії';
+  const збіг = ЗБІГИ(ЗАПИТ);
+  async function шукати(q) {
+    await p.evaluate((v) => {
+      const f = document.getElementById('c-find');
+      f.value = v;
+      f.dispatchEvent(new Event('input', { bubbles: true }));
+    }, q);
+    await p.waitForTimeout(200);
+    return await p.evaluate(() => {
+      const рядки = Array.from(document.querySelectorAll('#rows tr.item'));
+      const видимі = рядки.filter(r => !r.hidden).map(r => r.id.replace(/^r-/, ''));
+      const групи = Array.from(document.querySelectorAll('#rows tr.grp'));
+      // заголовок групи мусить зникати разом з останньою своєю позицією
+      const порожніВидимі = групи.filter(g => {
+        if (g.hidden) return false;
+        let n = 0;
+        for (let el = g.nextElementSibling; el && !/\bgrp\b/.test(el.className); el = el.nextElementSibling) {
+          if (/\bitem\b/.test(el.className) && !el.hidden) n++;
+        }
+        return n === 0;
+      }).length;
+      return {
+        видимі,
+        всього: рядки.length,
+        групВидимих: групи.filter(g => !g.hidden).length,
+        групВсього: групи.length,
+        порожніВидимі,
+        лічильник: document.getElementById('c-cnt').textContent.trim(),
+        очистка: !document.getElementById('c-clear').hidden,
+        набір: рядки.filter(r => /\bon\b/.test(r.className)).map(r => r.id.replace(/^r-/, '')),
+      };
+    });
+  }
+  // «Детально» відкриваємо на позиції, яку пошук приховає: рядок порівняння —
+  // окремий <tr>, і забути про нього означає лишити на екрані склад робіт
+  // позиції, якої вже не видно.
+  await p.evaluate(() => {
+    const tr = document.getElementById('r-crm');
+    if (tr) tr.querySelector('.more').click();
+  });
+  await p.waitForTimeout(150);
+  const знайдено = await шукати(ЗАПИТ);
+  const мусять = збіг.concat(знайдено.набір.filter(id => !збіг.includes(id))).sort();
+  ok('пошук «' + ЗАПИТ + '» лишає збіги (' + збіг.join(',') + ') і позиції набору',
+     збіг.length > 0 && збіг.length < знайдено.всього
+     && знайдено.видимі.slice().sort().join(',') === мусять.join(','),
+     'видно ' + знайдено.видимі.join(',') + ' | мусять ' + мусять.join(','));
+  ok('лічильник називає знайдене, показане і те, що набір лишається',
+     знайдено.лічильник === 'знайдено ' + збіг.length + ' · показано ' + знайдено.видимі.length
+       + ' з ' + знайдено.всього + ' — позиції набору лишаються видимими',
+     знайдено.лічильник);
+  ok('заголовок групи без видимих позицій зникає',
+     знайдено.порожніВидимі === 0 && знайдено.групВидимих < знайдено.групВсього,
+     'порожніх видимих ' + знайдено.порожніВидимі + ' · груп видно '
+       + знайдено.групВидимих + ' з ' + знайдено.групВсього);
+  const деталі = await p.evaluate(() => {
+    const d = document.getElementById('d-crm'), tr = document.getElementById('r-crm');
+    return { рядок: !!tr && tr.hidden, деталь: !!d && d.hidden,
+             підпис: tr ? tr.querySelector('.more').textContent.trim() : '' };
+  });
+  ok('розкрите «Детально» ховається разом зі своєю позицією',
+     деталі.рядок && деталі.деталь && деталі.підпис === 'Детально',
+     JSON.stringify(деталі));
+  const чисто = await p.evaluate(() => {
+    document.getElementById('c-clear').click();
+    const рядки = Array.from(document.querySelectorAll('#rows tr.item'));
+    return { видимі: рядки.filter(r => !r.hidden).length, всього: рядки.length,
+             поле: document.getElementById('c-find').value,
+             лічильник: document.getElementById('c-cnt').textContent.trim() };
+  });
+  ok('«Очистити» повертає всі позиції', чисто.видимі === чисто.всього && чисто.поле === ''
+     && /у прайсі/.test(чисто.лічильник),
+     JSON.stringify(чисто));
+
+  // Фільтр НЕ зберігається: збережений фільтр — це «позиції зникли» наступного
+  // ранку, і сейл шукав би поломку там, де її немає.
+  await шукати(ЗАПИТ);
+  await p.reload();
+  await p.waitForTimeout(700);
+  const післяПерезавантаження = await p.evaluate(() => {
+    const рядки = Array.from(document.querySelectorAll('#rows tr.item'));
+    return { поле: document.getElementById('c-find').value,
+             видимі: рядки.filter(r => !r.hidden).length, всього: рядки.length };
+  });
+  ok('пошук не переживає перезавантаження сторінки',
+     післяПерезавантаження.поле === ''
+     && післяПерезавантаження.видимі === післяПерезавантаження.всього,
+     JSON.stringify(післяПерезавантаження));
+
+  // --- 5д. набори текстом: перенос на іншу машину -------------------------
+  // Дірка, яку це закриває: набори лежать у localStorage цього браузера. Інша
+  // машина або чищений профіль — і робота сейла зникла. Тест перевіряє повний
+  // кругообіг: скопіювати → стерти набори → вставити → відкрити набір.
+  const текстНаборів = await p.evaluate(() => {
+    const cb = document.getElementById('c-stk');
+    if (!cb.checked) cb.click();
+    const lv = document.getElementById('l-stk');
+    lv.value = '2'; lv.dispatchEvent(new Event('change', { bubbles: true }));
+    const cli = document.getElementById('cli');
+    cli.value = 'Перенос'; cli.dispatchEvent(new Event('input', { bubbles: true }));
+    document.getElementById('save').click();
+    document.getElementById('io').click();
+    document.getElementById('io-copy').click();
+    return { поле: document.getElementById('io-out').value, msg: document.getElementById('io-msg').textContent.trim() };
+  });
+  await p.waitForTimeout(300);
+  const буферНаборів = await p.evaluate(async () => {
+    try { return await navigator.clipboard.readText(); } catch (e) { return 'ПОМИЛКА: ' + e.message; }
+  });
+  if (/^ПОМИЛКА/.test(буферНаборів)) {
+    console.error('Буфер не читається: ' + буферНаборів);
+    console.error('НЕ ПЕРЕВІРЕНО: перенос наборів текстом.');
+    process.exit(2);
+  }
+  ok('«Скопіювати» кладе набори в буфер: мітка, назви і розбірний JSON',
+     буферНаборів === текстНаборів.поле
+     && /^ODOO-CALC НАБОРИ v1 · /.test(буферНаборів)
+     && /Перенос/.test(буферНаборів.split('\n')[0])
+     && (() => {
+          try {
+            const o = JSON.parse(буферНаборів.slice(буферНаборів.indexOf('{')));
+            return !!(o['набори'] && o['набори']['Перенос'] && o['набори']['Перенос'].lv);
+          } catch (e) { return false; }
+        })(),
+     буферНаборів.split('\n')[0].slice(0, 90) + ' | msg: ' + текстНаборів.msg);
+  // Підпис під кнопкою і шапка тексту називають ту саму кількість. Це не
+  // прикраса: перша версія рахувала її окремо й на вже збереженому клієнті
+  // казала «3 набори» під шапкою з двома.
+  const скількиШапка = (буферНаборів.match(/· (\d+) набор/) || [])[1];
+  const скількиПідпис = (текстНаборів.msg.match(/(\d+) набор/) || [])[1];
+  ok('підпис і шапка називають ту саму кількість наборів',
+     !!скількиШапка && скількиШапка === скількиПідпис,
+     'шапка ' + скількиШапка + ' · підпис ' + скількиПідпис);
+
+  const прийнято = await p.evaluate((txt) => {
+    localStorage.removeItem('odoo-com-calc-cases-v1');
+    document.getElementById('io-in').value = txt;
+    document.getElementById('io-take').click();
+    return {
+      msg: document.getElementById('io-msg').textContent.trim(),
+      назви: Array.from(document.getElementById('cases').options).map(o => o.value).filter(Boolean),
+      полеОчищене: document.getElementById('io-in').value === '',
+    };
+  }, буферНаборів);
+  await p.waitForTimeout(200);
+  const відновлено = await p.evaluate(() => {
+    document.getElementById('reset').click();
+    const sel = document.getElementById('cases');
+    sel.value = 'Перенос';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    return { stk: /\bon\b/.test(document.getElementById('r-stk').className),
+             lv: document.getElementById('l-stk').value,
+             клієнт: document.getElementById('cli').value };
+  });
+  await p.waitForTimeout(300);
+  ok('вставлений текст повертає набори, і набір відкривається як свій',
+     прийнято.назви.includes('Перенос') && прийнято.полеОчищене
+     && /додано \d+, оновлено \d+/.test(прийнято.msg)
+     && відновлено.stk === true && відновлено.lv === '2',
+     JSON.stringify(прийнято) + ' | ' + JSON.stringify(відновлено));
+
+  const сміття = await p.evaluate(() => {
+    const скільки = () => Object.keys(JSON.parse(localStorage.getItem('odoo-com-calc-cases-v1') || '{}')).length;
+    const до = скільки();
+    const проба = (txt) => {
+      document.getElementById('io-in').value = txt;
+      document.getElementById('io-take').click();
+      return { після: скільки(), msg: document.getElementById('io-msg').textContent.trim(),
+               клас: document.getElementById('io-msg').className };
+    };
+    return { до,
+             зДужками: проба('привіт, це просто текст із мессенджера {майже json}'),
+             безДужок: проба('доброго дня, надсилаю набір як обіцяв') };
+  });
+  const чужий = р => р.після === сміття.до && /не схоже на набори/.test(р.msg) && /bad/.test(р.клас);
+  ok('чужий текст не приймається і нічого не псує — і з дужками, і без',
+     чужий(сміття.зДужками) && чужий(сміття.безДужок),
+     JSON.stringify(сміття));
 
   // --- 6. чек-лист кваліфікації: поріг обмежень й вердикт «стоп» -----------
   await p.getByText('ЧЕК-ЛИСТ КВАЛІФІКАЦІЇ', { exact: false }).first().click();

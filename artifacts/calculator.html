@@ -151,6 +151,10 @@ select.lv:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 select.lv.up{border-color:var(--escalate);color:var(--escalate)}
 
 tr.det[hidden]{display:none}
+/* Рядок, схований пошуком. Правило потрібне з тієї самої причини, що й для
+   tr.det вище: у таблиці `[hidden]` перебивається не в кожному оточенні
+   однаково, а обгортку публікації тест не бачить. */
+tbody tr.item[hidden],tbody tr.grp[hidden]{display:none}
 tr.det td{background:var(--surface-2);padding:10px 12px 12px}
 .lvgrid{display:grid;gap:7px}
 @media (min-width:640px){.lvgrid{grid-template-columns:repeat(3,1fr)}}
@@ -265,6 +269,28 @@ tfoot td.n{font-size:15px}
   font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--allow);margin-top:7px;display:block;
 }
 .copied[hidden]{display:none!important}
+
+/* Набори текстом. Причина існування блоку: названі набори живуть у
+   localStorage ЦЬОГО браузера — інша машина або чищений профіль, і робота
+   сейла зникла без слідів. Текст — єдиний спосіб її винести. */
+.io{
+  margin:0 0 16px;padding:11px 13px;border:1px solid var(--line);
+  border-radius:10px;background:var(--surface);
+}
+.io[hidden]{display:none!important}
+.io .ionote{font-size:12px;line-height:1.5;color:var(--ink-3);margin:0 0 9px}
+.io textarea{
+  width:100%;min-height:74px;resize:vertical;
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;line-height:1.5;
+  padding:9px;border:1px solid var(--line-strong);border-radius:7px;
+  background:var(--surface-2);color:var(--ink-2);
+}
+.io textarea[hidden]{display:none!important}
+.io textarea + textarea{margin-top:9px}
+.iorow{display:flex;flex-wrap:wrap;gap:9px 12px;align-items:center;margin-top:9px}
+.iomsg{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-3)}
+.iomsg.bad{color:var(--deny)}
+.iomsg.ok{color:var(--allow)}
 
 footer{
   margin-top:30px;padding-top:15px;border-top:1px solid var(--line);
@@ -597,12 +623,32 @@ select.chip{padding-right:8px}
     <select class="chip" id="cases" aria-label="Збережені набори" hidden></select>
     <button class="chip" type="button" id="save" title="зберегти набір під назвою клієнта">Зберегти</button>
     <button class="chip" type="button" id="del" hidden>Видалити</button>
+    <button class="chip" type="button" id="io">Набори текстом</button>
     <button class="chip" type="button" id="reset">Почати заново</button>
+  </div>
+
+  <div class="io" id="io-wrap" hidden>
+    <p class="ionote">Набори зберігаються в цьому браузері й тільки в ньому. Щоб перенести роботу на іншу машину або зберегти її перед чищенням профілю: «Скопіювати набори» — надіслати текст собі — на іншій машині вставити його в поле нижче й натиснути «Прийняти вставлене». У текст ідуть усі збережені набори і поточний екран, якщо в полі «Замовник» стоїть назва.</p>
+    <div class="iorow">
+      <button class="chip" type="button" id="io-copy">Скопіювати набори</button>
+      <span class="copied" id="io-copied" hidden>Скопійовано в буфер</span>
+      <span class="iomsg" id="io-msg"></span>
+    </div>
+    <textarea id="io-out" readonly hidden aria-label="Набори текстом"></textarea>
+    <textarea id="io-in" placeholder="або вставте сюди текст із наборами з іншої машини" aria-label="Вставити набори"></textarea>
+    <div class="iorow">
+      <button class="chip" type="button" id="io-take">Прийняти вставлене</button>
+    </div>
   </div>
 
   <div class="page" id="page-calc" role="tabpanel" aria-labelledby="tab-calc">
   <div class="grid">
     <div>
+      <div class="sbar cbar">
+        <input type="search" id="c-find" placeholder="пошук по позиціях, складу робіт і межах" aria-label="Пошук по прайсу">
+        <button class="chip" type="button" id="c-clear" hidden>Очистити</button>
+        <span class="cnt" id="c-cnt">—</span>
+      </div>
       <div class="tblwrap">
         <table>
           <colgroup>
@@ -9429,14 +9475,21 @@ select.chip{padding-right:8px}
 
   // ---------- build ----------
   var tb = $('rows');
+  // Пошук ховає позиції, а заголовок групи, у якій не лишилось жодної, мусить
+  // зникнути разом із ними — інакше на екрані висять порожні назви розділів.
+  // Тому будова запамʼятовує пару «заголовок → id його позицій».
+  var СТРУКТУРА = [];
   GROUPS.forEach(function(gr){
     var g = document.createElement('tr');
     g.className = 'grp';
     var gtd = document.createElement('td');
     gtd.colSpan = 3; gtd.textContent = gr.g;
     g.appendChild(gtd); tb.appendChild(g);
+    var вузол = { head:g, ids:[] };
+    СТРУКТУРА.push(вузол);
 
     gr.items.forEach(function(m){
+      вузол.ids.push(m.id);
       var tr = document.createElement('tr');
       tr.className = 'item'; tr.id = 'r-' + m.id;
 
@@ -9570,6 +9623,71 @@ select.chip{padding-right:8px}
         more.textContent = open ? 'Згорнути' : 'Детально';
       });
     });
+  });
+
+  // ---------- пошук по прайсу (сторінка 1) ----------
+  // 27 позицій у семи групах — це вже той обсяг, де під час розмови позицію
+  // шукають очима довше, ніж говорять. Пошук дивиться на ВСІ тексти позиції, а
+  // не тільки на назву: клієнт каже «партії», «виїзд», «портал», а не назву
+  // позиції прайсу.
+  //
+  // Фільтр НЕ зберігається — ні в стані, ні в наборі клієнта. Збережений фільтр
+  // означає «позиції зникли» на наступному відкритті, і сейл шукав би поломку
+  // там, де її немає. Тому змінна модуля, а не state.
+  var фільтр = '';
+  // Апостроф у прайсі трапляється трьома знаками (’ ʼ '), і різниця не видна
+  // оком — на цьому вже горіли чотири рази. Тому і сіно, і запит зводяться до
+  // одного знака.
+  function норм(t){ return String(t || '').toLowerCase().replace(/[\u2019\u02bc\u0027]/g, "'"); }
+  function сіно(m){
+    if(m._сіно) return m._сіно;
+    var ч = [m.n, m.grp, m.d, m.q];
+    m.lv.forEach(function(l, i){
+      ч.push(l[0], l[3]);
+      if(i > 0) ч.push.apply(ч, l[4]);
+    });
+    ч.push.apply(ч, m.inc);
+    ч.push.apply(ч, m.bounds || []);
+    m._сіно = норм(ч.join(' \n '));
+    return m._сіно;
+  }
+  function застосуватиФільтр(){
+    var q = норм(фільтр).trim(), знайдено = 0, показано = 0, всього = MODS.length;
+    СТРУКТУРА.forEach(function(гр){
+      var живих = 0;
+      гр.ids.forEach(function(id){
+        var m = BYID[id];
+        var збіг = !!q && сіно(m).indexOf(q) >= 0;
+        if(збіг) знайдено++;
+        // Позиція набору лишається на екрані навіть без збігу: таблиця — це не
+        // довідник, а сам набір, і сховати з нього рядок означає сховати те, за
+        // що клієнт платить. Обіцянка написана в лічильнику й перевірена тестом.
+        var видно = !q || збіг || state.sel[id];
+        var tr = $('r-' + id);
+        tr.hidden = !видно;
+        if(видно) { живих++; показано++; }
+        var det = $('d-' + id);
+        if(det && !видно && !det.hidden){
+          det.hidden = true;
+          var btn = tr.querySelector('.more');
+          if(btn){ btn.textContent = 'Детально'; btn.setAttribute('aria-expanded', 'false'); }
+        }
+      });
+      гр.head.hidden = !живих;
+    });
+    $('c-clear').hidden = !q;
+    $('c-cnt').textContent = !q
+      ? всього + ' ' + plural(всього, 'позиція', 'позиції', 'позицій') + ' у прайсі'
+      : 'знайдено ' + знайдено + ' · показано ' + показано + ' з ' + всього
+        + (показано > знайдено ? ' — позиції набору лишаються видимими' : '');
+  }
+  $('c-find').addEventListener('input', function(){
+    фільтр = this.value;
+    застосуватиФільтр();
+  });
+  $('c-clear').addEventListener('click', function(){
+    фільтр = ''; $('c-find').value = '';
+    застосуватиФільтр(); $('c-find').focus();
   });
 
   // ---------- залежності ----------
@@ -9734,6 +9852,9 @@ select.chip{padding-right:8px}
     $('warns-card').hidden = !warns.children.length;
 
     renderQual();
+    // Фільтр залежить від набору («позиції набору лишаються видимими»), тому
+    // перезастосовується після кожної перемальовки, а не лише при введенні.
+    застосуватиФільтр();
     save();
   }
 
@@ -9968,6 +10089,76 @@ select.chip{padding-right:8px}
     caseApply(all[name]);
     casesRender();
   });
+  // ---------- набори текстом ----------
+  // Дірка, яку це закриває: названі набори лежать у localStorage ЦЬОГО браузера.
+  // Інша машина, інший профіль, чищення даних сайту — і робота сейла зникла, без
+  // слідів і без попередження. Текст — єдиний спосіб винести її з браузера, який
+  // не вимагає сервера й нікуди нічого не надсилає сам.
+  //
+  // Формат: рядок-шапка для людини (кому й скільки) плюс JSON. Розбір НЕ вимагає
+  // шапки — мессенджери й пошта дописують своє, — але вимагає ключа «набори»:
+  // саме він, а не мітка, відрізняє наш текст від чужого.
+  var IOMARK = 'ODOO-CALC НАБОРИ v1';
+  // Що саме поїде в текст — рахується ОДИН раз, тут. Перша версія рахувала
+  // кількість для підпису окремо («збережені + 1, якщо є клієнт») і на клієнті,
+  // який уже збережений, казала «3 набори» під шапкою з двома. Друга копія того
+  // самого знання завжди розходиться — тут вона розійшлася за пʼять хвилин.
+  function ioНабори(){
+    var all = casesRead(), cur = state.client.trim();
+    // Поточний екран важливіший за збережену копію того самого імені: сейл бачить
+    // саме його, і саме його очікує на іншій машині. Якщо назви немає — виносити
+    // нічого, набір без імені не існує.
+    if(cur) all[cur] = caseSnapshot();
+    return all;
+  }
+  function ioText(){
+    var all = ioНабори(), names = Object.keys(all).sort();
+    return IOMARK + ' · ' + зараз() + ' · '
+         + names.length + ' ' + plural(names.length, 'набір', 'набори', 'наборів')
+         + (names.length ? ': ' + names.join(', ') : '')
+         + '\n' + JSON.stringify({ 'версія':1, 'набори':all });
+  }
+  function ioTake(txt){
+    var i = String(txt || '').indexOf('{'), j = String(txt || '').lastIndexOf('}');
+    if(i < 0 || j <= i) return null;
+    var o;
+    try { o = JSON.parse(txt.slice(i, j + 1)); } catch(e){ return null; }
+    var н = o && o['набори'];
+    if(!н || typeof н !== 'object') return null;
+    var all = casesRead(), додано = 0, оновлено = 0;
+    Object.keys(н).forEach(function(name){
+      if(!н[name] || typeof н[name] !== 'object') return;
+      if(all[name]) оновлено++; else додано++;
+      all[name] = н[name];
+    });
+    if(!додано && !оновлено) return null;
+    casesWrite(all);
+    return { 'додано':додано, 'оновлено':оновлено };
+  }
+  function ioMsg(t, cls){
+    var el = $('io-msg');
+    el.textContent = t; el.className = 'iomsg' + (cls ? ' ' + cls : '');
+  }
+  $('io').addEventListener('click', function(){
+    var w = $('io-wrap'), open = w.hidden;
+    w.hidden = !open;
+    if(open){ ioMsg(''); $('io-in').focus(); }
+  });
+  $('io-copy').addEventListener('click', function(){
+    copyOut(ioText(), $('io-out'), $('io-copied'));
+    var n = Object.keys(ioНабори()).length;
+    ioMsg(n ? 'у тексті ' + n + ' ' + plural(n, 'набір', 'набори', 'наборів')
+            : 'наборів немає: спершу впишіть замовника й натисніть «Зберегти»',
+          n ? 'ok' : 'bad');
+  });
+  $('io-take').addEventListener('click', function(){
+    var r = ioTake($('io-in').value);
+    if(!r){ ioMsg('це не схоже на набори з цього інструмента — потрібен текст із кнопки «Скопіювати»', 'bad'); return; }
+    $('io-in').value = '';
+    casesRender();
+    ioMsg('додано ' + r['додано'] + ', оновлено ' + r['оновлено'] + ' — виберіть набір у списку вгорі', 'ok');
+  });
+
   function load(){
     try {
       var raw = localStorage.getItem(KEY);
@@ -10029,7 +10220,8 @@ select.chip{padding-right:8px}
     // строк дії стосується тільки КП, тому поле живе на першій сторінці
     $('until-wrap').hidden = p !== 'calc';
     $('save').hidden = !sales;
-    if(!sales){ $('cases').hidden = true; $('del').hidden = true; }
+    $('io').hidden = !sales;
+    if(!sales){ $('cases').hidden = true; $('del').hidden = true; $('io-wrap').hidden = true; }
     else casesRender();
     state.page = p; save();
   }
@@ -11187,6 +11379,12 @@ select.chip{padding-right:8px}
     $('copied').hidden = true;
     $('qnote-out').hidden = true;
     $('qcopied').hidden = true;
+    // пошук — частина робочого стану екрана, тому «Почати заново» чистить і його
+    фільтр = ''; $('c-find').value = '';
+    $('io-wrap').hidden = true;
+    $('io-out').hidden = true;
+    $('io-copied').hidden = true;
+    ioMsg('');
     state.client = '';
     state.until = '';
     $('until').value = '';
