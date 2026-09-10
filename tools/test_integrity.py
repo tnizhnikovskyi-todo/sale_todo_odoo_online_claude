@@ -639,6 +639,64 @@ def check_validator():
     out.append((cr.main() == 0, 'на чистих рецептах валідатор мовчить'))
     return out
 
+def check_claude_md():
+    """CLAUDE.md проти даних: чи ловиться застаріле число.
+
+    Це інструкція, яку читає кожна наступна сесія перед першою дією, і 10.09.2026
+    девʼять її чисел уже не збігалися з даними — частину зістарив я сам того ж дня
+    (додав поле в анкету, додав тести). Клас відтворюється щоразу, коли правиш
+    дані й не перечитуєш інструкцію, тому правило потрібне саме тут.
+    """
+    import importlib.util, tempfile, os, contextlib as _cc
+    sp = importlib.util.spec_from_file_location('cmd', 'tools/check_claude_md.py')
+    cm = importlib.util.module_from_spec(sp); sp.loader.exec_module(cm)
+    md = io.open('CLAUDE.md', encoding='utf-8').read()
+    буф = io.StringIO()
+    with _cc.redirect_stdout(буф):
+        код = cm.main()
+    out = [(код == 0, 'CLAUDE.md: на чинному тексті перевірка мовчить'),
+           ('19 похідних чисел' in буф.getvalue(),
+            'CLAUDE.md: перевірка справді дивиться на 19 чисел, а не на нуль')]
+    d = tempfile.mkdtemp()
+    справж = cm.MD
+    for було, стало, підпис in [
+        ('банк питань на 84 позиці', 'банк питань на 80 позиці', 'застаріле число'),
+        ('фільтрує по всіх 549 рядках', 'фільтрує по всіх 539 рядках', 'стара сума рядків'),
+    ]:
+        assert було in md, було
+        ш = os.path.join(d, 'poison_md_%s.md' % abs(hash(було)))
+        io.open(ш, 'w', encoding='utf-8').write(md.replace(було, стало, 1))
+        буф2 = io.StringIO()
+        try:
+            cm.MD = ш
+            with _cc.redirect_stdout(буф2):
+                код2 = cm.main()
+        finally:
+            cm.MD = справж
+        out.append((код2 != 0 and 'а в даних' in буф2.getvalue(),
+                    'CLAUDE.md: %s спіймано' % підпис))
+    # Протиотрута на саму прив’язку: якщо текст навколо числа перепишуть, правило
+    # мусить сказати «твердження не знайдено», а не тихо пройти.
+    ш3 = os.path.join(d, 'poison_md_gone.md')
+    io.open(ш3, 'w', encoding='utf-8').write(md.replace('банк питань на 84 позиці',
+                                                        'банк питань', 1))
+    буф3 = io.StringIO()
+    try:
+        cm.MD = ш3
+        with _cc.redirect_stdout(буф3):
+            код3 = cm.main()
+    finally:
+        cm.MD = справж
+    out.append((код3 != 0 and 'не знайдено' in буф3.getvalue(),
+                'CLAUDE.md: зникле твердження назване, а не пропущене'))
+    return out
+
+
+for okk, note in check_claude_md():
+    print(('  ok     ' if okk else '  ПРОВАЛ ') + note)
+    res.append(okk)
+
+
 def check_concept():
     """Концепція: чи ловиться Studio без заперечення, чужа ціна і стоп-слово.
 
