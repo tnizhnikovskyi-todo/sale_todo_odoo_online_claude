@@ -562,6 +562,7 @@ select.chip{padding-right:8px}
     </div>
     <span class="spacer"></span>
     <label class="cli" id="cli-wrap"><span class="lbl">Клієнт</span><input type="text" id="cli" placeholder="назва" aria-label="Назва клієнта"></label>
+    <label class="cli" id="until-wrap"><span class="lbl">Дійсна до</span><input type="date" id="until" aria-label="Пропозиція дійсна до"></label>
     <select class="chip" id="cases" aria-label="Збережені набори" hidden></select>
     <button class="chip" type="button" id="save" title="зберегти набір під назвою клієнта">Зберегти</button>
     <button class="chip" type="button" id="del" hidden>Видалити</button>
@@ -9146,7 +9147,30 @@ select.chip{padding-right:8px}
   // sel — що позначено; lv — індекс рівня; manual — позначив сам сейл; auto — додано через залежність (ким)
   // qa — відповіді скринінгу; qr — закриті пункти готовності; no — позиції, про які спитали й вони не потрібні
   // open — розкриті розділи чек-листа; page — активна сторінка
-  var state = { sel:{}, lv:{}, manual:{}, auto:{}, qa:{}, qr:{}, no:{}, probe:{}, open:{ scr:true }, page:'calc', client:'' };
+  var state = { sel:{}, lv:{}, manual:{}, auto:{}, qa:{}, qr:{}, no:{}, probe:{}, open:{ scr:true }, page:'calc', client:'', until:'' };
+
+  // Дата й строк дії у вихідних текстах. Без них два КП того самого клієнта не
+  // відрізнити й не підшити в CRM, а рядок «ціни фіксовані на строк дії пропозиції»
+  // обіцяє строк, якого ніде немає. Сам строк — рішення власника, тому інструмент
+  // його НЕ вигадує: поле порожнє друкується прочерком, який заповнюють перед
+  // відправкою.
+  function дд(iso){
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    return m ? (m[3] + '.' + m[2] + '.' + m[1]) : '';
+  }
+  function зараз(){
+    var d = new Date(), p2 = function(x){ return (x < 10 ? '0' : '') + x; };
+    return p2(d.getDate()) + '.' + p2(d.getMonth() + 1) + '.' + d.getFullYear()
+           + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes());
+  }
+  // Шапка спільна для всіх трьох текстів: назва клієнта (якщо є) і дата з часом.
+  // Час тут не прикраса — це і є номер версії: два КП того самого клієнта в один
+  // день інакше однакові.
+  function шапка(L, зСтроком){
+    if(state.client.trim()) L.push('Клієнт: ' + state.client.trim());
+    L.push('Дата: ' + зараз());
+    if(зСтроком) L.push('Пропозиція дійсна до: ' + (дд(state.until) || '____________'));
+  }
   function blank(){
     state.manual = {}; state.auto = {}; state.qa = {}; state.qr = {}; state.no = {}; state.probe = {};
     MODS.forEach(function(m){ state.sel[m.id] = !!m.req; state.lv[m.id] = 1; });
@@ -9515,7 +9539,9 @@ select.chip{padding-right:8px}
 
   function summary(){
     var notes = resolve();
-    var lines = ['Впровадження Odoo Online — склад робіт і вартість', ''];
+    var lines = ['Впровадження Odoo Online — склад робіт і вартість'];
+    шапка(lines, true);
+    lines.push('');
     var TP = 0, TH = 0, apps = {};
     GROUPS.forEach(function(gr){
       var chosen = gr.items.filter(function(m){ return state.sel[m.id] && m.id !== 'diag'; });
@@ -9569,6 +9595,9 @@ select.chip{padding-right:8px}
   // одночасно й перемикається між ними, не втрачаючи попереднього.
   var CASEKEY = 'odoo-com-calc-cases-v1';
   var CASEFIELDS = ['sel', 'lv', 'manual', 'auto', 'no', 'qa', 'probe', 'open'];
+  // Строк дії належить конкретному КП, тому їде разом із набором клієнта. Це рядок,
+  // а не обʼєкт, тож у caseApply для нього окрема гілка.
+  var CASESCALARS = ['until'];
 
   function casesRead(){
     try {
@@ -9582,12 +9611,17 @@ select.chip{padding-right:8px}
   function caseSnapshot(){
     var snap = {};
     CASEFIELDS.forEach(function(k){ snap[k] = JSON.parse(JSON.stringify(state[k])); });
+    CASESCALARS.forEach(function(k){ snap[k] = state[k]; });
     return snap;
   }
   function caseApply(snap){
     CASEFIELDS.forEach(function(k){
       if(snap[k] && typeof snap[k] === 'object') state[k] = JSON.parse(JSON.stringify(snap[k]));
     });
+    CASESCALARS.forEach(function(k){
+      if(typeof snap[k] === 'string'){ state[k] = snap[k]; }
+    });
+    if($('until')) $('until').value = state.until;
     MODS.forEach(function(m){
       if(typeof state.sel[m.id] !== 'boolean') state.sel[m.id] = !!m.req;
       if(typeof state.lv[m.id] !== 'number') state.lv[m.id] = 1;
@@ -9619,6 +9653,10 @@ select.chip{padding-right:8px}
   $('cli').addEventListener('input', function(){
     state.client = $('cli').value;
     casesRender(); save();
+  });
+  $('until').addEventListener('input', function(){
+    state.until = $('until').value;
+    save();
   });
   $('save').addEventListener('click', function(){
     var name = state.client.trim();
@@ -9668,6 +9706,7 @@ select.chip{padding-right:8px}
       }
       if(PAGES[st.page]) state.page = st.page;
       if(typeof st.client === 'string') state.client = st.client;
+      if(typeof st.until === 'string') state.until = st.until;
     } catch(e){}
   }
 
@@ -9687,6 +9726,8 @@ select.chip{padding-right:8px}
     // анкету заповнює клієнт у себе, а перелік — довідник: набори там не потрібні
     var sales = p === 'calc' || p === 'qual';
     $('cli-wrap').hidden = !sales;
+    // строк дії стосується тільки КП, тому поле живе на першій сторінці
+    $('until-wrap').hidden = p !== 'calc';
     $('save').hidden = !sales;
     if(!sales){ $('cases').hidden = true; $('del').hidden = true; }
     else casesRender();
@@ -10072,7 +10113,7 @@ select.chip{padding-right:8px}
 
   function qualNotes(){
     var L = ['Кваліфікація клієнта — нотатки зустрічі'];
-    if(state.client.trim()) L.push('Клієнт: ' + state.client.trim());
+    шапка(L, false);
     L.push('');
     QSECS.forEach(function(sec){
       if(sec.kind === 'питання'){
@@ -10703,7 +10744,7 @@ select.chip{padding-right:8px}
   }
 
   function ftext(){
-    var L = ['Анкета перед зустріччю — відповіді клієнта', ''];
+    var L = ['Анкета перед зустріччю — відповіді клієнта', 'Дата: ' + зараз(), ''];
     function block(title, where, fields){
       var filled = fields.filter(function(f){ return fval(where, f); });
       if(!filled.length) return;
@@ -10763,6 +10804,8 @@ select.chip{padding-right:8px}
     $('qnote-out').hidden = true;
     $('qcopied').hidden = true;
     state.client = '';
+    state.until = '';
+    $('until').value = '';
     $('cli').value = '';
     render();
     casesRender();
@@ -10774,6 +10817,7 @@ select.chip{padding-right:8px}
 
   load();
   $('cli').value = state.client;
+  $('until').value = state.until;
   showPage(state.page);
   render();
   casesRender();

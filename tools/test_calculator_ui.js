@@ -206,6 +206,25 @@ function expected(sel) {
   ok('КП зібралося', !kp.hidden && kp.text.length > 500, 'довжина ' + kp.text.length);
   ok('у КП є «не входить»', /невходить/i.test(flat));
   ok('у КП стоїть та сама сума ' + e.sum, flat.includes('€' + e.sum), 'шукали €' + e.sum);
+  // Ідентифікація КП. Порожній строк дії мусить друкуватися ПРОЧЕРКОМ, а не
+  // зникати: рядок «ціни фіксовані на строк дії пропозиції» інакше обіцяє строк,
+  // якого в тексті немає. Сам строк — рішення власника, тому інструмент його не
+  // вигадує.
+  ok('у КП з порожнім строком стоїть прочерк', /Пропозиція дійсна до: _+/.test(kp.text),
+     kp.text.split('\n').slice(0, 4).join(' | '));
+  await p.evaluate(() => {
+    const c = document.getElementById('cli');
+    c.value = 'ТОВ «Перевірка»'; c.dispatchEvent(new Event('input', { bubbles: true }));
+    const u = document.getElementById('until');
+    u.value = '2026-09-24'; u.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await p.click('#sum-btn');
+  await p.waitForTimeout(400);
+  const kp2 = await p.evaluate(() => document.getElementById('sum-out').value || '');
+  ok('у КП є клієнт, дата й строк дії',
+     /Клієнт: ТОВ «Перевірка»/.test(kp2) && /Дата: \d\d\.\d\d\.\d{4} \d\d:\d\d/.test(kp2)
+     && /Пропозиція дійсна до: 24\.09\.2026/.test(kp2),
+     kp2.split('\n').slice(0, 4).join(' | '));
 
   // --- 6. чек-лист кваліфікації: поріг обмежень й вердикт «стоп» -----------
   await p.getByText('ЧЕК-ЛИСТ КВАЛІФІКАЦІЇ', { exact: false }).first().click();
