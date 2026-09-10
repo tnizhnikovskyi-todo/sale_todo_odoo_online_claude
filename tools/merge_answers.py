@@ -23,7 +23,29 @@ def main():
     поз = Q['позиції']
     нових_ф, нових_в, чужі = 0, 0, []
 
+    # Дослідники працюють поблочно і пишуть один файл на блок: <блок>-BLOCK.json.
+    # Розкладаємо його по sid, щоб реєстр лишався поштучним.
+    поблочні = {}
+    for назва in sorted(os.listdir(fdir)) if os.path.isdir(fdir) else []:
+        if not назва.endswith('-BLOCK.json'):
+            continue
+        try:
+            d = json.load(io.open(os.path.join(fdir, назва), encoding='utf-8'))
+        except Exception as e:
+            чужі.append('%s: файл блоку нечитабельний (%s)' % (назва, e)); continue
+        for sid, тіло in (d.get('позиції') or {}).items():
+            if sid in поз:
+                поблочні[sid] = тіло
+            else:
+                чужі.append('%s: у файлі блоку невідомий sid' % sid)
+
     for sid in list(поз):
+        if sid in поблочні:
+            if поз[sid].get('знайдено') is None:
+                нових_ф += 1
+            поз[sid]['знайдено'] = поблочні[sid]
+            if поз[sid]['стан'] == 'pending':
+                поз[sid]['стан'] = 'explored'
         f = os.path.join(fdir, sid + '.json')
         if os.path.exists(f):
             try:
