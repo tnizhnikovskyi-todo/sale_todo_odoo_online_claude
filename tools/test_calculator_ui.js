@@ -254,6 +254,72 @@ function expected(sel) {
   ok('мʼяка залежність дає попередження, а не додає позицію',
      !soft.cardHidden && soft.warns.length > 10, soft.warns.slice(0, 100));
 
+  // --- 4а. рівень автододаної позиції належить сейлу -----------------------
+  // Було: resolve() на кожному рендері присвоював автододаній позиції мінімальний
+  // рівень, тому вибір у перемикачі жив до наступної перемальовки. Сейл бачив
+  // «перемикач не слухається» і не бачив чому.
+  await p.evaluate(() => { document.getElementById('reset').click(); });
+  await p.waitForTimeout(300);
+  await p.evaluate(() => document.getElementById('c-mrp').click());   // Виробництво тягне Склад
+  await p.waitForTimeout(400);
+  let авто = await p.evaluate(() => ({
+    додано: document.getElementById('c-stk').checked,
+    тег: (document.getElementById('at-stk') || {}).hidden === false,
+    рівень: document.getElementById('l-stk').value,
+  }));
+  ok('Виробництво додало Склад як «потрібна для»', авто.додано && авто.тег, JSON.stringify(авто));
+  await p.evaluate(() => {
+    const s = document.getElementById('l-stk');
+    s.value = '2';
+    s.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await p.waitForTimeout(300);
+  await p.evaluate(() => document.getElementById('c-crm').click());   // будь-який наступний рендер
+  await p.waitForTimeout(400);
+  st = await p.evaluate(READ);
+  e = expected(st.sel);
+  const stk = st.sel.find(r => r.id === 'stk');
+  ok('вибраний рівень автододаної позиції переживає рендер', stk && stk.lv === 2, 'рівень ' + (stk && stk.lv));
+  ok('сума рахує автододану позицію на її рівні = ' + e.sum, num(st.total) === e.sum,
+     st.total + ' | ' + e.parts.join(', '));
+
+  // --- 4б. мінімум від залежності: стан, а не подія ------------------------
+  // «Оренда» р.2 вимагає Склад не нижче р.2 (партії й серійники). Склад тут
+  // позначає САМ сейл — це інша гілка коду, ніж автододавання: рядок про мінімум
+  // береться з мапи мінімумів, а не з підпису «додано». Рядок мусить стояти, поки
+  // стоїть причина, а рівні нижчі за мінімум — не вибиратися.
+  await p.evaluate(() => { document.getElementById('reset').click(); });
+  await p.waitForTimeout(300);
+  await p.evaluate(() => document.getElementById('c-stk').click());
+  await p.waitForTimeout(300);
+  await p.evaluate(() => {
+    document.getElementById('c-rnt').click();
+    const s = document.getElementById('l-rnt');
+    s.value = '1';
+    s.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await p.waitForTimeout(500);
+  let мін = await p.evaluate(() => ({
+    рівень: document.getElementById('l-stk').value,
+    вимкнено: Array.from(document.getElementById('l-stk').options).map(o => o.disabled),
+    рядок: document.getElementById('autos').textContent,
+    підказка: document.getElementById('l-stk').title,
+  }));
+  ok('Склад піднявся до мінімуму Оренди', мін.рівень === '1', 'рівень ' + мін.рівень);
+  ok('рівень нижчий за мінімум вимкнено', мін.вимкнено[0] === true && мін.вимкнено[1] === false,
+     JSON.stringify(мін.вимкнено));
+  ok('підказка називає, хто вимагає мінімум', /не нижче рівня 2/.test(мін.підказка), мін.підказка);
+  await p.evaluate(() => document.getElementById('c-crm').click());   // ще один рендер
+  await p.waitForTimeout(400);
+  мін = await p.evaluate(() => ({
+    рядок: document.getElementById('autos').textContent,
+    рівень: document.getElementById('l-stk').value,
+  }));
+  ok('рядок про мінімум живе довше за один рендер',
+     /не нижче рівня 2/.test(мін.рядок) && мін.рівень === '1', мін.рядок.slice(0, 120));
+  await p.evaluate(() => { document.getElementById('reset').click(); });
+  await p.waitForTimeout(300);
+
   // --- 5. КП: збирається, містить «не входить», та сама сума ---------------
   st = await p.evaluate(READ);
   e = expected(st.sel);
