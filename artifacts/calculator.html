@@ -427,6 +427,23 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
 select.chip{padding-right:8px}
 .chip:disabled{opacity:.45;cursor:default}
 .chip:disabled:hover{background:var(--surface)}
+/* Незбережене й підтвердження. Питання стоїть У СТРІЧЦІ, а не в діалозі браузера:
+   сторінка живе в iframe артефакту, де `confirm()` може бути заблокований — тоді
+   кнопка просто перестала б працювати, і це найгірший з можливих результатів. */
+.chip.dirty{border-style:solid;border-color:var(--accent);color:var(--accent);font-weight:500}
+.ask{
+  display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:4px 10px;border:1px solid var(--escalate);background:var(--escalate-soft);
+  color:var(--escalate);border-radius:14px;font-size:12.5px;
+}
+.ask[hidden]{display:none!important}
+.ask b{font-weight:500}
+.ask button{
+  appearance:none;border:1px solid currentColor;background:transparent;color:inherit;
+  font-family:inherit;font-size:12px;padding:3px 9px;border-radius:12px;cursor:pointer;
+}
+.ask button:hover{background:var(--surface)}
+.ask button:focus-visible{outline:2px solid var(--escalate);outline-offset:2px}
 
 /* ---------- повний перелік (сторінка 4) ---------- */
 .sbar{
@@ -634,6 +651,7 @@ select.chip{padding-right:8px}
     <button class="chip" type="button" id="del" hidden>Видалити</button>
     <button class="chip" type="button" id="io">Набори текстом</button>
     <button class="chip" type="button" id="reset">Почати заново</button>
+    <span class="ask" id="ask" role="alertdialog" aria-live="assertive" hidden><b id="ask-t"></b><span id="ask-btns"></span></span>
   </div>
 
   <div class="io" id="io-wrap" hidden>
@@ -9928,6 +9946,7 @@ select.chip{padding-right:8px}
     // Фільтр залежить від набору («позиції набору лишаються видимими»), тому
     // перезастосовується після кожної перемальовки, а не лише при введенні.
     застосуватиФільтр();
+    кнопкиНабору();
     save();
   }
 
@@ -10113,6 +10132,71 @@ select.chip{padding-right:8px}
     });
     render();
   }
+  // ---------- незбережене й підтвердження ----------
+  // Три дії стирали роботу сейла мовчки: «Почати заново», «Видалити» і перемикання
+  // набору (воно викидало незбережені зміни попереднього). При цьому «Оновити набір»
+  // виглядала однаково — є зміни чи немає. Тепер стан порівнюється зі знімком.
+  //
+  // `open` (який розділ чек-листа розкрито) з порівняння виключений навмисно:
+  // перегляд розділів не робить набір іншим, і без цього «•» світилося б завжди.
+  function дляПорівняння(snap){
+    var типово = { until:'', kpbounds:false };
+    var o = {};
+    CASEFIELDS.concat(CASESCALARS).forEach(function(k){
+      if(k === 'open') return;
+      o[k] = (snap[k] === undefined) ? (k in типово ? типово[k] : {}) : snap[k];
+    });
+    return JSON.stringify(o);
+  }
+  function порожній(){
+    return !MODS.some(function(m){ return state.sel[m.id] && !m.req; })
+      && !Object.keys(state.qa).length && !Object.keys(state.probe).length
+      && !Object.keys(state.no).length && !Object.keys(state.touched).length
+      && !state.client.trim();
+  }
+  function брудний(){
+    var all = casesRead(), name = state.client.trim();
+    if(!name || !all[name]) return !порожній();
+    return дляПорівняння(all[name]) !== дляПорівняння(caseSnapshot());
+  }
+
+  var питТаймер = null;
+  function сховатиПитання(){
+    if(питТаймер){ clearTimeout(питТаймер); питТаймер = null; }
+    $('ask').hidden = true;
+  }
+  function спитати(текст, варіанти){
+    var w = $('ask'), b = $('ask-btns');
+    $('ask-t').textContent = текст;
+    b.innerHTML = '';
+    варіанти.forEach(function(v){
+      var btn = document.createElement('button');
+      btn.type = 'button'; btn.textContent = v.t;
+      btn.addEventListener('click', function(){ сховатиПитання(); v.f(); });
+      b.appendChild(btn);
+    });
+    w.hidden = false;
+    if(питТаймер) clearTimeout(питТаймер);
+    // питання не висить вічно: без відповіді воно зникає, не зробивши нічого
+    питТаймер = setTimeout(сховатиПитання, 15000);
+    var first = b.querySelector('button');
+    if(first) first.focus();
+  }
+
+  // Підпис кнопок набору оновлюється на кожному рендері — інакше «•» з'явилося б
+  // лише при наступному перемальовуванні стрічки, тобто після наступної дії.
+  // Сам перелік наборів при цьому не перебудовується: селект під курсором сейла
+  // не має смикатися від кожної галочки.
+  function кнопкиНабору(){
+    var all = casesRead(), cur = state.client.trim();
+    var збережений = !!(cur && all[cur]), зміни = збережений && брудний();
+    $('save').disabled = !cur;
+    $('save').textContent = збережений ? ('Оновити набір' + (зміни ? ' •' : '')) : 'Зберегти';
+    $('save').className = 'chip' + (зміни ? ' dirty' : '');
+    $('save').title = зміни ? 'у наборі є незбережені зміни'
+                            : 'зберегти набір під назвою замовника';
+    $('del').hidden = !збережений;
+  }
   function casesRender(){
     var all = casesRead(), names = Object.keys(all).sort();
     var sel = $('cases'), cur = state.client.trim();
@@ -10127,9 +10211,7 @@ select.chip{padding-right:8px}
       sel.appendChild(o);
     });
     sel.hidden = !names.length;
-    $('save').disabled = !cur;
-    $('save').textContent = (cur && all[cur]) ? 'Оновити набір' : 'Зберегти';
-    $('del').hidden = !(cur && all[cur]);
+    кнопкиНабору();
   }
 
   $('cli').addEventListener('input', function(){
@@ -10148,19 +10230,43 @@ select.chip{padding-right:8px}
     casesWrite(all); casesRender();
   });
   $('del').addEventListener('click', function(){
-    var all = casesRead(), name = state.client.trim();
-    delete all[name];
-    casesWrite(all); casesRender();
+    var name = state.client.trim();
+    if(!name) return;
+    спитати('Видалити набір «' + name + '»?', [
+      { t:'Видалити', f:function(){
+          var all = casesRead();
+          delete all[name];
+          casesWrite(all); casesRender();
+        } },
+      { t:'Скасувати', f:function(){} }
+    ]);
   });
   $('cases').addEventListener('change', function(){
     var name = $('cases').value;
-    if(!name) return;
+    if(!name){ casesRender(); return; }
     var all = casesRead();
-    if(!all[name]) return;
-    state.client = name;
-    $('cli').value = name;
-    caseApply(all[name]);
-    casesRender();
+    if(!all[name]){ casesRender(); return; }
+    var відкрити = function(){
+      state.client = name;
+      $('cli').value = name;
+      caseApply(all[name]);
+      casesRender();
+    };
+    if(!брудний()){ відкрити(); return; }
+    // Перемикання набору з незбереженими змінами — найтихіша з трьох втрат: сейл
+    // навіть не дізнавався, що щось зникло. Тепер це питання, і «Лишитись» повертає
+    // селект на поточний набір (casesRender ставить selected за назвою замовника).
+    var було = state.client.trim();
+    var варіанти = [];
+    if(було) варіанти.push({ t:'Зберегти й перейти', f:function(){
+      var a2 = casesRead();
+      a2[було] = caseSnapshot();
+      casesWrite(a2); відкрити();
+    } });
+    варіанти.push({ t:'Перейти без збереження', f:відкрити });
+    варіанти.push({ t:'Лишитись', f:function(){ casesRender(); } });
+    спитати(було ? 'У наборі «' + було + '» є незбережені зміни'
+                 : 'Поточна робота не збережена в набір', варіанти);
   });
   // ---------- набори текстом ----------
   // Дірка, яку це закриває: названі набори лежать у localStorage ЦЬОГО браузера.
@@ -10276,6 +10382,7 @@ select.chip{padding-right:8px}
   var RESETLBL = { calc:'Почати заново', spec:'Очистити пошук', qual:'Почати заново', form:'Очистити анкету' };
   function showPage(p){
     if(!PAGES[p] || схована(p)) p = 'calc';
+    сховатиПитання();   // питання стосується сторінки, з якої пішли
     Object.keys(PAGES).forEach(function(k){
       var on = k === p, ref = PAGES[k];
       $(ref[0]).setAttribute('aria-selected', on ? 'true' : 'false');
@@ -11433,6 +11540,7 @@ select.chip{padding-right:8px}
   $('reset').addEventListener('click', function(){
     if(state.page === 'form'){ fclear(); return; }
     if(state.page === 'spec'){
+      сховатиПитання();
       // галочки перевірки — записи, а не робочий стан: кнопка їх не чіпає
       // типовий вигляд: сховані позначені, галочки видно, «не входить» і «накопичено» — ні
       $('s-find').value = ''; $('s-only').value = 'all';
@@ -11440,6 +11548,17 @@ select.chip{padding-right:8px}
       $('s-cum').checked = false; $('s-bnd').checked = false;
       specFilter(); return;
     }
+    // Кнопка стирає і склад, і скринінг, і замовника — тому питає. Порожній стан
+    // не питає: підтверджувати нічого. Збережені набори «Почати заново» не чіпає
+    // ні в якому разі, і в тексті питання їх навмисно немає.
+    if(порожній()){ скинути(); return; }
+    спитати('Стерти склад, відповіді скринінгу й назву замовника?', [
+      { t:'Стерти', f:скинути },
+      { t:'Скасувати', f:function(){} }
+    ]);
+  });
+
+  function скинути(){
     blank();
     MODS.forEach(function(m){
       if(!m.req) $('c-' + m.id).checked = false;
@@ -11470,7 +11589,7 @@ select.chip{padding-right:8px}
     $('cli').value = '';
     render();
     casesRender();
-  });
+  }
 
   $('sum-btn').addEventListener('click', function(){
     var txt = summary();

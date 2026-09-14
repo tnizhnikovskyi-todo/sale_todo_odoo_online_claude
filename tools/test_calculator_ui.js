@@ -176,6 +176,18 @@ function expected(sel) {
   await p.goto('file://' + tmp);
   await p.waitForTimeout(1200);
 
+  // «Почати заново» питає підтвердження (рішення 14.09.2026), тому тест мусить
+  // відповідати. Функція СТЕРТИ живе в сторінці — її викликають і ті перевірки,
+  // що клікають скидання всередині власного evaluate.
+  // Функція живе в тексті кожного evaluate, а не у window: один із тестів
+  // перезавантажує сторінку, і вставлене у window після цього зникає.
+  const ВІДПОВІСТИ = `(t => { const b = Array.from(document.querySelectorAll('#ask-btns button'))
+      .find(x => x.textContent === t); if (b) b.click(); })`;
+  const скинутиСтан = async () => {
+    await p.evaluate(`(() => { document.getElementById('reset').click(); ${ВІДПОВІСТИ}('Стерти'); })()`);
+    await p.waitForTimeout(250);
+  };
+
   // --- 1. типовий стан: База обовʼязкова й на «Базовому» -------------------
   // Рівень за замовчуванням — нижній (рішення 14.09.2026). Було «Стандарт», і це
   // означало, що позиція, до перемикача якої ніхто не торкався, продається на
@@ -258,7 +270,7 @@ function expected(sel) {
   // Було: resolve() на кожному рендері присвоював автододаній позиції мінімальний
   // рівень, тому вибір у перемикачі жив до наступної перемальовки. Сейл бачив
   // «перемикач не слухається» і не бачив чому.
-  await p.evaluate(() => { document.getElementById('reset').click(); });
+  await скинутиСтан();
   await p.waitForTimeout(300);
   await p.evaluate(() => document.getElementById('c-mrp').click());   // Виробництво тягне Склад
   await p.waitForTimeout(400);
@@ -288,7 +300,7 @@ function expected(sel) {
   // позначає САМ сейл — це інша гілка коду, ніж автододавання: рядок про мінімум
   // береться з мапи мінімумів, а не з підпису «додано». Рядок мусить стояти, поки
   // стоїть причина, а рівні нижчі за мінімум — не вибиратися.
-  await p.evaluate(() => { document.getElementById('reset').click(); });
+  await скинутиСтан();
   await p.waitForTimeout(300);
   await p.evaluate(() => document.getElementById('c-stk').click());
   await p.waitForTimeout(300);
@@ -317,7 +329,7 @@ function expected(sel) {
   }));
   ok('рядок про мінімум живе довше за один рендер',
      /не нижче рівня 2/.test(мін.рядок) && мін.рівень === '1', мін.рядок.slice(0, 120));
-  await p.evaluate(() => { document.getElementById('reset').click(); });
+  await скинутиСтан();
   await p.waitForTimeout(300);
 
   // --- 5. КП: збирається, містить «не входить», та сама сума ---------------
@@ -694,10 +706,16 @@ function expected(sel) {
   // значення тихо не поверталося б, і на другому клієнті сейл отримав би чуже
   // налаштування.
   const набір = await p.evaluate(() => {
+    const ВІДПОВІСТИ_СТЕРТИ = () => {
+      const b = Array.from(document.querySelectorAll('#ask-btns button'))
+        .find(x => x.textContent === 'Стерти');
+      if (b) b.click();
+    };
     document.getElementById('cli').value = 'Набір із межами';
     document.getElementById('cli').dispatchEvent(new Event('input', { bubbles: true }));
     document.getElementById('save').click();
     document.getElementById('reset').click();
+    ВІДПОВІСТИ_СТЕРТИ();
     const післяСкидання = document.getElementById('sum-bounds').checked;
     const sel = document.getElementById('cases');
     sel.value = 'Набір із межами';
@@ -897,7 +915,13 @@ function expected(sel) {
   }, буферНаборів);
   await p.waitForTimeout(200);
   const відновлено = await p.evaluate(() => {
+    const ВІДПОВІСТИ_СТЕРТИ = () => {
+      const b = Array.from(document.querySelectorAll('#ask-btns button'))
+        .find(x => x.textContent === 'Стерти');
+      if (b) b.click();
+    };
     document.getElementById('reset').click();
+    ВІДПОВІСТИ_СТЕРТИ();
     const sel = document.getElementById('cases');
     sel.value = 'Перенос';
     sel.dispatchEvent(new Event('change', { bubbles: true }));
@@ -929,6 +953,101 @@ function expected(sel) {
   ok('чужий текст не приймається і нічого не псує — і з дужками, і без',
      чужий(сміття.зДужками) && чужий(сміття.безДужок),
      JSON.stringify(сміття));
+
+  // --- 5е. незбережене: ознака й три підтвердження -------------------------
+  // Три дії стирали роботу мовчки: «Почати заново», «Видалити» і перемикання
+  // набору. Питання стоїть у стрічці, а не в діалозі браузера: сторінка живе в
+  // iframe артефакту, де confirm() може бути заблокований.
+  const нз = await p.evaluate(async () => {
+    const пауза = () => new Promise(r => setTimeout(r, 120));
+    const $ = id => document.getElementById(id);
+    const питання = () => ($('ask').hidden ? '' : $('ask-t').textContent);
+    // Клік «якщо кнопка є»: без цього отрута, яка прибирає саме питання, валила б
+    // тест винятком, а не провалом. Провал називає, що зламалось; виняток — ні.
+    const кнопка = t => Array.from($('ask-btns').querySelectorAll('button')).find(b => b.textContent === t);
+    const тиснути = async t => { const b = кнопка(t); if (b) { b.click(); } await пауза(); return !!b; };
+    localStorage.removeItem('odoo-com-calc-cases-v1');
+    $('reset').click(); await пауза();
+    if (!$('ask').hidden) { await тиснути('Стерти'); }
+
+    // набір «Альфа»: CRM
+    $('cli').value = 'Альфа'; $('cli').dispatchEvent(new Event('input', { bubbles: true }));
+    $('c-crm').click(); await пауза();
+    $('save').click(); await пауза();
+    const чисто = { підпис: $('save').textContent, клас: $('save').className };
+
+    // зміна без збереження → ознака
+    $('c-hlp').click(); await пауза();
+    const брудно = { підпис: $('save').textContent, клас: $('save').className };
+
+    // перемикання набору питає, «Лишитись» нічого не міняє
+    $('cli').value = 'Бета'; $('cli').dispatchEvent(new Event('input', { bubbles: true }));
+    $('save').click(); await пауза();                    // зберегли Бету (з CRM і hlp)
+    $('cli').value = 'Альфа'; $('cli').dispatchEvent(new Event('input', { bubbles: true }));
+    $('cases').value = 'Альфа';
+    $('cases').dispatchEvent(new Event('change', { bubbles: true })); await пауза();
+    $('c-pln').click(); await пауза();                   // незбережена зміна в Альфі
+    $('cases').value = 'Бета';
+    $('cases').dispatchEvent(new Event('change', { bubbles: true })); await пауза();
+    const пит = питання();
+    await тиснути('Лишитись');
+    const лишились = { клієнт: $('cli').value, pln: $('c-pln').checked };
+
+    // «Зберегти й перейти» не губить зміну: повертаємось і дивимось
+    $('cases').value = 'Бета';
+    $('cases').dispatchEvent(new Event('change', { bubbles: true })); await пауза();
+    await тиснути('Зберегти й перейти');
+    const уБеті = { клієнт: $('cli').value, pln: $('c-pln').checked };
+    $('cases').value = 'Альфа';
+    $('cases').dispatchEvent(new Event('change', { bubbles: true })); await пауза();
+    if (!$('ask').hidden) { await тиснути('Перейти без збереження'); }
+    const назадВАльфу = { клієнт: $('cli').value, pln: $('c-pln').checked };
+
+    // видалення питає
+    $('del').click(); await пауза();
+    const питВидалення = питання();
+    const до = Object.keys(JSON.parse(localStorage.getItem('odoo-com-calc-cases-v1') || '{}')).length;
+    await тиснути('Скасувати');
+    const післяСкасування = Object.keys(JSON.parse(localStorage.getItem('odoo-com-calc-cases-v1') || '{}')).length;
+    $('del').click(); await пауза();
+    await тиснути('Видалити');
+    const післяВидалення = Object.keys(JSON.parse(localStorage.getItem('odoo-com-calc-cases-v1') || '{}')).length;
+
+    // скидання питає, «Скасувати» лишає все на місці
+    $('reset').click(); await пауза();
+    const питСкидання = питання();
+    await тиснути('Скасувати');
+    const післяВідмови = { crm: $('c-crm').checked, клієнт: $('cli').value };
+    $('reset').click(); await пауза();
+    await тиснути('Стерти');
+    const післяСкидання = {
+      crm: $('c-crm').checked, клієнт: $('cli').value,
+      наборів: Object.keys(JSON.parse(localStorage.getItem('odoo-com-calc-cases-v1') || '{}')).length,
+    };
+    return { чисто, брудно, пит, лишились, уБеті, назадВАльфу, питВидалення, до,
+             післяСкасування, післяВидалення, питСкидання, післяВідмови, післяСкидання };
+  });
+  ok('збережений набір без змін — кнопка чиста',
+     нз.чисто.підпис === 'Оновити набір' && !/dirty/.test(нз.чисто.клас), JSON.stringify(нз.чисто));
+  ok('зміна без збереження піднімає ознаку «•»',
+     /•/.test(нз.брудно.підпис) && /dirty/.test(нз.брудно.клас), JSON.stringify(нз.брудно));
+  ok('перемикання набору з незбереженим питає, «Лишитись» лишає все',
+     /незбережені зміни/.test(нз.пит) && нз.лишились.клієнт === 'Альфа' && нз.лишились.pln === true,
+     нз.пит + ' | ' + JSON.stringify(нз.лишились));
+  ok('«Зберегти й перейти» переходить і не губить зміну',
+     нз.уБеті.клієнт === 'Бета' && нз.назадВАльфу.клієнт === 'Альфа' && нз.назадВАльфу.pln === true,
+     JSON.stringify(нз.уБеті) + ' | ' + JSON.stringify(нз.назадВАльфу));
+  ok('видалення питає: «Скасувати» лишає набір, «Видалити» прибирає',
+     /Видалити набір/.test(нз.питВидалення) && нз.післяСкасування === нз.до
+     && нз.післяВидалення === нз.до - 1,
+     нз.питВидалення + ' | ' + [нз.до, нз.післяСкасування, нз.післяВидалення].join('→'));
+  ok('«Почати заново» питає, «Скасувати» нічого не стирає',
+     /Стерти склад/.test(нз.питСкидання) && нз.післяВідмови.crm === true
+     && нз.післяВідмови.клієнт === 'Альфа',
+     нз.питСкидання + ' | ' + JSON.stringify(нз.післяВідмови));
+  ok('«Стерти» чистить стан, але не збережені набори',
+     нз.післяСкидання.crm === false && нз.післяСкидання.клієнт === ''
+     && нз.післяСкидання.наборів === нз.до - 1, JSON.stringify(нз.післяСкидання));
 
   // --- 6. чек-лист кваліфікації: поріг обмежень й вердикт «стоп» -----------
   await p.getByText('ЧЕК-ЛИСТ КВАЛІФІКАЦІЇ', { exact: false }).first().click();
