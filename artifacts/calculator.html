@@ -58,7 +58,7 @@ h1{
   padding:13px 0;border-bottom:1px solid var(--line);margin-bottom:18px;
 }
 .bar .lbl{
-  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;
   text-transform:uppercase;color:var(--muted);
 }
 .bar .spacer{flex:1 1 auto}
@@ -91,7 +91,7 @@ h1{
    вміст комірок на ширини не впливає. */
 table{border-collapse:collapse;width:100%;min-width:660px;font-size:13.5px;table-layout:fixed}
 thead th{
-  font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;
   text-transform:uppercase;color:var(--muted);font-weight:500;text-align:left;
   padding:9px 12px;background:var(--surface-2);border-bottom:1px solid var(--line-strong);
   white-space:nowrap;position:sticky;top:0;z-index:2;
@@ -100,7 +100,7 @@ thead th.n{text-align:right}
 tbody td{padding:7px 12px;border-bottom:1px solid var(--line);vertical-align:middle;overflow-wrap:break-word}
 tbody tr.grp td{
   background:var(--surface-2);border-bottom:1px solid var(--line-strong);
-  font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;
   text-transform:uppercase;color:var(--muted);padding:7px 12px;
 }
 tbody tr.item.off .pn{color:var(--muted)}
@@ -120,7 +120,7 @@ tr.req td.name label{cursor:default}
 td.name input[type="checkbox"]{accent-color:var(--accent);flex:none;margin:0;position:relative;top:2px}
 .pn{font-weight:500}
 .tag{
-  font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.08em;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;
   text-transform:uppercase;color:var(--muted);
 }
 .crit{
@@ -191,7 +191,7 @@ tr.det td{background:var(--surface-2);padding:10px 12px 12px}
 .lvopt[aria-pressed="true"] li{color:var(--ink-2)}
 .lvopt[aria-pressed="true"] li.plus{color:var(--accent)}
 .lvcount{
-  font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.05em;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.05em;
   color:var(--muted);margin-top:7px;display:block;
 }
 .lvhint{
@@ -214,7 +214,7 @@ tfoot td.n{font-size:15px}
   padding:15px;margin:0 0 13px;
 }
 .card > h2{
-  font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:10.5px;
+  font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:11px;
   letter-spacing:.11em;text-transform:uppercase;color:var(--muted);margin:0 0 11px;
 }
 .big b{
@@ -303,7 +303,7 @@ footer{
 /* «рівень не обирали» — підказка, а не тривога: пунктир і сірий, щоб не змагалася
    з «потрібна для», яка означає дію калькулятора. Обидві позначки ховаються
    атрибутом hidden, тому правило нижче потрібне: display у класі інакше виграє. */
-.tag.none{display:inline-block;font-size:11px;padding:1px 6px;border-radius:999px;margin-left:6px;background:var(--surface-2);color:var(--muted);border:1px dashed var(--line-strong);font-weight:500}
+.tag.none{display:inline-block;white-space:nowrap;font-size:11px;padding:1px 6px;border-radius:999px;margin-left:6px;background:var(--surface-2);color:var(--muted);border:1px dashed var(--line-strong);font-weight:500}
 .tag.auto[hidden],.tag.none[hidden]{display:none!important}
 .hint2.warnline{color:var(--escalate)}
 .hint2.stopline{color:var(--deny)}
@@ -318,7 +318,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
 .tabs{display:flex;flex-wrap:wrap;gap:6px}
 .tab{
   appearance:none;cursor:pointer;border:1px solid var(--line-strong);background:var(--surface);
-  color:var(--muted);font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  color:var(--muted);font-family:"IBM Plex Mono",monospace;font-size:11px;
   letter-spacing:.09em;text-transform:uppercase;padding:7px 13px;border-radius:999px;
 }
 .tab:hover{color:var(--ink)}
@@ -340,7 +340,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
 .qcheck input{accent-color:var(--accent);flex:none;margin:0;position:relative;top:2px}
 .qcheck input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .qcheck .cnt{
-  font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--muted);
+  font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);
   font-variant-numeric:tabular-nums;
 }
 .qcheck.on .cnt{color:var(--accent)}
@@ -358,7 +358,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
   display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;
 }
 .qsec > h3 .cnt{
-  font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:400;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:400;
   letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
 }
 .qsec > p.sub2{font-size:12.5px;color:var(--muted);margin:0 0 12px;max-width:82ch;line-height:1.45}
@@ -368,7 +368,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
   display:flex;gap:9px;align-items:baseline;flex-wrap:wrap;
 }
 .qq .pos{
-  font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.09em;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.09em;
   text-transform:uppercase;color:var(--accent);white-space:nowrap;
 }
 .opts{display:flex;flex-wrap:wrap;gap:7px}
@@ -382,7 +382,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
 .opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
 .opt em{
   display:block;font-style:normal;font-family:"IBM Plex Mono",monospace;
-  font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:5px;
+  font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:5px;
 }
 .opt[aria-pressed="true"] em{color:var(--accent)}
 .opt.no{flex:0 0 auto;border-style:dashed}
@@ -401,7 +401,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
 .qnote.stop{background:var(--deny-soft);color:var(--deny);border-color:var(--deny)}
 .addpos{
   appearance:none;cursor:pointer;margin-left:7px;font-family:"IBM Plex Mono",monospace;
-  font-size:10px;letter-spacing:.06em;padding:2px 8px;border-radius:999px;
+  font-size:11px;letter-spacing:.06em;padding:2px 8px;border-radius:999px;
   border:1px solid currentColor;background:transparent;color:inherit;
 }
 .addpos:hover{background:var(--surface)}
@@ -411,7 +411,7 @@ tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,tran
 .chk input{accent-color:var(--accent);flex:none;margin:0;position:relative;top:2px}
 .probes{margin:16px 0 0;border-top:1px solid var(--line-strong);padding-top:3px}
 .probes > h4{
-  font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:10px;
+  font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:11px;
   letter-spacing:.1em;text-transform:uppercase;color:var(--accent);
   margin:11px 0 0;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;
 }
@@ -460,11 +460,11 @@ select.chip{padding-right:8px}
 .sbar .swi{display:inline-flex;align-items:baseline;gap:7px;cursor:pointer;font-size:12.5px;color:var(--ink-2)}
 .sbar .swi input{accent-color:var(--accent);margin:0;position:relative;top:2px}
 .sbar .cnt{
-  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.06em;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.06em;
   text-transform:uppercase;color:var(--muted);margin-left:auto;
 }
 .sgrp{
-  font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.11em;text-transform:uppercase;
   color:var(--muted);margin:22px 0 9px;padding-bottom:5px;border-bottom:1px solid var(--line-strong);
 }
 .sgrp:first-child{margin-top:0}
@@ -482,19 +482,19 @@ select.chip{padding-right:8px}
   font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:400;
   color:var(--muted);font-variant-numeric:tabular-nums;
 }
-.spos > h3 .tag{font-size:9px}
+.spos > h3 .tag{font-size:11px}
 .spos > p.q{margin:0 0 9px}
 .slv{margin:9px 0 0;padding-top:8px;border-top:1px solid var(--line)}
 .slv[hidden]{display:none!important}
 .slv > h4{
-  font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:10.5px;letter-spacing:.09em;
+  font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:11px;letter-spacing:.09em;
   text-transform:uppercase;margin:0 0 6px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;
 }
 .slv.l1 > h4{color:var(--allow)}
 .slv.l2 > h4{color:var(--accent)}
 .slv.l3 > h4{color:var(--escalate)}
 .slv > h4 .pr{color:var(--ink-2);font-variant-numeric:tabular-nums;letter-spacing:.02em}
-.slv > h4 .note{color:var(--muted);text-transform:none;letter-spacing:.02em;font-size:10px}
+.slv > h4 .note{color:var(--muted);text-transform:none;letter-spacing:.02em;font-size:11px}
 .slv ul{list-style:none;margin:0;padding:0}
 .slv li{
   font-size:13px;line-height:1.45;color:var(--ink-2);
@@ -518,7 +518,7 @@ select.chip{padding-right:8px}
 #spec-body.nochk .slv li.chk > label{margin-left:0}
 #spec-body.nochk .slv li.chk > label > input{display:none}
 .slv li .vb{
-  display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:9px;
+  display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:11px;
   letter-spacing:.06em;text-transform:uppercase;border-radius:3px;
   padding:1px 5px;margin-left:6px;white-space:nowrap;
 }
@@ -531,7 +531,7 @@ select.chip{padding-right:8px}
 .slv li .anote{display:block;font-size:11.5px;line-height:1.4;color:var(--ink-2);margin-top:1px}
 .slv li .vnote{display:block;font-size:11.5px;line-height:1.4;color:var(--muted);margin-top:1px}
 .slv > h4 .vcnt{
-  color:var(--muted);text-transform:none;letter-spacing:.02em;font-size:10px;
+  color:var(--muted);text-transform:none;letter-spacing:.02em;font-size:11px;
   font-variant-numeric:tabular-nums;
 }
 .spos > h3 .vcnt{
@@ -612,7 +612,7 @@ select.chip{padding-right:8px}
 .fopt input{accent-color:var(--accent);flex:none;margin:0;position:relative;top:1px}
 .fprocs{display:flex;flex-wrap:wrap;gap:4px 12px}
 .fdone{
-  font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;
   text-transform:uppercase;color:var(--allow);margin-left:8px;font-weight:400;
 }
 
@@ -9806,6 +9806,13 @@ select.chip{padding-right:8px}
   }
   var COMPANY_DEP = ['stk', 'acc', 'pos', 'sal', 'pur', 'shop', 'sub', 'rnt'];
   function names(ids){ return ids.map(function(t){ return '«' + BYID[t].n + '»'; }).join(' або '); }
+  // Перелік із чотирьох і більше цілей ніхто не дочитує: «Дашборди» посилаються на
+  // 16 позицій, «Друковані форми» — на 11, і попередження перетворювалось на стіну
+  // назв. Коротка назва такої групи каже те саме одним рядком.
+  function namesShort(ids){
+    if(ids.length < 4) return names(ids);
+    return 'жодної позиції з операціями (' + ids.length + ' на вибір)';
+  }
   function lvLabel(m){ return 'рівень ' + (state.lv[m.id] + 1) + ' (' + lvOf(m)[0] + ')'; }
   // строк = години / робочих годин на тиждень, округлені до півтижня вгору
   function weeksOf(TH){
@@ -9950,7 +9957,7 @@ select.chip{padding-right:8px}
     var warns = $('warns'); warns.innerHTML = '';
     var byTarget = {}, order = [];
     notes.filter(function(n){ return n.kind === 'warn'; }).forEach(function(n){
-      var key = names([].concat(n.dep.on));
+      var key = namesShort([].concat(n.dep.on));
       if(!byTarget[key]){ byTarget[key] = {}; order.push(key); }
       if(!byTarget[key][n.from.id]) byTarget[key][n.from.id] = n.from.n + ' — ' + n.dep.why;
     });

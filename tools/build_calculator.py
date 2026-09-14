@@ -867,6 +867,31 @@ def check_prose_numbers(html):
     return errs
 
 
+def check_font_sizes(html):
+    """Текст на сторінці не менший за 11px.
+
+    Інструментом користуються на зустрічі, часто з ноутбука через проєктор або
+    з чужого екрана. Дев'ять пікселів мали теги «обов'язкова» й «у базі», 9.5 —
+    назва позиції в чек-листі й рядок «рівень · ціна» під кожною відповіддю: тобто
+    саме те, що сейл читає вголос. Декоративні значки (::before із «+», «→») під
+    правило не підпадають — вони не текст.
+    """
+    errs = []
+    i, j = html.index('<style>'), html.index('</style>')
+    css = html[i:j]
+    for m in re.finditer(r'font-size:\s*(\d+(?:\.\d+)?)px', css):
+        якщо = float(m.group(1))
+        if якщо >= 11:
+            continue
+        початок = css.rfind('}', 0, m.start()) + 1
+        селектор = css[початок:m.start()].split('{')[0].strip().replace('\n', ' ')
+        if '::before' in селектор or '::after' in селектор:
+            continue
+        errs.append('дрібний текст: `%s` — %spx, а менше 11px на сторінці бути не може'
+                    % (селектор[:60], m.group(1)))
+    return errs
+
+
 def check_client_text(html):
     """Стоп-слова знятих тем у КЛІЄНТСЬКОМУ тексті калькулятора.
 
@@ -972,7 +997,7 @@ def main():
     ce = (check_client_text(html) + check_diag_credit_const(html)
           + check_kp_refs(html) + check_kp_window(html) + check_kp_half(html)
           + check_kp_words(html) + check_hidden_pages(html) + check_kp_wrap(html)
-          + check_prose_numbers(html))
+          + check_prose_numbers(html) + check_font_sizes(html))
     if ce:
         print('КЛІЄНТСЬКИЙ ТЕКСТ РОЗІЙШОВСЯ З РІШЕННЯМИ, збірку скасовано:')
         for e in ce:
