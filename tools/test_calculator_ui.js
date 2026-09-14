@@ -1142,6 +1142,28 @@ function expected(sel) {
   }));
   ok('відповідь «стоп» дає вердикт «не наш»', stopped && /stop/.test(verd.c), verd.v + ' | ' + verd.c);
 
+  // --- 6а. обмеження скринінгу доходять до тексту пропозиції ---------------
+  // Раніше вони називались «сказати вголос до КП» і там і лишались: сейл казав,
+  // Замовник кивав, а в документі цього не було. Друкується `say` (мова Замовника),
+  // а не `note` — нота внутрішня.
+  await p.getByText('СКЛАД РОБІТ І ЦІНА', { exact: false }).first().click();
+  await p.waitForTimeout(400);
+  await p.evaluate(() => document.getElementById('sum-btn').click());
+  await p.waitForTimeout(400);
+  const kpДомов = await p.evaluate(() => document.getElementById('sum-out').value);
+  const qjson2 = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/qualification.json'), 'utf8'));
+  const усіSay = [];
+  qjson2['блоки'].forEach(b2 => (b2['питання'] || []).forEach(q2 => (q2.a || []).forEach(a2 => {
+    if (a2.r === 'warn' && a2.say) усіSay.push(a2.say);
+  })));
+  const уКП = усіSay.filter(t => kpДомов.includes(t));
+  ok('у КП є розділ «Про що домовилися» з формулюваннями для Замовника',
+     /ПРО ЩО ДОМОВИЛИСЯ/.test(kpДомов) && уКП.length > 0,
+     'знайдено ' + уКП.length + ' із ' + усіSay.length + ': ' + (уКП[0] || '').slice(0, 70));
+  ok('внутрішня нота гейта в КП не потрапляє',
+     !/сказати вголос|звірити з керівником|дискваліф/i.test(kpДомов),
+     kpДомов.length + ' символів');
+
   // стан скринінгу видно на ПЕРШІЙ сторінці, поруч із кнопкою КП: там сейл його
   // збирає, а попередження досі стояло тільки на чек-листі
   await p.getByText('СКЛАД РОБІТ І ЦІНА', { exact: false }).first().click();
