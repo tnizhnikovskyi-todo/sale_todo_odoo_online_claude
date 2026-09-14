@@ -655,6 +655,8 @@ select.chip{padding-right:8px}
     <label class="cli" id="cli-wrap"><span class="lbl">Замовник</span><input type="text" id="cli" placeholder="назва" aria-label="Назва замовника"></label>
     <label class="cli" id="until-wrap"><span class="lbl">Дійсна до</span><input type="date" id="until" aria-label="Пропозиція дійсна до"></label>
     <select class="chip" id="cases" aria-label="Збережені набори" hidden></select>
+    <select class="chip" id="vers" aria-label="Версії КП цього замовника" hidden></select>
+    <button class="chip" type="button" id="vdiff" hidden>Що змінилося</button>
     <button class="chip" type="button" id="save" title="зберегти набір під назвою клієнта">Зберегти</button>
     <button class="chip" type="button" id="del" hidden>Видалити</button>
     <button class="chip" type="button" id="io">Набори текстом</button>
@@ -10227,11 +10229,39 @@ select.chip{padding-right:8px}
   // anketa може бути null, тому копіюється окремо від CASEFIELDS
   function caseAnketa(snap, into){ into.anketa = snap.anketa || null; }
 
+  // Запис набору з 14.09.2026 має вигляд { поточний, версії }: КП того самого
+  // клієнта живе довше за одну зустріч, і «що ми пропонували в серпні» відновити
+  // було нізвідки — кожне збереження перезаписувало єдиний знімок.
+  // Старий формат (плоский знімок) читається як `поточний` без версій: набори,
+  // збережені до сьогодні, не зникають і не потребують дій від сейла.
+  var ВЕРСІЙ_МАКС = 20;
+  function запис(r){
+    if(!r || typeof r !== 'object') return { 'поточний':null, 'версії':[] };
+    if(r['поточний'] || r['версії']) {
+      return { 'поточний':r['поточний'] || null,
+               'версії':(r['версії'] || []).slice() };
+    }
+    return { 'поточний':r, 'версії':[] };     // формат v1
+  }
   function casesRead(){
     try {
       var o = JSON.parse(localStorage.getItem(CASEKEY) || '{}');
       return (o && typeof o === 'object') ? o : {};
     } catch(e){ return {}; }
+  }
+  function записНабору(name){ return запис(casesRead()[name]); }
+  // Сума знімка рахується так само, як на панелі: з прайсу, а не зберігається
+  // окремим числом — інакше після правки годин історія почала б брехати.
+  function сумаЗнімка(snap){
+    if(!snap) return 0;
+    var сума = 0;
+    MODS.forEach(function(m){
+      if(m.id === 'diag') return;
+      if(!(snap.sel || {})[m.id]) return;
+      var lv = (snap.lv || {})[m.id];
+      сума += priceAt(m, typeof lv === 'number' ? lv : 0);
+    });
+    return сума;
   }
   function casesWrite(o){
     try { localStorage.setItem(CASEKEY, JSON.stringify(o)); } catch(e){}
@@ -10287,7 +10317,7 @@ select.chip{padding-right:8px}
   function брудний(){
     var all = casesRead(), name = state.client.trim();
     if(!name || !all[name]) return !порожній();
-    return дляПорівняння(all[name]) !== дляПорівняння(caseSnapshot());
+    return дляПорівняння(запис(all[name])['поточний'] || {}) !== дляПорівняння(caseSnapshot());
   }
 
   var питТаймер = null;
@@ -10312,6 +10342,78 @@ select.chip{padding-right:8px}
     var first = b.querySelector('button');
     if(first) first.focus();
   }
+
+  // Версії КП цього замовника: селект показує «11.09 12:22 · €4 850», кнопка
+  // «Що змінилося» друкує різницю з поточним станом. Версія створюється кнопкою
+  // «Зібрати текст для КП» — у мить, коли текст пішов Замовнику.
+  function версіїRender(){
+    var name = state.client.trim();
+    var версії = name ? записНабору(name)['версії'] : [];
+    var sel = $('vers');
+    var було = sel.value;
+    sel.innerHTML = '';
+    версії.forEach(function(v, i){
+      var o = document.createElement('option');
+      o.value = String(i);
+      o.textContent = v['коли'] + ' · ' + money(v['сума']);
+      sel.appendChild(o);
+    });
+    // Типово порівнюємо з ПОПЕРЕДНЬОЮ версією: найновіша щойно створена тією самою
+    // кнопкою й дорівнює тому, що на екрані, — різниця з нею завжди порожня.
+    if(було && sel.querySelector('option[value="' + було + '"]')) sel.value = було;
+    else sel.value = String(Math.min(1, Math.max(0, версії.length - 1)));
+    var є = версії.length > 0 && state.page === 'calc';
+    sel.hidden = !є;
+    $('vdiff').hidden = !є;
+  }
+
+  // Різниця між версією і поточним станом — мовою складу робіт, а не JSON.
+  function різниця(знімок){
+    var L = [], було = знімок || {}, стало = caseSnapshot();
+    function рівень(snap, id){
+      var lv = (snap.lv || {})[id];
+      return typeof lv === 'number' ? lv : 0;
+    }
+    MODS.forEach(function(m){
+      if(m.id === 'diag') return;
+      var б = !!(було.sel || {})[m.id], с = !!стало.sel[m.id];
+      if(!б && с) L.push('  + ' + m.n + ' — ' + m.lv[рівень(стало, m.id)][0]
+                         + ' — ' + money(priceAt(m, рівень(стало, m.id))));
+      else if(б && !с) L.push('  - ' + m.n + ' — прибрано');
+      else if(б && с && рівень(було, m.id) !== рівень(стало, m.id))
+        L.push('  ~ ' + m.n + ': ' + m.lv[рівень(було, m.id)][0] + ' -> '
+               + m.lv[рівень(стало, m.id)][0] + ' — '
+               + money(priceAt(m, рівень(було, m.id))) + ' -> '
+               + money(priceAt(m, рівень(стало, m.id))));
+    });
+    var сБуло = сумаЗнімка(було), сСтало = сумаЗнімка(стало);
+    if((було['until'] || '') !== (стало['until'] || ''))
+      L.push('  ~ строк дії: ' + (дд(було['until']) || 'не названо') + ' -> '
+             + (дд(стало['until']) || 'не названо'));
+    var head = [];
+    if(state.client.trim()) head.push('Замовник: ' + state.client.trim());
+    head.push('Що змінилося з версії ' + (знімок && знімок['коли'] ? знімок['коли'] : 'обраної'));
+    head.push('');
+    if(!L.length) L.push('  склад робіт не змінився');
+    L.push('');
+    L.push('Сума: ' + money(сБуло) + ' -> ' + money(сСтало)
+           + (сСтало === сБуло ? '' : ((сСтало > сБуло ? ' (+' : ' (-')
+             + money(Math.abs(сСтало - сБуло)) + ')')));
+    L.push('Текст внутрішній — це не пропозиція Замовнику.');
+    return head.concat(L).join('\n');
+  }
+
+  $('vdiff').addEventListener('click', function(){
+    var name = state.client.trim();
+    if(!name) return;
+    var версії = записНабору(name)['версії'];
+    var i = parseInt($('vers').value, 10);
+    var v = версії[isNaN(i) ? 0 : i];
+    if(!v) return;
+    var знімок = v['знімок'] || {};
+    знімок['коли'] = v['коли'];
+    copyOut(різниця(знімок), $('sum-out'), $('copied'));
+  });
 
   // Підпис кнопок набору оновлюється на кожному рендері — інакше «•» з'явилося б
   // лише при наступному перемальовуванні стрічки, тобто після наступної дії.
@@ -10342,6 +10444,7 @@ select.chip{padding-right:8px}
     });
     sel.hidden = !names.length;
     кнопкиНабору();
+    версіїRender();
   }
 
   $('cli').addEventListener('input', function(){
@@ -10355,8 +10458,9 @@ select.chip{padding-right:8px}
   $('save').addEventListener('click', function(){
     var name = state.client.trim();
     if(!name) return;
-    var all = casesRead();
-    all[name] = caseSnapshot();
+    var all = casesRead(), r = запис(all[name]);
+    r['поточний'] = caseSnapshot();
+    all[name] = r;
     casesWrite(all); casesRender();
   });
   $('del').addEventListener('click', function(){
@@ -10379,7 +10483,7 @@ select.chip{padding-right:8px}
     var відкрити = function(){
       state.client = name;
       $('cli').value = name;
-      caseApply(all[name]);
+      caseApply(запис(all[name])['поточний'] || {});
       casesRender();
     };
     if(!брудний()){ відкрити(); return; }
@@ -10389,8 +10493,9 @@ select.chip{padding-right:8px}
     var було = state.client.trim();
     var варіанти = [];
     if(було) варіанти.push({ t:'Зберегти й перейти', f:function(){
-      var a2 = casesRead();
-      a2[було] = caseSnapshot();
+      var a2 = casesRead(), r2 = запис(a2[було]);
+      r2['поточний'] = caseSnapshot();
+      a2[було] = r2;
       casesWrite(a2); відкрити();
     } });
     варіанти.push({ t:'Перейти без збереження', f:відкрити });
@@ -10417,7 +10522,11 @@ select.chip{padding-right:8px}
     // Поточний екран важливіший за збережену копію того самого імені: сейл бачить
     // саме його, і саме його очікує на іншій машині. Якщо назви немає — виносити
     // нічого, набір без імені не існує.
-    if(cur) all[cur] = caseSnapshot();
+    if(cur){
+      var r = запис(all[cur]);
+      r['поточний'] = caseSnapshot();
+      all[cur] = r;
+    }
     return all;
   }
   function ioText(){
@@ -10660,6 +10769,8 @@ select.chip{padding-right:8px}
     $('io').hidden = !sales;
     if(!sales){ $('cases').hidden = true; $('del').hidden = true; $('io-wrap').hidden = true; }
     else casesRender();
+    // версії КП стосуються тільки першої сторінки
+    if(p !== 'calc'){ $('vers').hidden = true; $('vdiff').hidden = true; }
     state.page = p; save();
   }
   $('tab-calc').addEventListener('click', function(){ showPage('calc'); });
@@ -11956,6 +12067,22 @@ select.chip{padding-right:8px}
   $('sum-btn').addEventListener('click', function(){
     var txt = summary();
     copyRich(txt, richHTML(txt), $('sum-out'), $('copied'));
+    // Версія КП пишеться саме тут, а не при «Оновити набір»: у цю мить текст із
+    // датою пішов Замовнику, і саме його треба вміти показати через місяць.
+    // Без назви замовника версії нема куди класти — набір без імені не існує.
+    var name = state.client.trim();
+    if(!name) return;
+    var all = casesRead(), r = запис(all[name]);
+    r['поточний'] = caseSnapshot();
+    r['версії'].unshift({ 'коли':зараз(), 'сума':сумаЗнімка(r['поточний']),
+                          'знімок':r['поточний'] });
+    if(r['версії'].length > ВЕРСІЙ_МАКС) r['версії'] = r['версії'].slice(0, ВЕРСІЙ_МАКС);
+    all[name] = r;
+    casesWrite(all);
+    // Скидаємо вибір, щоб версіїRender поставив ПОПЕРЕДНЮ версію: найновіша щойно
+    // створена цією ж кнопкою й дорівнює екрану — різниця з нею завжди порожня.
+    $('vers').value = '';
+    casesRender();
   });
 
   load();

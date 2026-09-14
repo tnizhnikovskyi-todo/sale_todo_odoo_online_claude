@@ -946,7 +946,9 @@ function expected(sel) {
      && (() => {
           try {
             const o = JSON.parse(буферНаборів.slice(буферНаборів.indexOf('{')));
-            return !!(o['набори'] && o['набори']['Перенос'] && o['набори']['Перенос'].lv);
+            // з 14.09.2026 набір — це запис { поточний, версії }, а не плоский знімок
+            const з = o['набори'] && o['набори']['Перенос'];
+            return !!(з && (з['поточний'] || з).lv);
           } catch (e) { return false; }
         })(),
      буферНаборів.split('\n')[0].slice(0, 90) + ' | msg: ' + текстНаборів.msg);
@@ -1272,6 +1274,76 @@ function expected(sel) {
   });
   ok('на сторінці клієнта немає ні цін, ні рівнів, ні вкладок калькулятора',
      !цін.євро && !цін.рівень && !цін.вкладки, JSON.stringify(цін));
+
+  // --- 7а. історія КП по замовнику ----------------------------------------
+  // Кожне збереження перезаписувало єдиний знімок: «що ми пропонували в серпні»
+  // відновити було нізвідки. Версія пишеться кнопкою «Зібрати текст для КП» —
+  // у мить, коли текст із датою пішов Замовнику.
+  await p.getByText('СКЛАД РОБІТ І ЦІНА', { exact: false }).first().click();
+  await p.waitForTimeout(300);
+  await скинутиСтан();
+  const історія = await p.evaluate(async () => {
+    const пауза = () => new Promise(r => setTimeout(r, 200));
+    const $ = id => document.getElementById(id);
+    localStorage.removeItem('odoo-com-calc-cases-v1');
+    $('cli').value = 'Історія ТОВ';
+    $('cli').dispatchEvent(new Event('input', { bubbles: true }));
+    await пауза();
+    $('c-crm').click(); await пауза();
+    $('sum-btn').click(); await пауза();          // версія 1
+    const сума1 = $('o-price').textContent;
+    $('c-prj').click(); await пауза();            // додали позицію
+    $('sum-btn').click(); await пауза();          // версія 2
+    const записи = JSON.parse(localStorage.getItem('odoo-com-calc-cases-v1'))['Історія ТОВ'];
+    const версій = (записи['версії'] || []).length;
+    // дивимось різницю з НАЙСТАРШОЮ версією
+    const sel = $('vers');
+    sel.value = String(версій - 1);
+    $('vdiff').click();
+    await пауза();
+    return {
+      версій, сума1, сума2: $('o-price').textContent,
+      селектВидимий: !sel.hidden,
+      підписи: Array.from(sel.options).map(o => o.textContent),
+      різниця: $('sum-out').value,
+      маєПоточний: !!записи['поточний'],
+    };
+  });
+  ok('дві збірки КП дали дві версії з датою й сумою',
+     історія.версій === 2 && історія.селектВидимий && історія.маєПоточний
+     && /· €/.test(історія.підписи[0]), JSON.stringify(історія.підписи));
+  ok('«Що змінилося» називає додану позицію й дельту суми',
+     /\+ Проєкти й таймшити/.test(історія.різниця) && /Сума: .* -> .*\(\+/.test(історія.різниця),
+     історія.різниця.split('\n').filter(x => /Проєкти|Сума/.test(x)).join(' | '));
+
+  // набір, збережений старим форматом (плоский знімок), мусить відкриватись
+  const старий = await p.evaluate(async () => {
+    const пауза = () => new Promise(r => setTimeout(r, 200));
+    const $ = id => document.getElementById(id);
+    const all = JSON.parse(localStorage.getItem('odoo-com-calc-cases-v1'));
+    // Беремо НАЙСТАРШУ версію (там лише CRM, без «Проєктів») і кладемо її плоским
+    // знімком — як писала версія формату v1. Набір мусить відрізнятися від того, що
+    // зараз на екрані: інакше «відкрився» й «нічого не зробив» виглядають однаково.
+    const версії = all['Історія ТОВ']['версії'];
+    all['Старий формат'] = версії[версії.length - 1]['знімок'];
+    localStorage.setItem('odoo-com-calc-cases-v1', JSON.stringify(all));
+    // перелік наборів перемальовується на будь-якому рендері — інакше в селекті
+    // ще немає опції, і присвоєння value мовчки нічого не робить
+    $('cli').dispatchEvent(new Event('input', { bubbles: true }));
+    await пауза();
+    $('cases').value = 'Старий формат';
+    $('cases').dispatchEvent(new Event('change', { bubbles: true }));
+    await пауза();
+    const кн = Array.from(document.querySelectorAll('#ask-btns button'))
+      .find(x => /Перейти без збереження|Лишитись/.test(x.textContent));
+    if (кн && /Перейти без збереження/.test(кн.textContent)) { кн.click(); await пауза(); }
+    return { клієнт: $('cli').value, crm: $('c-crm').checked, prj: $('c-prj').checked,
+             версійВидно: !$('vers').hidden };   // prj мусить ЗНЯТИСЯ: у старому наборі його немає
+  });
+  ok('набір старого формату відкривається як свій',
+     старий.клієнт === 'Старий формат' && старий.crm === true && старий.prj === false,
+     JSON.stringify(старий));
+  await скинутиСтан();
 
   // --- 8. анкета клієнта → чек-лист: «Прийняти анкету» ---------------------
   // Кінець-у-кінець: заповнюємо анкету на ЇЇ сторінці, беремо текст кнопкою
