@@ -297,6 +297,12 @@ footer{
   font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);line-height:1.6;
 }
 .tag.auto{display:inline-block;font-size:11px;padding:1px 6px;border-radius:999px;margin-left:6px;background:var(--escalate-soft);color:var(--escalate);border:1px solid var(--escalate);font-weight:500}
+/* «рівень не обирали» — підказка, а не тривога: пунктир і сірий, щоб не змагалася
+   з «потрібна для», яка означає дію калькулятора. Обидві позначки ховаються
+   атрибутом hidden, тому правило нижче потрібне: display у класі інакше виграє. */
+.tag.none{display:inline-block;font-size:11px;padding:1px 6px;border-radius:999px;margin-left:6px;background:var(--surface-2);color:var(--muted);border:1px dashed var(--line-strong);font-weight:500}
+.tag.auto[hidden],.tag.none[hidden]{display:none!important}
+.hint2.warnline{color:var(--escalate)}
 tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,transparent)}
 .q{font-size:12.5px;color:var(--accent);font-style:italic;margin:4px 0 2px;max-width:60ch;line-height:1.35}
 .autos,.warns{list-style:none;margin:8px 0 0;padding:0;font-size:12.5px;color:var(--ink-2);line-height:1.4}
@@ -672,7 +678,7 @@ select.chip{padding-right:8px}
           </tfoot>
         </table>
       </div>
-      <p class="tblnote">Поки позиція не позначена, у колонці ціни стоїть вилка від базового до розширеного рівня — щоб бачити порядок цін по всьому прайсу відразу. Рівень підбирається під те, як процес виглядає у клієнта: <b>базовий</b> — влаштовує стандартна логіка Odoo, нічого в системі не змінюємо; <b>стандарт</b> — потрібні власні поля й подання під процеси клієнта; робиться штатними засобами, Studio ми не відкриваємо; <b>розширений</b> — межа того, що робиться налаштуванням. Рівні вкладені: кожен наступний містить усе з попереднього, нові пункти позначені знаком «+». Якщо клієнт хоче більше за розширений — це вже не наш контур, і про це варто сказати відразу. Курсивом під назвою — питання, яке сейл ставить клієнту; ознаки рівнів — відповіді на нього. Позиції з тегом «потрібна для…» калькулятор додає сам: без них обраний склад робіт технічно неможливий. Експрес-діагностика в підсумок не додається — вона сплачується окремо до старту, і у вартість проєкту зараховується половина її суми.</p>
+      <p class="tblnote">Поки позиція не позначена, у колонці ціни стоїть вилка від базового до розширеного рівня — щоб бачити порядок цін по всьому прайсу відразу. Рівень підбирається під те, як процес виглядає у клієнта: <b>базовий</b> — влаштовує стандартна логіка Odoo, нічого в системі не змінюємо; <b>стандарт</b> — потрібні власні поля й подання під процеси клієнта; робиться штатними засобами, Studio ми не відкриваємо; <b>розширений</b> — межа того, що робиться налаштуванням. Рівні вкладені: кожен наступний містить усе з попереднього, нові пункти позначені знаком «+». Якщо клієнт хоче більше за розширений — це вже не наш контур, і про це варто сказати відразу. Курсивом під назвою — питання, яке сейл ставить клієнту; ознаки рівнів — відповіді на нього. Позиції з тегом «потрібна для…» калькулятор додає сам: без них обраний склад робіт технічно неможливий. Кожна позиція починається з «Базового»; поки перемикача не торкалися, поруч стоїть «рівень не обирали» — і перед збиранням КП такі позиції названі в панелі, бо в пропозицію вони підуть на тому рівні, що видно зараз. Експрес-діагностика в підсумок не додається — вона сплачується окремо до старту, і у вартість проєкту зараховується половина її суми.</p>
     </div>
 
     <div class="panel">
@@ -703,6 +709,7 @@ select.chip{padding-right:8px}
         <h2>Підсумок</h2>
         <label class="opt2" for="sum-bounds"><input type="checkbox" id="sum-bounds"><span>додати «не входить» по кожній позиції</span></label>
         <p class="hint2">Типово в КП іде тільки загальний перелік і приписка, що він не вичерпний. Галочка додає межі кожної обраної позиції — це для клієнтів, з якими межі краще зафіксувати письмово.</p>
+        <p class="hint2 warnline" id="sum-nolv" hidden></p>
         <button class="sumbtn" type="button" id="sum-btn">Зібрати текст для КП</button>
         <span class="copied" id="copied" hidden>Скопійовано в буфер</span>
         <p class="hint2" id="sum-fallback" hidden>Браузер не дав доступу до буфера — виділіть текст нижче й скопіюйте вручну.</p>
@@ -9415,7 +9422,10 @@ select.chip{padding-right:8px}
   // sel — що позначено; lv — індекс рівня; manual — позначив сам сейл; auto — додано через залежність (ким)
   // qa — відповіді скринінгу; qr — закриті пункти готовності; no — позиції, про які спитали й вони не потрібні
   // open — розкриті розділи чек-листа; page — активна сторінка
-  var state = { sel:{}, lv:{}, manual:{}, auto:{}, qa:{}, qr:{}, no:{}, probe:{}, open:{ scr:true }, page:'calc', client:'', until:'', kpbounds:false };
+  // touched — рівень цієї позиції сейл ОБИРАВ сам (перемикачем, «Детально», чек-листом
+  //   або кнопкою гейта). Потрібне, бо рівень є в кожної позиції завжди, і без цієї
+  //   позначки не відрізнити «вибрали Базовий» від «не дійшли до цієї позиції».
+  var state = { sel:{}, lv:{}, manual:{}, auto:{}, qa:{}, qr:{}, no:{}, probe:{}, touched:{}, open:{ scr:true }, page:'calc', client:'', until:'', kpbounds:false };
 
   // Дата й строк дії у вихідних текстах. Без них два КП того самого клієнта не
   // відрізнити й не підшити в CRM, а рядок «ціни фіксовані на строк дії пропозиції»
@@ -9439,9 +9449,15 @@ select.chip{padding-right:8px}
     L.push('Дата: ' + зараз());
     if(зСтроком) L.push('Пропозиція дійсна до: ' + (дд(state.until) || '____________'));
   }
+  // Рівень за замовчуванням — «Базовий», а не «Стандарт» (рішення 14.09.2026).
+  // Було навпаки, і це означало, що позиція, до перемикача якої сейл не торкався,
+  // продається на Стандарті: порожній набір коштував €1 000 замість €800. Правило
+  // прайсу «рівень визнається за тим, що сейл побачив» із таким замовчуванням не
+  // сходилось. Тепер нижній рівень — і позначка «рівень не обирали», поки не обрали.
   function blank(){
-    state.manual = {}; state.auto = {}; state.qa = {}; state.qr = {}; state.no = {}; state.probe = {};
-    MODS.forEach(function(m){ state.sel[m.id] = !!m.req; state.lv[m.id] = 1; });
+    state.manual = {}; state.auto = {}; state.qa = {}; state.qr = {}; state.no = {};
+    state.probe = {}; state.touched = {};
+    MODS.forEach(function(m){ state.sel[m.id] = !!m.req; state.lv[m.id] = 0; });
   }
   blank();
 
@@ -9513,6 +9529,11 @@ select.chip{padding-right:8px}
       var atg = document.createElement('span');
       atg.className = 'tag auto'; atg.id = 'at-' + m.id; atg.hidden = true;
       lab.appendChild(atg);
+      // «рівень не обирали» — позиція в наборі, але перемикача рівня ніхто не чіпав
+      var ntg = document.createElement('span');
+      ntg.className = 'tag none'; ntg.id = 'nt-' + m.id; ntg.hidden = true;
+      ntg.textContent = 'рівень не обирали';
+      lab.appendChild(ntg);
       td1.appendChild(lab);
       if(m.q){
         var qq = document.createElement('div');
@@ -9540,7 +9561,9 @@ select.chip{padding-right:8px}
         sel.appendChild(op);
       });
       sel.value = state.lv[m.id];
-      sel.addEventListener('change', function(){ state.lv[m.id] = +sel.value; render(); });
+      sel.addEventListener('change', function(){
+        state.lv[m.id] = +sel.value; state.touched[m.id] = true; render();
+      });
       // «Детально» стоїть ПОРУЧ із перемикачем рівня, в одному рядку — там, куди
       // сейл і так дивиться, коли обирає рівень. Раніше це було дрібне посилання
       // праворуч від ознаки: найважчий елемент на екрані для ока, хоча натискають
@@ -9605,7 +9628,7 @@ select.chip{padding-right:8px}
         b.appendChild(cnt);
 
         b.addEventListener('click', function(){
-          state.lv[m.id] = i;
+          state.lv[m.id] = i; state.touched[m.id] = true;
           if(!m.req && !state.sel[m.id]){ state.sel[m.id] = true; $('c-' + m.id).checked = true; }
           state.manual[m.id] = true; delete state.auto[m.id];
           render();
@@ -9758,6 +9781,9 @@ select.chip{padding-right:8px}
       var atg = $('at-' + m.id);
       if(state.auto[m.id]){ atg.textContent = 'потрібна для «' + BYID[state.auto[m.id]].n + '»'; atg.hidden = false; }
       else atg.hidden = true;
+      // позначка «рівень не обирали» — лише на позиціях, які поставив сам сейл:
+      // в автододаної рівень обирає залежність, і там уже стоїть «потрібна для»
+      $('nt-' + m.id).hidden = !(on && !state.touched[m.id] && !state.auto[m.id]);
 
       $('r-' + m.id).className = 'item ' + (m.req ? 'req ' : '') + (state.auto[m.id] ? 'auto ' : '') + (on ? 'on' : 'off');
       if(on){
@@ -9796,6 +9822,20 @@ select.chip{padding-right:8px}
       li.innerHTML = '<b>' + BYID[n.to].n + '</b> — піднято до рівня ' + (n.lv + 1) + ': потрібно для «' + n.from.n + '»';
       autos.appendChild(li);
     });
+
+    // позиції в наборі, до перемикача рівня яких не торкалися: у КП вони підуть
+    // на тому рівні, що стоїть зараз, — сейл мусить це побачити ДО того, як натисне
+    // «Зібрати текст для КП», а не почути від клієнта після
+    var noLv = MODS.filter(function(m){
+      return state.sel[m.id] && !state.touched[m.id] && !state.auto[m.id] && m.id !== 'diag';
+    });
+    var nh = $('sum-nolv');
+    if(noLv.length){
+      nh.textContent = 'Рівень не обирали: ' + noLv.map(function(m){
+        return m.n + ' (' + lvOf(m)[0] + ')';
+      }).join(', ') + '.';
+      nh.hidden = false;
+    } else nh.hidden = true;
 
     var names_ = ['Базовий', 'Стандарт', 'Розширений'];
     var cols = ['var(--allow)', 'var(--accent)', 'var(--escalate)'];
@@ -10001,7 +10041,7 @@ select.chip{padding-right:8px}
   // Поточний стан лежить у KEY, а названі набори — окремо: сейл веде кількох клієнтів
   // одночасно й перемикається між ними, не втрачаючи попереднього.
   var CASEKEY = 'odoo-com-calc-cases-v1';
-  var CASEFIELDS = ['sel', 'lv', 'manual', 'auto', 'no', 'qa', 'probe', 'open'];
+  var CASEFIELDS = ['sel', 'lv', 'manual', 'auto', 'no', 'qa', 'probe', 'touched', 'open'];
   // Строк дії належить конкретному КП, тому їде разом із набором клієнта. Це рядок,
   // а не обʼєкт, тож у caseApply для нього окрема гілка.
   var CASESCALARS = ['until', 'kpbounds'];
@@ -10033,7 +10073,7 @@ select.chip{padding-right:8px}
     if($('sum-bounds')) $('sum-bounds').checked = state.kpbounds;
     MODS.forEach(function(m){
       if(typeof state.sel[m.id] !== 'boolean') state.sel[m.id] = !!m.req;
-      if(typeof state.lv[m.id] !== 'number') state.lv[m.id] = 1;
+      if(typeof state.lv[m.id] !== 'number') state.lv[m.id] = 0;
       if(m.req) state.sel[m.id] = true;
       $('c-' + m.id).checked = state.sel[m.id];
       $('l-' + m.id).value = state.lv[m.id];
@@ -10178,6 +10218,7 @@ select.chip{padding-right:8px}
       if(st.qa && typeof st.qa === 'object') state.qa = st.qa;
       if(st.qr && typeof st.qr === 'object') state.qr = st.qr;
       if(st.probe && typeof st.probe === 'object') state.probe = st.probe;
+      if(st.touched && typeof st.touched === 'object') state.touched = st.touched;
       if(st.open && typeof st.open === 'object'){
         // на екрані лишається один розділ, навіть якщо в старому стані їх було кілька
         var first = Object.keys(st.open).filter(function(k){ return st.open[k]; })[0];
@@ -10340,7 +10381,7 @@ select.chip{padding-right:8px}
       b.addEventListener('click', function(){
         state.sel[m.id] = true; state.manual[m.id] = true;
         delete state.auto[m.id]; delete state.no[m.id];
-        state.lv[m.id] = i;
+        state.lv[m.id] = i; state.touched[m.id] = true;
         render();
       });
       o.appendChild(b);
@@ -10459,7 +10500,8 @@ select.chip{padding-right:8px}
       + (lv ? ' до рівня ' + lv : '');
     b.addEventListener('click', function(){
       state.sel[id] = true; state.manual[id] = true; delete state.no[id];
-      if(lv && state.lv[id] < lv - 1) state.lv[id] = lv - 1;
+      // рівень із гейта — теж вибір сейла: він натиснув кнопку, прочитавши нотатку
+      if(lv && state.lv[id] < lv - 1){ state.lv[id] = lv - 1; state.touched[id] = true; }
       render();
     });
     return b;

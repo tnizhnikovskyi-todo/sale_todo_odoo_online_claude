@@ -78,6 +78,11 @@ for (const g of price['групи']) {
       n: it.n,
       ціни: it.lv.map(l => Math.round(l[1] * RATE / 50) * 50),
       hard: (it.dep || []).filter(d => d.type === 'hard').map(d => d.on),
+      // жорсткі залежності, які діють уже на першому рівні: решта вмикається з
+      // `from_lv`, і на «Базовому» їх не має бути — після того як рівень за
+      // замовчуванням став нижнім, тест мусить питати про рівень, а не «взагалі»
+      hardAt: lv => (it.dep || []).filter(d => d.type === 'hard' && (d.from_lv || 1) - 1 <= lv)
+                                  .map(d => d.on),
     };
   }
 }
@@ -171,13 +176,26 @@ function expected(sel) {
   await p.goto('file://' + tmp);
   await p.waitForTimeout(1200);
 
-  // --- 1. типовий стан: База обовʼязкова й уже на «Стандарті» --------------
-  // Це не дрібниця: будь-який підсумок калькулятора вже містить 1 000 € Бази.
+  // --- 1. типовий стан: База обовʼязкова й на «Базовому» -------------------
+  // Рівень за замовчуванням — нижній (рішення 14.09.2026). Було «Стандарт», і це
+  // означало, що позиція, до перемикача якої ніхто не торкався, продається на
+  // середньому рівні: порожній набір коштував €1 000 замість €800.
   let st = await p.evaluate(READ);
   const base = st.sel.find(r => r.id === 'base');
   ok('База позначена й обовʼязкова', base && base.on && /req/.test(base.cls), JSON.stringify(base));
+  ok('База стартує на «Базовому»', base && base.lv === 0, 'рівень ' + (base && base.lv));
   let e = expected(st.sel);
   ok('ціна типового стану = ' + e.sum, num(st.total) === e.sum, st.total + ' | ' + e.parts.join(', '));
+
+  // --- 1а. «рівень не обирали»: позначка в рядку й рядок у панелі ----------
+  // Рівень є в кожної позиції завжди, тому без позначки не відрізнити «обрали
+  // Базовий» від «не дійшли до цієї позиції» — а в КП піде те, що стоїть.
+  let нр = await p.evaluate(() => ({
+    тег: !document.getElementById('nt-base').hidden,
+    рядок: document.getElementById('sum-nolv').hidden ? '' : document.getElementById('sum-nolv').textContent,
+  }));
+  ok('позначка «рівень не обирали» стоїть на Базі', нр.тег, JSON.stringify(нр).slice(0, 130));
+  ok('панель називає такі позиції з рівнем', /База \(Базовий\)/.test(нр.рядок), нр.рядок);
 
   // --- 2. рівні: ціна кожного рівня збігається з прайсом -------------------
   for (const lv of [0, 1, 2]) {
@@ -192,13 +210,36 @@ function expected(sel) {
     ok('База р.' + (lv + 1) + ': підсумок = ' + e.sum, num(st.total) === e.sum, st.total);
   }
 
+  // вибір рівня знімає позначку — і рядок у панелі зникає разом з нею
+  нр = await p.evaluate(() => ({
+    тег: !document.getElementById('nt-base').hidden,
+    схований: document.getElementById('sum-nolv').hidden,
+  }));
+  ok('вибраний рівень знімає позначку й рядок у панелі', !нр.тег && нр.схований === true,
+     JSON.stringify(нр));
+
   // --- 3. жорсткі залежності додаються самі --------------------------------
-  const hardOfPrj = EXP.prj.hard.flat();
+  // Спершу на «Базовому»: обидві жорсткі залежності «Проєктів» оголошені з рівня 2,
+  // тому на першому рівні позиція не тягне нічого — і це не поломка, а прайс.
   await p.evaluate(() => document.getElementById('c-prj').click());
+  await p.waitForTimeout(400);
+  st = await p.evaluate(READ);
+  let вкл = st.sel.filter(r => r.on).map(r => r.id);
+  ok('prj на «Базовому» не тягне нічого зайвого',
+     EXP.prj.hardAt(0).flat().every(x => вкл.includes(x)) &&
+     EXP.prj.hard.flat().filter(x => !EXP.prj.hardAt(0).flat().includes(x)).every(x => !вкл.includes(x)),
+     вкл.join(','));
+
+  const hardOfPrj = EXP.prj.hardAt(2).flat();
+  await p.evaluate(() => {
+    const s = document.getElementById('l-prj');
+    s.value = '2';
+    s.dispatchEvent(new Event('change', { bubbles: true }));
+  });
   await p.waitForTimeout(500);
   st = await p.evaluate(READ);
   const on = st.sel.filter(r => r.on).map(r => r.id);
-  ok('prj сам додав ' + hardOfPrj.join(' і '), hardOfPrj.every(x => on.includes(x)), on.join(','));
+  ok('prj р.3 сам додав ' + hardOfPrj.join(' і '), hardOfPrj.every(x => on.includes(x)), on.join(','));
   ok('додані позначені як «потрібна для»', /потрібна для/.test(st.autos), st.autos.slice(0, 90));
   e = expected(st.sel);
   ok('ціна з залежностями = ' + e.sum, num(st.total) === e.sum, st.total + ' | ' + e.parts.join(', '));
