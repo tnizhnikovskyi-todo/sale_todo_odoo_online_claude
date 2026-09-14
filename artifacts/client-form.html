@@ -282,7 +282,12 @@ footer{
 .tag.auto{display:inline-block;font-size:11px;padding:1px 6px;border-radius:999px;margin-left:6px;background:var(--escalate-soft);color:var(--escalate);border:1px solid var(--escalate);font-weight:500}
 
 .tag.none{display:inline-block;white-space:nowrap;font-size:11px;padding:1px 6px;border-radius:999px;margin-left:6px;background:var(--surface-2);color:var(--muted);border:1px dashed var(--line-strong);font-weight:500}
-.tag.auto[hidden],.tag.none[hidden]{display:none!important}
+.tag.auto[hidden],.tag.none[hidden],.tag.anketa[hidden]{display:none!important}
+
+.tag.anketa{display:inline-block;white-space:nowrap;font-size:11px;padding:1px 6px;border-radius:999px;margin-left:6px;background:var(--allow-soft);color:var(--allow);border:1px solid var(--allow);font-weight:500}
+.qbnd.anketa{border-left:2px solid var(--allow);padding-left:9px;margin-top:7px}
+.qbnd.anketa i{font-style:italic;color:var(--muted)}
+.io textarea#an-in{min-height:90px}
 .hint2.warnline{color:var(--escalate)}
 .hint2.stopline{color:var(--deny)}
 tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,transparent)}
@@ -714,7 +719,17 @@ select.chip{padding-right:8px}
               "10–20",
               "20–50",
               "понад 50"
-            ]
+            ],
+            "гейт": {
+              "id": "size",
+              "мапа": [
+                0,
+                0,
+                0,
+                1,
+                2
+              ]
+            }
           },
           {
             "id": "entities",
@@ -724,7 +739,15 @@ select.chip{padding-right:8px}
               "одній",
               "двом-трьом",
               "понад трьом"
-            ]
+            ],
+            "гейт": {
+              "id": "legal",
+              "мапа": [
+                0,
+                1,
+                2
+              ]
+            }
           },
           {
             "id": "places",
@@ -856,7 +879,15 @@ select.chip{padding-right:8px}
               "немає",
               "поодинокі",
               "регулярні"
-            ]
+            ],
+            "гейт": {
+              "id": "fx",
+              "мапа": [
+                0,
+                0,
+                1
+              ]
+            }
           },
           {
             "id": "terms",
@@ -1477,7 +1508,15 @@ select.chip{padding-right:8px}
               "тільки довідники клієнтів і товарів",
               "ще залишки й борги",
               "усю історію операцій"
-            ]
+            ],
+            "гейт": {
+              "id": "migrate",
+              "мапа": [
+                0,
+                1,
+                2
+              ]
+            }
           },
           {
             "id": "who",
@@ -1543,7 +1582,15 @@ select.chip{padding-right:8px}
               "так",
               "частково",
               "ні"
-            ]
+            ],
+            "гейт": {
+              "id": "standard",
+              "мапа": [
+                0,
+                1,
+                2
+              ]
+            }
           },
           {
             "id": "others",

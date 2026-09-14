@@ -430,15 +430,20 @@ def check_probes(probes, group_names, pos_names=()):
     for g in missing: warns.append('глибина: для групи «%s» питань немає' % g)
     return errs, warns
 
-def check_form(form, known):
+def check_form(form, known, gates=None):
     """Перевіряє анкету клієнта: типи полів, унікальність id, посилання на позиції прайсу.
 
     Аудиторія анкети — клієнт, тому окремо ловимо внутрішню лексику: рівнів, цін,
     «стопів» і слова «контур» у питаннях до клієнта бути не має.
+
+    `gates` — питання скринінгу: поле-вибір може нести `гейт {id, мапа}`, і тоді
+    відповідь клієнта проставляє гейт у чек-листі. Мапа — індекс опції → індекс
+    відповіді гейта; звіряється з обома джерелами, бо розійтися може з будь-яким.
     """
     errs, warns = [], []
     INNER = ['рівень', 'рівня', 'стоп-', 'наш контур', 'прайс', 'маржа', '€', 'дискваліф']
     TYPES = ('текст', 'абзац', 'вибір')
+    g_known = gates
     seen = set()
     if not form.get('вступ'): warns.append('анкета: немає вступу для клієнта')
 
@@ -460,6 +465,24 @@ def check_form(form, known):
                 errs.append('%s: у полі-виборі мусить бути щонайменше дві опції' % fid)
             if f.get('тип') != 'вибір' and f.get('опції'):
                 errs.append('%s: опції має тільки поле-вибір' % fid)
+            г = f.get('гейт')
+            if г is not None:
+                if f.get('тип') != 'вибір':
+                    errs.append('%s: `гейт` має тільки поле-вибір — відповідь мусить бути '
+                                'однією з названих' % fid)
+                елементи = г.get('мапа')
+                if g_known is not None and г.get('id') not in g_known:
+                    errs.append('%s: `гейт` посилається на невідоме питання скринінгу «%s»'
+                                % (fid, г.get('id')))
+                elif not isinstance(елементи, list) or len(елементи) != len(f.get('опції') or []):
+                    errs.append('%s: у `мапа` мусить бути стільки ж елементів, скільки опцій '
+                                '(%d)' % (fid, len(f.get('опції') or [])))
+                elif g_known is not None:
+                    скільки = len(g_known[г['id']])
+                    погані = [x for x in елементи if not isinstance(x, int) or not 0 <= x < скільки]
+                    if погані:
+                        errs.append('%s: у `мапа` індекси %s поза відповідями гейта «%s» '
+                                    '(їх %d)' % (fid, погані, г['id'], скільки))
 
     secs = (form.get('розділи') or []) + (form.get('розділи2') or [])
     if not secs: errs.append('анкета: немає постійних розділів')
@@ -1133,7 +1156,9 @@ def main():
                           [it['n'] for g in groups for it in g['items']])
     errs += pe; warns += pw
     formdata = json.load(io.open(FORM, encoding='utf-8'))
-    fe, fw = check_form(formdata, known)
+    gates = {q_['id']: [a_.get('t') for a_ in q_.get('a') or []]
+             for b_ in qual for q_ in b_.get('питання') or []}
+    fe, fw = check_form(formdata, known, gates)
     errs += fe; warns += fw
     vrfy = json.load(io.open(VRFY, encoding='utf-8'))
     ve, vw = check_verify(vrfy, groups)

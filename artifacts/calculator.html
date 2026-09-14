@@ -304,7 +304,12 @@ footer{
    з «потрібна для», яка означає дію калькулятора. Обидві позначки ховаються
    атрибутом hidden, тому правило нижче потрібне: display у класі інакше виграє. */
 .tag.none{display:inline-block;white-space:nowrap;font-size:11px;padding:1px 6px;border-radius:999px;margin-left:6px;background:var(--surface-2);color:var(--muted);border:1px dashed var(--line-strong);font-weight:500}
-.tag.auto[hidden],.tag.none[hidden]{display:none!important}
+.tag.auto[hidden],.tag.none[hidden],.tag.anketa[hidden]{display:none!important}
+/* відповідь, яку проставила анкета клієнта: це слова з листа, а не з розмови */
+.tag.anketa{display:inline-block;white-space:nowrap;font-size:11px;padding:1px 6px;border-radius:999px;margin-left:6px;background:var(--allow-soft);color:var(--allow);border:1px solid var(--allow);font-weight:500}
+.qbnd.anketa{border-left:2px solid var(--allow);padding-left:9px;margin-top:7px}
+.qbnd.anketa i{font-style:italic;color:var(--muted)}
+.io textarea#an-in{min-height:90px}
 .hint2.warnline{color:var(--escalate)}
 .hint2.stopline{color:var(--deny)}
 tbody tr.item.auto td{background:color-mix(in srgb,var(--escalate-soft) 45%,transparent)}
@@ -749,6 +754,15 @@ select.chip{padding-right:8px}
   <div class="page" id="page-qual" role="tabpanel" aria-labelledby="tab-qual" hidden>
     <div class="grid">
       <div>
+        <div class="io" id="an-wrap">
+          <p class="ionote">Клієнт заповнив анкету й надіслав текст? Вставте його сюди — відповіді стануть на свої місця: питання скринінгу, які анкета закриває, проставляться самі, а під позиціями зʼявиться те, що клієнт написав своїми словами. Те, на що ви вже відповіли, анкета не перезаписує.</p>
+          <textarea id="an-in" placeholder="вставте сюди текст анкети від клієнта" aria-label="Текст анкети клієнта"></textarea>
+          <div class="iorow">
+            <button class="chip" type="button" id="an-take">Прийняти анкету</button>
+            <button class="chip" type="button" id="an-drop" hidden>Прибрати анкету</button>
+            <span class="iomsg" id="an-msg"></span>
+          </div>
+        </div>
         <div class="qbar" id="qbar"></div>
         <div id="qblocks"></div>
         <p class="tblnote">Чек-лист — не анкета для клієнта, а порядок розмови для сейла. Розділи вмикаються галочками по одному: відкрито те, про що говорять зараз. Питання блоку «Розкрити глибину» не мають готових відповідей — вони для того, щоб клієнт розповів сам, а сейл почув у розповіді ознаку рівня; галочка означає «спитали». Питання скринінгу ставляться до того, як почалося обговорення модулів: одна відповідь «стоп» означає, що склад робіт обговорювати нема сенсу, і лід іде в основну команду. Відповідь «з обмеженням» не зупиняє угоду, але це обмеження треба сказати вголос до КП, а не після приймання. У напрямах кожна відповідь — це ознака рівня, і рівень визнається за тим, що сейл побачив або почув на діагностиці: файл із даними, чинний бланк рахунка, перелік ролей — а не зі слів «у нас усе просто». </p>
@@ -8598,7 +8612,17 @@ select.chip{padding-right:8px}
               "10–20",
               "20–50",
               "понад 50"
-            ]
+            ],
+            "гейт": {
+              "id": "size",
+              "мапа": [
+                0,
+                0,
+                0,
+                1,
+                2
+              ]
+            }
           },
           {
             "id": "entities",
@@ -8608,7 +8632,15 @@ select.chip{padding-right:8px}
               "одній",
               "двом-трьом",
               "понад трьом"
-            ]
+            ],
+            "гейт": {
+              "id": "legal",
+              "мапа": [
+                0,
+                1,
+                2
+              ]
+            }
           },
           {
             "id": "places",
@@ -8740,7 +8772,15 @@ select.chip{padding-right:8px}
               "немає",
               "поодинокі",
               "регулярні"
-            ]
+            ],
+            "гейт": {
+              "id": "fx",
+              "мапа": [
+                0,
+                0,
+                1
+              ]
+            }
           },
           {
             "id": "terms",
@@ -9361,7 +9401,15 @@ select.chip{padding-right:8px}
               "тільки довідники клієнтів і товарів",
               "ще залишки й борги",
               "усю історію операцій"
-            ]
+            ],
+            "гейт": {
+              "id": "migrate",
+              "мапа": [
+                0,
+                1,
+                2
+              ]
+            }
           },
           {
             "id": "who",
@@ -9427,7 +9475,15 @@ select.chip{padding-right:8px}
               "так",
               "частково",
               "ні"
-            ]
+            ],
+            "гейт": {
+              "id": "standard",
+              "мапа": [
+                0,
+                1,
+                2
+              ]
+            }
           },
           {
             "id": "others",
@@ -9486,7 +9542,10 @@ select.chip{padding-right:8px}
   // touched — рівень цієї позиції сейл ОБИРАВ сам (перемикачем, «Детально», чек-листом
   //   або кнопкою гейта). Потрібне, бо рівень є в кожної позиції завжди, і без цієї
   //   позначки не відрізнити «вибрали Базовий» від «не дійшли до цієї позиції».
-  var state = { sel:{}, lv:{}, manual:{}, auto:{}, qa:{}, qr:{}, no:{}, probe:{}, touched:{}, open:{ scr:true }, page:'calc', client:'', until:'', kpbounds:false };
+  // anketa — розібрані відповіді клієнта з анкети; anketaQa — які питання скринінгу
+  //   проставила анкета (щоб позначити їх тегом і вміти прибрати назад)
+  var state = { sel:{}, lv:{}, manual:{}, auto:{}, qa:{}, qr:{}, no:{}, probe:{}, touched:{},
+                anketa:null, anketaQa:{}, open:{ scr:true }, page:'calc', client:'', until:'', kpbounds:false };
 
   // Дата й строк дії у вихідних текстах. Без них два КП того самого клієнта не
   // відрізнити й не підшити в CRM, а рядок «ціни фіксовані на строк дії пропозиції»
@@ -9517,7 +9576,7 @@ select.chip{padding-right:8px}
   // сходилось. Тепер нижній рівень — і позначка «рівень не обирали», поки не обрали.
   function blank(){
     state.manual = {}; state.auto = {}; state.qa = {}; state.qr = {}; state.no = {};
-    state.probe = {}; state.touched = {};
+    state.probe = {}; state.touched = {}; state.anketa = null; state.anketaQa = {};
     MODS.forEach(function(m){ state.sel[m.id] = !!m.req; state.lv[m.id] = 0; });
   }
   blank();
@@ -10161,10 +10220,12 @@ select.chip{padding-right:8px}
   // Поточний стан лежить у KEY, а названі набори — окремо: сейл веде кількох клієнтів
   // одночасно й перемикається між ними, не втрачаючи попереднього.
   var CASEKEY = 'odoo-com-calc-cases-v1';
-  var CASEFIELDS = ['sel', 'lv', 'manual', 'auto', 'no', 'qa', 'probe', 'touched', 'open'];
+  var CASEFIELDS = ['sel', 'lv', 'manual', 'auto', 'no', 'qa', 'probe', 'touched', 'anketaQa', 'open'];
   // Строк дії належить конкретному КП, тому їде разом із набором клієнта. Це рядок,
   // а не обʼєкт, тож у caseApply для нього окрема гілка.
   var CASESCALARS = ['until', 'kpbounds'];
+  // anketa може бути null, тому копіюється окремо від CASEFIELDS
+  function caseAnketa(snap, into){ into.anketa = snap.anketa || null; }
 
   function casesRead(){
     try {
@@ -10176,12 +10237,13 @@ select.chip{padding-right:8px}
     try { localStorage.setItem(CASEKEY, JSON.stringify(o)); } catch(e){}
   }
   function caseSnapshot(){
-    var snap = {};
+    var snap = { anketa: state.anketa ? JSON.parse(JSON.stringify(state.anketa)) : null };
     CASEFIELDS.forEach(function(k){ snap[k] = JSON.parse(JSON.stringify(state[k])); });
     CASESCALARS.forEach(function(k){ snap[k] = state[k]; });
     return snap;
   }
   function caseApply(snap){
+    caseAnketa(snap, state);
     CASEFIELDS.forEach(function(k){
       if(snap[k] && typeof snap[k] === 'object') state[k] = JSON.parse(JSON.stringify(snap[k]));
     });
@@ -10406,6 +10468,127 @@ select.chip{padding-right:8px}
     ioMsg('додано ' + r['додано'] + ', оновлено ' + r['оновлено'] + ' — виберіть набір у списку вгорі', 'ok');
   });
 
+  // ---------- анкета клієнта у чек-листі ----------
+  // Клієнт заповнює анкету (окрема сторінка) і надсилає текст. До 14.09.2026 сейл
+  // перечитував його й клікав ті самі відповіді руками, хоча п'ять полів-виборів
+  // збігаються з гейтами один в один, а галочки процесів уже зіставлені з позиціями.
+  //
+  // Розбір іде по тексту, який генерує сама анкета (`ftext`): рядок у верхньому
+  // регістрі — назва розділу, «  • » — питання, наступні рядки з відступом — відповідь.
+  // Формат наш, тому розбір не гадає: він звіряє тексти питань із `FORM`.
+  function анкетаРозібрати(txt){
+    var рядки = String(txt || '').split('\n');
+    var розділи = {};        // назва розділу → { id, поля:[{id,q}] }
+    (FORM['розділи'] || []).concat(FORM['розділи2'] || []).forEach(function(sec){
+      розділи[sec['назва'].toUpperCase()] = { id:sec.id, поля:sec['поля'] || [] };
+    });
+    (FORM['процеси'] || []).forEach(function(pr){
+      розділи[pr['назва'].toUpperCase()] = { id:pr.id, поля:pr['питання'] || [], процес:true };
+    });
+    var поточний = null, питання = null, буфер = [], поля = {}, процеси = [], беруПроцеси = false;
+    function закрити(){
+      if(поточний && питання && буфер.length){
+        var текст = буфер.join('\n').trim();
+        var поле = поточний['поля'].filter(function(f){ return f.q === питання; })[0];
+        if(поле && текст) поля[поточний.id + '/' + поле.id] = текст;
+      }
+      питання = null; буфер = [];
+    }
+    рядки.forEach(function(r){
+      var гола = r.trim();
+      if(!гола){ закрити(); return; }
+      if(беруПроцеси && гола.charAt(0) !== '•' && r.indexOf('  ') === 0){
+        гола.replace(/\.$/, '').split(',').forEach(function(n){
+          var назва = n.trim();
+          (FORM['процеси'] || []).forEach(function(pr){
+            if(pr['назва'] === назва && процеси.indexOf(pr.id) < 0) процеси.push(pr.id);
+          });
+        });
+        беруПроцеси = false;
+        return;
+      }
+      if(гола === 'ЩО ВЕСТИ В СИСТЕМІ'){ закрити(); поточний = null; беруПроцеси = true; return; }
+      if(розділи[гола]){ закрити(); поточний = розділи[гола]; return; }
+      if(r.indexOf('  • ') === 0){ закрити(); питання = гола.slice(2).trim(); return; }
+      if(питання && r.indexOf('      ') === 0){ буфер.push(гола); return; }
+    });
+    закрити();
+    if(!Object.keys(поля).length && !процеси.length) return null;
+    return { 'поля':поля, 'процеси':процеси };
+  }
+
+  // Гейт, який закриває відповідь клієнта: поле-вибір несе `гейт {id, мапа}` —
+  // індекс опції переводиться в індекс відповіді гейта. Мапа живе в даних анкети
+  // (data/client-form.json), а не в коді: це зіставлення двох переліків, і місце
+  // йому там, де обидва переліки видно.
+  function анкетаГейти(поля){
+    var out = {};
+    (FORM['розділи'] || []).concat(FORM['розділи2'] || [], FORM['процеси'] || [])
+      .forEach(function(sec){
+        (sec['поля'] || sec['питання'] || []).forEach(function(f){
+          if(!f['гейт']) return;
+          var v = поля[sec.id + '/' + f.id];
+          if(!v) return;
+          var i = (f['опції'] || []).indexOf(v.trim());
+          if(i < 0) return;
+          var відп = f['гейт']['мапа'][i];
+          if(typeof відп === 'number') out[f['гейт'].id] = відп;
+        });
+      });
+    return out;
+  }
+
+  function анкетаПрийняти(txt){
+    var розібрано = анкетаРозібрати(txt);
+    if(!розібрано) return null;
+    state.anketa = розібрано;
+    var гейти = анкетаГейти(розібрано['поля']), поставлено = 0, лишили = 0;
+    state.anketaQa = {};
+    Object.keys(гейти).forEach(function(gid){
+      var ключ = 'scr/' + gid;
+      // Відповідь сейла не перезаписуємо (рішення власника Р4): він чув розмову,
+      // анкета — ні. Проставляється тільки те, чого сейл ще не торкався.
+      if(typeof state.qa[ключ] === 'number'){ лишили++; return; }
+      state.qa[ключ] = гейти[gid];
+      state.anketaQa[ключ] = true;
+      поставлено++;
+    });
+    render();
+    return { 'полів':Object.keys(розібрано['поля']).length, 'процесів':розібрано['процеси'].length,
+             'гейтів':поставлено, 'лишили':лишили };
+  }
+
+  function анкетаПовідомлення(t, cls){
+    var el = $('an-msg');
+    el.textContent = t; el.className = 'iomsg' + (cls ? ' ' + cls : '');
+  }
+  function анкетаКнопки(){
+    var є = !!(state.anketa && Object.keys(state.anketa['поля'] || {}).length);
+    $('an-drop').hidden = !є;
+  }
+  $('an-take').addEventListener('click', function(){
+    var r = анкетаПрийняти($('an-in').value);
+    if(!r){
+      анкетаПовідомлення('це не схоже на анкету — потрібен текст із кнопки «Скопіювати відповіді»', 'bad');
+      return;
+    }
+    $('an-in').value = '';
+    анкетаПовідомлення('прийнято ' + r['полів'] + ' ' + plural(r['полів'], 'відповідь', 'відповіді', 'відповідей')
+      + ', процесів ' + r['процесів'] + ', проставлено питань скринінгу ' + r['гейтів']
+      + (r['лишили'] ? ' (' + r['лишили'] + ' лишили вашими)' : ''), 'ok');
+    анкетаКнопки();
+  });
+  $('an-drop').addEventListener('click', function(){
+    спитати('Прибрати відповіді анкети з чек-листа?', [
+      { t:'Прибрати', f:function(){
+          Object.keys(state.anketaQa || {}).forEach(function(k){ delete state.qa[k]; });
+          state.anketa = null; state.anketaQa = {};
+          анкетаПовідомлення(''); анкетаКнопки(); render();
+        } },
+      { t:'Скасувати', f:function(){} }
+    ]);
+  });
+
   function load(){
     try {
       var raw = localStorage.getItem(KEY);
@@ -10426,6 +10609,8 @@ select.chip{padding-right:8px}
       if(st.qr && typeof st.qr === 'object') state.qr = st.qr;
       if(st.probe && typeof st.probe === 'object') state.probe = st.probe;
       if(st.touched && typeof st.touched === 'object') state.touched = st.touched;
+      if(st.anketa && typeof st.anketa === 'object') state.anketa = st.anketa;
+      if(st.anketaQa && typeof st.anketaQa === 'object') state.anketaQa = st.anketaQa;
       if(st.open && typeof st.open === 'object'){
         // на екрані лишається один розділ, навіть якщо в старому стані їх було кілька
         var first = Object.keys(st.open).filter(function(k){ return st.open[k]; })[0];
@@ -10534,7 +10719,12 @@ select.chip{padding-right:8px}
     var d = document.createElement('div');
     d.className = 'qitem';
     var t = document.createElement('div');
-    t.className = 'qq'; t.textContent = q.q;
+    t.className = 'qq';
+    t.appendChild(document.createTextNode(q.q));
+    var мітка = document.createElement('span');
+    мітка.className = 'tag anketa'; мітка.id = 'qa-' + sec.id + '-' + q.id;
+    мітка.textContent = 'з анкети'; мітка.hidden = true;
+    t.appendChild(мітка);
     d.appendChild(t);
     var o = document.createElement('div');
     o.className = 'opts';
@@ -10630,7 +10820,28 @@ select.chip{padding-right:8px}
     var bn = document.createElement('div');
     bn.className = 'qbnd'; bn.id = 'qb-' + m.id; bn.hidden = true;
     d.appendChild(bn);
+    // те, що клієнт написав про цей процес в анкеті: його слова стоять поруч із
+    // питанням позиції, а не в окремому файлі, який ніхто не відкриє під час розмови
+    var an = document.createElement('div');
+    an.className = 'qbnd anketa'; an.id = 'an-pos-' + m.id; an.hidden = true;
+    d.appendChild(an);
     return d;
+  }
+
+  // Відповіді анкети, що стосуються позиції: блок анкети несе `позиції`, тому
+  // зіставлення вже описане в даних — код лише читає його.
+  function анкетаДляПозиції(id){
+    if(!state.anketa) return [];
+    var out = [];
+    (FORM['розділи'] || []).concat(FORM['розділи2'] || [], FORM['процеси'] || [])
+      .forEach(function(sec){
+        if((sec['позиції'] || []).indexOf(id) < 0) return;
+        (sec['поля'] || sec['питання'] || []).forEach(function(f){
+          var v = state.anketa['поля'][sec.id + '/' + f.id];
+          if(v) out.push({ q:f.q, v:v });
+        });
+      });
+    return out;
   }
 
   function probeItem(sec, pr){
@@ -10750,6 +10961,11 @@ select.chip{padding-right:8px}
           });
           var n = $('qn-' + sec.id + '-' + q.id);
           var a = (typeof pick === 'number') ? (q.a || [])[pick] : null;
+          // відповідь, яку проставила анкета клієнта, позначена: сейл мусить бачити,
+          // що це слова клієнта з листа, а не те, що він почув на зустрічі
+          var зАнкети = !!(state.anketaQa || {})[qKey(sec.id, q.id)];
+          var мітка = $('qa-' + sec.id + '-' + q.id);
+          if(мітка) мітка.hidden = !(зАнкети && typeof pick === 'number');
           if(!a){ n.hidden = true; return; }
           done++;
           if(a.r === 'ok'){ n.hidden = true; return; }
@@ -10796,6 +11012,21 @@ select.chip{padding-right:8px}
             tg.textContent = 'потрібна для «' + BYID[state.auto[m.id]].n + '»';
             tg.hidden = false;
           } else tg.hidden = true;
+          var ан = $('an-pos-' + m.id), відп = анкетаДляПозиції(m.id);
+          if(відп.length){
+            ан.innerHTML = '';
+            var шапка = document.createElement('b');
+            шапка.textContent = 'з анкети: ';
+            ан.appendChild(шапка);
+            відп.forEach(function(x, i){
+              if(i) ан.appendChild(document.createTextNode(' · '));
+              var q = document.createElement('i');
+              q.textContent = x.q + ' — ';
+              ан.appendChild(q);
+              ан.appendChild(document.createTextNode(x.v.replace(/\s+/g, ' ')));
+            });
+            ан.hidden = false;
+          } else ан.hidden = true;
           var bn = $('qb-' + m.id);
           if(on && m.bounds && m.bounds.some(function(t, i){ return !межаЗнята(m.id, i); })){
             bn.innerHTML = '';
@@ -10977,6 +11208,30 @@ select.chip{padding-right:8px}
         ? 'УВАГА: ' + limCount + ' обмежень — інший профіль клієнта, рішення керівника, чи беремо.'
         : 'УВАГА: ' + limCount + ' обмежень — підсумок звірити з керівником до КП.');
       L.push('');
+    }
+    if(state.anketa){
+      var поля = state.anketa['поля'] || {}, ключі = Object.keys(поля);
+      if(ключі.length){
+        L.push('З АНКЕТИ КЛІЄНТА');
+        var проц = (state.anketa['процеси'] || []).map(function(id){
+          var pr = (FORM['процеси'] || []).filter(function(x){ return x.id === id; })[0];
+          return pr ? pr['назва'] : id;
+        });
+        if(проц.length) L.push('  клієнт позначив: ' + проц.join(', ') + '.');
+        (FORM['розділи'] || []).concat(FORM['розділи2'] || [], FORM['процеси'] || [])
+          .forEach(function(sec){
+            var рядки = [];
+            (sec['поля'] || sec['питання'] || []).forEach(function(f){
+              var v = поля[sec.id + '/' + f.id];
+              if(v) рядки.push('      • ' + f.q + ': ' + v.replace(/\n/g, ' '));
+            });
+            if(рядки.length){
+              L.push('  ' + sec['назва']);
+              L.push.apply(L, рядки);
+            }
+          });
+        L.push('');
+      }
     }
     L.push('СКЛАД, ВИЗНАЧЕНИЙ НА ЗУСТРІЧІ');
     var chosen = MODS.filter(function(m){ return state.sel[m.id]; });
@@ -11704,6 +11959,7 @@ select.chip{padding-right:8px}
   });
 
   load();
+  анкетаКнопки();
   $('cli').value = state.client;
   $('until').value = state.until;
   $('sum-bounds').checked = state.kpbounds;

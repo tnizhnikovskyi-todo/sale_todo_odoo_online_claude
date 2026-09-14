@@ -1273,6 +1273,111 @@ function expected(sel) {
   ok('на сторінці клієнта немає ні цін, ні рівнів, ні вкладок калькулятора',
      !цін.євро && !цін.рівень && !цін.вкладки, JSON.stringify(цін));
 
+  // --- 8. анкета клієнта → чек-лист: «Прийняти анкету» ---------------------
+  // Кінець-у-кінець: заповнюємо анкету на ЇЇ сторінці, беремо текст кнопкою
+  // «Скопіювати відповіді» і вставляємо в чек-лист. П'ять полів-виборів анкети
+  // зіставлені з гейтами в даних (`гейт: {id, мапа}`), тому перенос — не здогадка.
+  const формJSON = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/client-form.json'), 'utf8'));
+  const зГейтом = [];
+  [].concat(формJSON['розділи'] || [], формJSON['розділи2'] || [], формJSON['процеси'] || [])
+    .forEach(sec => (sec['поля'] || sec['питання'] || []).forEach(f => {
+      if (f['гейт']) зГейтом.push({ sec: sec.id, f, гейт: f['гейт'] });
+    }));
+
+  // відповідаємо на всі поля з гейтом і позначаємо два процеси
+  const текстАнкети = await pf.evaluate(async (поля) => {
+    const пауза = () => new Promise(r => setTimeout(r, 60));
+    document.getElementById('f-clear').click();
+    await пауза();
+    // позначити процеси, щоб їхні блоки відкрились
+    const чекбокси = Array.from(document.querySelectorAll('#f-body .fprocs .fopt input'));
+    чекбокси.slice(0, 2).forEach(c => c.click());
+    await пауза();
+    for (const п of поля) {
+      const опція = п.f['опції'][п.індекс];
+      const радіо = Array.from(document.querySelectorAll('input[type=radio]'))
+        .find(r => r.name === 'fr-' + п.sec + '/' + п.f.id && r.value === опція);
+      if (радіо) { радіо.click(); await пауза(); }
+    }
+    // одне текстове поле, щоб у тексті була не лише «анкетна» відповідь
+    const i = document.querySelector('#f-body .ffield input[type=text]');
+    if (i) { i.value = 'ТОВ Перенос'; i.dispatchEvent(new Event('input', { bubbles: true })); }
+    await пауза();
+    document.getElementById('f-btn').click();
+    await пауза();
+    return document.getElementById('f-out').value;
+  }, зГейтом.map(x => ({ sec: x.sec, f: x.f, індекс: x.f['опції'].length - 1 })));
+
+  ok('анкета дала текст із відповідями для переносу',
+     текстАнкети.length > 200 && /ТОВ Перенос/.test(текстАнкети), текстАнкети.length + ' символів');
+
+  // у чек-листі: спершу відповідаємо на ОДИН гейт самі — його анкета чіпати не має
+  const першийГейт = зГейтом[0]['гейт'].id;
+  await p.getByText('ЧЕК-ЛИСТ КВАЛІФІКАЦІЇ', { exact: false }).first().click();
+  await p.waitForTimeout(400);
+  await скинутиСтан();
+  await p.getByText('ЧЕК-ЛИСТ КВАЛІФІКАЦІЇ', { exact: false }).first().click();
+  await p.waitForTimeout(400);
+  const своя = await p.evaluate((gid) => {
+    const c = Array.from(document.querySelectorAll('#qbar .qcheck')).find(x => /скринінг/i.test(x.textContent));
+    const i = c && c.querySelector('input');
+    if (i && !i.checked) i.click();
+    const b = document.getElementById('qo-scr-' + gid + '-0');
+    if (b) b.click();
+    return !!b;
+  }, першийГейт);
+  await p.waitForTimeout(400);
+
+  const перенос = await p.evaluate(async (txt) => {
+    const пауза = () => new Promise(r => setTimeout(r, 150));
+    document.getElementById('an-in').value = txt;
+    document.getElementById('an-take').click();
+    await пауза();
+    const мітки = Array.from(document.querySelectorAll('.tag.anketa')).filter(x => !x.hidden).length;
+    const підПозиціями = Array.from(document.querySelectorAll('.qbnd.anketa')).filter(x => !x.hidden).length;
+    return {
+      msg: document.getElementById('an-msg').textContent,
+      клас: document.getElementById('an-msg').className,
+      мітки, підПозиціями,
+      поле: document.getElementById('an-in').value,
+    };
+  }, текстАнкети);
+  ok('«Прийняти анкету» проставила гейти й позначила їх як «з анкети»',
+     своя && /проставлено питань скринінгу [1-9]/.test(перенос.msg) && перенос.мітки > 0
+     && перенос.поле === '', JSON.stringify(перенос));
+  ok('відповідь сейла анкета не перезаписала',
+     /лишили вашими/.test(перенос.msg), перенос.msg);
+
+  const станГейтів = await p.evaluate((gid) => ({
+    сейлова: document.getElementById('qo-scr-' + gid + '-0').getAttribute('aria-pressed'),
+    міткаНаСейловій: (document.getElementById('qa-scr-' + gid) || {}).hidden,
+  }), першийГейт);
+  ok('на відповіді сейла мітки «з анкети» немає',
+     станГейтів.сейлова === 'true' && станГейтів.міткаНаСейловій === true,
+     JSON.stringify(станГейтів));
+
+  const нотатки = await p.evaluate(async () => {
+    document.getElementById('qnote-btn').click();
+    await new Promise(r => setTimeout(r, 200));
+    return document.getElementById('qnote-out').value;
+  });
+  ok('нотатки зустрічі містять розділ «З анкети клієнта»',
+     /З АНКЕТИ КЛІЄНТА/.test(нотатки) && /ТОВ Перенос/.test(нотатки), нотатки.length + ' символів');
+
+  const сміттяАнкети = await p.evaluate(async () => {
+    const пауза = () => new Promise(r => setTimeout(r, 150));
+    const до = document.querySelectorAll('.qbnd.anketa:not([hidden])').length;
+    document.getElementById('an-in').value = 'добрий день, надсилаю відповіді як домовлялись';
+    document.getElementById('an-take').click();
+    await пауза();
+    return { до, після: document.querySelectorAll('.qbnd.anketa:not([hidden])').length,
+             msg: document.getElementById('an-msg').textContent,
+             клас: document.getElementById('an-msg').className };
+  });
+  ok('чужий текст анкети не приймається і нічого не псує',
+     сміттяАнкети.до === сміттяАнкети.після && /не схоже на анкету/.test(сміттяАнкети.msg)
+     && /bad/.test(сміттяАнкети.клас), JSON.stringify(сміттяАнкети));
+
   ok('помилок JS немає на сторінці клієнта', errsF.length === 0, errsF.slice(0, 3).join(' || '));
 
   await b.close();
