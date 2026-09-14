@@ -25,7 +25,7 @@ QUAL = os.path.join(ROOT, 'data', 'qualification.json')
 FORM = os.path.join(ROOT, 'data', 'client-form.json')
 VRFY = os.path.join(ROOT, 'data', 'verify.json')
 HTML = os.path.join(ROOT, 'artifacts', 'calculator.html')
-RATE = 50  # €/год — та сама ставка, що в самій сторінці
+RATE = 50  # €/год — значення за замовчуванням; справжнє береться з _ставки (нижче)
 # Частка діагностики, що зараховується у вартість проєкту. Мусить дорівнювати
 # `DIAG_CREDIT` у самій сторінці — інакше перевірка стереже не те, що показує
 # калькулятор; збіг перевіряється окремо, нижче.
@@ -541,14 +541,27 @@ def check_diag_credit_const(html):
     Дві копії одного числа — рівно той клас, від якого цей проєкт страждав усю ніч.
     Тут копій дві неминуче (Python перевіряє, JS показує), тому вони звіряються.
     """
-    m = re.search(r'var DIAG_CREDIT = ([\d.]+);', html)
-    if not m:
-        return ['у коді сторінки немає `var DIAG_CREDIT` — залік діагностики '
-                'перестав бути одним числом']
-    якщо = float(m.group(1))
-    if abs(якщо - DIAG_CREDIT) > 1e-9:
-        return ['частка заліку діагностики: у сторінці %s, а перевірка рахує %s'
-                % (якщо, DIAG_CREDIT)]
+    # Після 14.09.2026 копій більше не дві: частка живе в `_ставки` (data/price.json),
+    # сторінка бере її звідти, а ця перевірка звіряє саме це — що в коді немає
+    # вписаного числа і що вшитий блок несе ту саму частку, що й дані.
+    if not re.search(r"var DIAG_CREDIT = СТАВКИ\['залік_діагностики'\];", html):
+        m = re.search(r'var DIAG_CREDIT = ([\d.]+);', html)
+        if not m:
+            return ['у коді сторінки немає `var DIAG_CREDIT` — залік діагностики '
+                    'перестав бути одним числом']
+        return ['частка заліку діагностики вписана в код сторінки (%s), а мусить '
+                'братися з `_ставки` в data/price.json' % m.group(1)]
+    з_даних = (json.load(io.open(DATA, encoding='utf-8')).get('_ставки')
+               or {}).get('залік_діагностики')
+    if з_даних is None:
+        return ['у `_ставки` немає `залік_діагностики` — сторінці нізвідки взяти частку']
+    m = re.search(r'var СТАВКИ = \{(.*?)\n  \};', html, re.S)
+    вшито = re.search(r'"залік_діагностики":\s*([\d.]+)', m.group(1)) if m else None
+    if not вшито:
+        return ['у вшитих `_ставки` немає частки заліку — сторінка порахує не те, що дані']
+    if abs(float(вшито.group(1)) - float(з_даних)) > 1e-9:
+        return ['частка заліку діагностики: у сторінці вшито %s, у даних %s — '
+                'сторінку не перезібрано' % (вшито.group(1), з_даних)]
     return []
 
 
@@ -816,6 +829,44 @@ def межі_залежності(groups):
     return карта, warns, скільки
 
 
+ЧИСЛІВНИКИ = ['два', 'три', 'чотири', 'пʼять', 'п’ять', 'шість', 'сім', 'вісім',
+              'девʼять', 'дев’ять', 'десять', 'одинадцять', 'дванадцять',
+              'тринадцять', 'чотирнадцять', 'пʼятнадцять', 'п’ятнадцять',
+              'шістнадцять', 'сімнадцять', 'вісімнадцять', 'девʼятнадцять',
+              'дев’ятнадцять', 'двадцять']
+
+
+# Те, що рахується й тому дрейфує: питання, позиції, поля, блоки, групи, рядки,
+# пункти. «Три рівні» сюди не входить навмисно — рівнів рівно три за будовою
+# прайсу, і збірка падає, якщо їх стає інакше.
+ЩО_ДРЕЙФУЄ = r'(питан\w*|позиц\w*|пол\w+|блок\w*|груп\w*|рядк\w*|пункт\w*)'
+
+
+def check_prose_numbers(html):
+    """Лічильників у прозі підзаголовків бути не може — ні цифрами, ні словами.
+
+    Підзаголовок чек-листа казав «тринадцять питань», коли гейтів стало 14, і
+    «10–12 питань» при 10–14. Таке число не ловиться жодною перевіркою даних:
+    воно не в даних. Правило: у прозі стоїть `<span data-n="…">`, який сторінка
+    заповнює з даних на старті.
+    """
+    errs = []
+    числівник = '|'.join(re.escape(ч) for ч in ЧИСЛІВНИКИ)
+    шаблон = re.compile(r'(?:\d[\d\s–—-]*|\b(?:%s)\b)\s+%s' % (числівник, ЩО_ДРЕЙФУЄ),
+                        re.IGNORECASE)
+    for m in re.finditer(r'<p class="sub" id="(sub-[a-z]+)"[^>]*>(.*?)</p>', html, re.S):
+        який, тіло = m.group(1), m.group(2)
+        # вміст спанів прибираємо: саме там числу й місце
+        текст = re.sub(r'<span data-n="[^"]*">.*?</span>', '', тіло, flags=re.S)
+        текст = re.sub(r'<[^>]+>', '', текст)
+        знайдено = шаблон.search(текст)
+        if знайдено:
+            errs.append('%s: лічильник «%s» у прозі підзаголовка застаріє мовчки — '
+                        'поставити <span data-n="…"> і заповнювати з даних'
+                        % (який, знайдено.group(0).strip()))
+    return errs
+
+
 def check_client_text(html):
     """Стоп-слова знятих тем у КЛІЄНТСЬКОМУ тексті калькулятора.
 
@@ -882,8 +933,17 @@ def inject(html, name, value):
     return html[:line] + block + html[end:]
 
 def main():
+    global RATE, DIAG_CREDIT
     payload = json.load(io.open(DATA, encoding='utf-8'))
     groups = payload['групи']
+    # Числа моделі — з даних, а не з коду перевірки (рішення 14.09.2026). Копії
+    # лишаються дві (Python перевіряє, JS показує), але тепер обидві походять із
+    # одного джерела: збірка читає `_ставки` і вшиває їх у сторінку.
+    ст = payload.get('_ставки') or {}
+    if 'ставка_клієнту_€_год' in ст:
+        RATE = ст['ставка_клієнту_€_год']
+    if 'залік_діагностики' in ст:
+        DIAG_CREDIT = ст['залік_діагностики']
     errs, warns = check(groups)
     known = set(it.get('id') for gr in groups for it in gr.get('items', []))
     qpayload = json.load(io.open(QUAL, encoding='utf-8'))
@@ -911,7 +971,8 @@ def main():
     html = io.open(HTML, encoding='utf-8').read()
     ce = (check_client_text(html) + check_diag_credit_const(html)
           + check_kp_refs(html) + check_kp_window(html) + check_kp_half(html)
-          + check_kp_words(html) + check_hidden_pages(html) + check_kp_wrap(html))
+          + check_kp_words(html) + check_hidden_pages(html) + check_kp_wrap(html)
+          + check_prose_numbers(html))
     if ce:
         print('КЛІЄНТСЬКИЙ ТЕКСТ РОЗІЙШОВСЯ З РІШЕННЯМИ, збірку скасовано:')
         for e in ce:
@@ -920,6 +981,8 @@ def main():
     карта_меж, wm, скільки_меж = межі_залежності(groups)
     for w in wm: print('  ⚠', w)
     html = inject(html, 'BOUND_DEPS', карта_меж)
+    html = inject(html, 'СТАВКИ', payload['_ставки'])
+    html = inject(html, 'ПОРОГИ', payload['_пороги'])
     html = inject(html, 'GROUPS', groups)
     html = inject(html, 'QUAL', qual)
     html = inject(html, 'PROBES', probes)

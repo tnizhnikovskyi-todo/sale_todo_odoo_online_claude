@@ -18,7 +18,6 @@ const path = require('path');
 const os = require('os');
 
 const ROOT = path.resolve(__dirname, '..');
-const RATE = 50;
 
 // Пакет шукається в чотирьох місцях, і це не перестраховка: у цьому образі
 // playwright стоїть ГЛОБАЛЬНО, а node глобальні модулі за замовчуванням не бачить.
@@ -71,6 +70,10 @@ function findChromium() {
 
 // --- очікування з прайсу ---------------------------------------------------
 const price = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/price.json'), 'utf8'));
+// Ставка й пороги — з даних (рішення 14.09.2026). Вписане тут число означало б, що
+// тест стереже власну копію, а не те, з чого рахує сторінка.
+const RATE = price['_ставки']['ставка_клієнту_€_год'];
+const ПОРОГИ = price['_пороги'];
 const EXP = {};
 for (const g of price['групи']) {
   for (const it of g.items) {
@@ -331,6 +334,49 @@ function expected(sel) {
      /не нижче рівня 2/.test(мін.рядок) && мін.рівень === '1', мін.рядок.slice(0, 120));
   await скинутиСтан();
   await p.waitForTimeout(300);
+
+  // --- 4в. пороги й числа в прозі — з даних, а не з коду сторінки ----------
+  // Ставка, години на тиждень, частка заліку діагностики й шість порогів ескалації
+  // жили в JS: щоб перевірити, звідки взявся прапорець, треба було читати код.
+  await скинутиСтан();
+  const пороги = await p.evaluate(async (поріг) => {
+    const пауза = () => new Promise(r => setTimeout(r, 80));
+    const ids = Array.from(document.querySelectorAll('#rows tr.item input[type=checkbox]'))
+      .map(cb => cb.id.replace(/^c-/, ''))
+      .filter(id => !['base', 'inv', 'diag'].includes(id));
+    const кроки = [];
+    for (const id of ids) {
+      const cb = document.getElementById('c-' + id);
+      if (!cb.disabled && !cb.checked) { cb.click(); await пауза(); }
+      const n = parseInt(document.getElementById('t-count').textContent, 10);
+      кроки.push({ n, прапорець: !document.getElementById('f-proj').hidden });
+      if (n > поріг) break;
+    }
+    return кроки;
+  }, ПОРОГИ['позицій_звірити']);
+  const доПорога = пороги.filter(x => x.n < ПОРОГИ['позицій_звірити']);
+  const наПорозі = пороги.filter(x => x.n >= ПОРОГИ['позицій_звірити']);
+  ok('прапорець «звірити з керівником» зʼявляється саме на порозі з даних ('
+     + ПОРОГИ['позицій_звірити'] + ')',
+     доПорога.every(x => !x.прапорець) && наПорозі.some(x => x.прапорець),
+     JSON.stringify(пороги.slice(-4)));
+
+  const проза = await p.evaluate(() => {
+    const el = document.getElementById('sub-qual');
+    return {
+      гейти: (el.querySelector('[data-n="гейти"]') || {}).textContent,
+      глибина: (el.querySelector('[data-n="глибина"]') || {}).textContent,
+      цифриПоруч: /\d+\s*(питан|позиц)/.test(el.textContent.replace(
+        (el.querySelector('[data-n="гейти"]') || {}).textContent || 'жодного', '')),
+    };
+  });
+  const qjson = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/qualification.json'), 'utf8'));
+  const гейтів = (qjson['блоки'].find(b => b.id === 'scr')['питання'] || []).length;
+  const глибини = Object.keys(qjson['глибина']).map(k => qjson['глибина'][k].length);
+  const очікГлибина = Math.min(...глибини) + '–' + Math.max(...глибини);
+  ok('число гейтів у прозі підзаголовка = ' + гейтів, проза.гейти === String(гейтів), проза.гейти);
+  ok('діапазон питань глибини в прозі = ' + очікГлибина, проза.глибина === очікГлибина, проза.глибина);
+  await скинутиСтан();
 
   // --- 5. КП: збирається, містить «не входить», та сама сума ---------------
   st = await p.evaluate(READ);
@@ -1085,6 +1131,28 @@ function expected(sel) {
     c: (document.getElementById('q-verdict') || {}).className,
   }));
   ok('відповідь «стоп» дає вердикт «не наш»', stopped && /stop/.test(verd.c), verd.v + ' | ' + verd.c);
+
+  // стан скринінгу видно на ПЕРШІЙ сторінці, поруч із кнопкою КП: там сейл його
+  // збирає, а попередження досі стояло тільки на чек-листі
+  await p.getByText('СКЛАД РОБІТ І ЦІНА', { exact: false }).first().click();
+  await p.waitForTimeout(400);
+  const рядокСкринінгу = await p.evaluate(() => ({
+    txt: (document.getElementById('sum-scr') || {}).textContent,
+    hidden: (document.getElementById('sum-scr') || {}).hidden,
+    cls: (document.getElementById('sum-scr') || {}).className,
+  }));
+  ok('на першій сторінці видно дискваліфікатор зі скринінгу',
+     !рядокСкринінгу.hidden && /лід не наш/.test(рядокСкринінгу.txt) && /stopline/.test(рядокСкринінгу.cls),
+     рядокСкринінгу.txt + ' | ' + рядокСкринінгу.cls);
+  await скинутиСтан();
+  const рядокПісля = await p.evaluate(() => ({
+    txt: (document.getElementById('sum-scr') || {}).textContent,
+    hidden: (document.getElementById('sum-scr') || {}).hidden,
+  }));
+  ok('після скидання рядок каже, що скринінг не закритий',
+     !рядокПісля.hidden && /без відповіді \d+ з \d+/.test(рядокПісля.txt), рядокПісля.txt);
+  await p.getByText('ЧЕК-ЛИСТ КВАЛІФІКАЦІЇ', { exact: false }).first().click();
+  await p.waitForTimeout(400);
 
   // --- 7. анкета клієнта ---------------------------------------------------
   // Блоки процесів сховані до галочки, тому рахуємо тільки **видимі** розділи й поля:
