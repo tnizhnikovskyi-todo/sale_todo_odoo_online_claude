@@ -29,7 +29,8 @@ import subprocess
 import sys
 
 GENERATORS = [
-    ('tools/build_calculator.py', ['artifacts/calculator.html']),
+    ('tools/build_calculator.py', ['artifacts/calculator.html',
+                                   'artifacts/client-form.html']),
     ('tools/build_kb.py', ['docs/база-знань-блоки.md']),
     ('tools/build_audit.py', ['docs/звірка-бази-2026-09-09.md']),
     ('tools/build_config_map.py', ['data/config-map.json']),

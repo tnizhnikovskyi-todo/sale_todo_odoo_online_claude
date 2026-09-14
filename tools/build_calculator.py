@@ -25,6 +25,7 @@ QUAL = os.path.join(ROOT, 'data', 'qualification.json')
 FORM = os.path.join(ROOT, 'data', 'client-form.json')
 VRFY = os.path.join(ROOT, 'data', 'verify.json')
 HTML = os.path.join(ROOT, 'artifacts', 'calculator.html')
+FORM_HTML = os.path.join(ROOT, 'artifacts', 'client-form.html')
 RATE = 50  # €/год — значення за замовчуванням; справжнє береться з _ставки (нижче)
 # Частка діагностики, що зараховується у вартість проєкту. Мусить дорівнювати
 # `DIAG_CREDIT` у самій сторінці — інакше перевірка стереже не те, що показує
@@ -683,7 +684,7 @@ def фіксований_текст(html):
     return '\n'.join(рядки) + '\n' + html[a:b]
 
 
-СХОВАНІ_СТОРІНКИ = {'spec': 'Повний перелік'}
+СХОВАНІ_СТОРІНКИ = {'spec': 'Повний перелік', 'form': 'Анкета для клієнта'}
 
 
 def check_hidden_pages(html):
@@ -938,6 +939,139 @@ def check_client_text(html):
     return errs
 
 
+ФОРМА_ШАПКА = 'Анкета перед зустріччю'
+ФОРМА_ПІД = ('Заповніть те, що знаєте, своїми словами. Порожні поля не проблема — '
+             'про них поговоримо на зустрічі.')
+ФОРМА_НИЗ = ('Відповіді зберігаються тільки у вашому браузері: нікуди не надсилаються '
+             'самі й нікому не видні. Щоб передати їх нам, натисніть «Скопіювати '
+             'відповіді» і вставте текст у лист або мессенджер.')
+# Слова, яких на сторінці клієнта бути не може. Той самий список, що `check_form`
+# застосовує до питань, плюс те, що могло приїхати з розмітки калькулятора.
+ФОРМА_ЗАБОРОНЕНО = ['€', 'рівень', 'рівня', 'рівні', 'прайс', 'КП', 'Замовник',
+                    'маржа', 'дискваліф', 'стоп', 'контур']
+
+
+def between(text, a, b, що):
+    i = text.find(a)
+    if i < 0:
+        raise SystemExit('не знайдено маркер «%s» у %s' % (a, що))
+    j = text.find(b, i + len(a))
+    if j < 0:
+        raise SystemExit('не знайдено маркер «%s» у %s' % (b, що))
+    return text[i + len(a):j]
+
+
+def emit_client_form(html, formdata):
+    """Збирає artifacts/client-form.html — сторінку, яку відкриває КЛІЄНТ.
+
+    Навіщо окремий файл: поки анкета живе вкладкою калькулятора, посилання на неї
+    давати не можна — у тому ж вікні видно ціни. Блок анкети для цього й писався
+    самодостатнім (свій ключ localStorage, свої стилі `.f*`, свій блок JS), тому
+    виніс — це вирізання за маркерами, а не переписування.
+
+    Стилі беруться ЦІЛИМ блоком калькулятора, а не вибірково: копія кількох правил
+    розійшлася б із оригіналом при першій же правці токенів. Зайві правила в CSS
+    нікого не бентежать, а от два різні набори кольорів — бентежать.
+    """
+    style = between(html, '<style>', '</style>', 'калькулятор')
+    # коментарі CSS пишуться для нас і згадують ціни, КП і прайс — на сторінці
+    # клієнта їм робити нічого, навіть невидимими
+    style = re.sub(r'/\*.*?\*/', '', style, flags=re.S)
+    style = re.sub(r'\n{3,}', '\n\n', style).strip()
+    markup = between(html, '<!-- анкета: початок розмітки (вирізається в '
+                           'artifacts/client-form.html) -->',
+                     '<!-- анкета: кінець розмітки -->', 'калькулятор')
+    markup = markup.replace(' role="tabpanel" aria-labelledby="tab-form"', '')
+    markup = markup.replace('<div class="page" id="page-form" hidden>',
+                            '<div class="page" id="page-form">')
+    js = between(html, '// ===================== АНКЕТА КЛІЄНТА (сторінка 3) '
+                       '=====================',
+                 '// =================== кінець блоку анкети клієнта ===================',
+                 'калькулятор')
+    шими = '''
+  // Сторінка зібрана з калькулятора (tools/build_calculator.py). Тут лише те, без
+  // чого вирізаний блок не працює: доступ до елемента, множина й копіювання.
+  var $ = function(id){ return document.getElementById(id); };
+  function plural(n, one, few, many){
+    var a = n %% 10, b = n %% 100;
+    if(a === 1 && b !== 11) return one;
+    if(a >= 2 && a <= 4 && (b < 12 || b > 14)) return few;
+    return many;
+  }
+  function зараз(){
+    var d = new Date(), p2 = function(x){ return (x < 10 ? '0' : '') + x; };
+    return p2(d.getDate()) + '.' + p2(d.getMonth() + 1) + '.' + d.getFullYear()
+           + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes());
+  }
+  function copyOut(txt, out, ok){
+    out.value = txt; out.hidden = false;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(function(){
+        ok.hidden = false;
+        setTimeout(function(){ ok.hidden = true; }, 2600);
+      }).catch(function(){ out.focus(); out.select(); });
+    } else { out.focus(); out.select(); }
+  }
+  var FORM = %s;
+''' % json.dumps(formdata, ensure_ascii=False, indent=2).replace('\n', '\n  ')
+    сторінка = '''<title>%s</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,600;7..72,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+%s
+</style>
+
+<div class="shell">
+
+  <header>
+    <div class="eyebrow">Todo · впровадження Odoo</div>
+    <h1>%s</h1>
+    <p class="sub">%s</p>
+  </header>
+
+%s
+
+  <footer>
+    %s
+  </footer>
+</div>
+
+<script>
+(function(){
+%s
+%s
+  $('f-clear').addEventListener('click', function(){ fclear(); });
+})();
+</script>
+''' % (ФОРМА_ШАПКА, style, ФОРМА_ШАПКА, ФОРМА_ПІД, markup.rstrip(), ФОРМА_НИЗ, шими, js.rstrip())
+    return сторінка
+
+
+def check_client_form_file(page):
+    """Сторінка клієнта не повинна нести ні цін, ні внутрішніх слів, ні даних прайсу.
+
+    Перевіряється видимий текст (усе поза `<script>` і `<style>`) і склад даних:
+    жодного GROUPS/QUAL/PROBES/VERIFY у файлі бути не може — інакше «окрема
+    сторінка» лишиться тим самим калькулятором, з якого просто прибрали вкладки.
+    """
+    errs = []
+    for name in ('GROUPS', 'QUAL', 'PROBES', 'VERIFY', 'СТАВКИ', 'ПОРОГИ', 'BOUND_DEPS'):
+        if re.search(r'\bvar %s\b' % name, page):
+            errs.append('у сторінці клієнта є дані `%s` — їх там бути не може' % name)
+    for мітка in ('tab-calc', 'page-calc', 'sum-btn', 'qnote-btn'):
+        if мітка in page:
+            errs.append('у сторінці клієнта лишився елемент калькулятора `%s`' % мітка)
+    видиме = re.sub(r'<script.*?</script>', '', page, flags=re.S)
+    видиме = re.sub(r'<style.*?</style>', '', видиме, flags=re.S)
+    видиме = re.sub(r'<[^>]+>', ' ', видиме)
+    for w in ФОРМА_ЗАБОРОНЕНО:
+        if re.search(r'(?i)%s' % re.escape(w), видиме):
+            errs.append('у видимому тексті сторінки клієнта слово «%s»' % w)
+    return errs
+
+
 def inject(html, name, value):
     """Замінює тіло `var NAME = …;` у HTML на value, зберігаючи відступ рядка."""
     a = html.index('var ' + name + ' = ')
@@ -1014,6 +1148,17 @@ def main():
     html = inject(html, 'FORM', formdata)
     html = inject(html, 'VERIFY', vrfy)
     io.open(HTML, 'w', encoding='utf-8').write(html)
+
+    # Сторінка клієнта — окремий файл із того самого джерела (рішення 14.09.2026):
+    # поки анкета була вкладкою калькулятора, посилання на неї давати було не можна.
+    сторінка = emit_client_form(html, formdata)
+    fe = check_client_form_file(сторінка)
+    if fe:
+        print('СТОРІНКА КЛІЄНТА НЕСЕ ЗАЙВЕ, збірку скасовано:')
+        for e in fe:
+            print('  •', e)
+        return 1
+    io.open(FORM_HTML, 'w', encoding='utf-8').write(сторінка)
 
     pos = sum(len(g['items']) for g in groups)
     pts = sum(len(it['inc']) + sum(len(it['lv'][k][4]) for k in (1, 2))

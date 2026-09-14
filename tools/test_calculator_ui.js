@@ -534,8 +534,18 @@ function expected(sel) {
   // сторінку, до якої користувач більше не має входу.
   const вкладки = await p.evaluate(() => Array.from(document.querySelectorAll('[role="tab"]'))
     .filter(t => !t.hidden).map(t => t.id));
-  ok('видимих вкладок три, «Повного переліку» серед них немає',
-     вкладки.length === 3 && !вкладки.includes('tab-spec'), вкладки.join(', '));
+  // Схованих сторінок дві: «Повний перелік» (довідник аналітика, 10.09) і анкета
+  // клієнта (окремий файл і окремий артефакт, 14.09). Очікування читається з коду
+  // сторінки, а не вписане числом: інакше кожне таке рішення ламало б тест.
+  const схованіІд = await p.evaluate(() => {
+    const m = /var СХОВАНІ = \[([^\]]*)\]/.exec(document.documentElement.innerHTML);
+    return m ? (m[1].match(/'([^']+)'/g) || []).map(x => x.replace(/'/g, '')) : [];
+  });
+  const усіхВкладок = await p.evaluate(() => document.querySelectorAll('[role="tab"]').length);
+  ok('видимі вкладки — усі, крім схованих (' + схованіІд.join(', ') + ')',
+     схованіІд.length > 0 && вкладки.length === усіхВкладок - схованіІд.length
+     && схованіІд.every(id => !вкладки.includes('tab-' + id)),
+     вкладки.join(', ') + ' | схованих ' + схованіІд.length);
   // Сховано, а не видалено: розмітка й побудований вміст сторінки на місці.
   const схована = await p.evaluate(() => ({
     вкладка: document.getElementById('tab-spec').hidden,
@@ -1154,11 +1164,35 @@ function expected(sel) {
   await p.getByText('ЧЕК-ЛИСТ КВАЛІФІКАЦІЇ', { exact: false }).first().click();
   await p.waitForTimeout(400);
 
-  // --- 7. анкета клієнта ---------------------------------------------------
-  // Блоки процесів сховані до галочки, тому рахуємо тільки **видимі** розділи й поля:
-  // у DOM лежать усі 21 розділ, а показано має бути 6 постійних.
-  await p.getByText('АНКЕТА ДЛЯ КЛІЄНТА', { exact: false }).first().click();
-  await p.waitForTimeout(600);
+  // --- 7. анкета клієнта — ОКРЕМА СТОРІНКА --------------------------------
+  // З 14.09.2026 анкета живе у власному файлі artifacts/client-form.html: у вікні
+  // сейла її вкладка схована, бо клієнту дають посилання саме на окремий файл.
+  // Тому перевіряємо і те, що входу з калькулятора немає, і сам файл.
+  const формаСхована = await p.evaluate(() => {
+    const t = document.getElementById('tab-form');
+    const вид = el => !!(el && (el.offsetParent || el.getClientRects().length));
+    return { кнопкаЄ: !!t, кнопкаВидима: вид(t), розміткаЄ: !!document.getElementById('page-form') };
+  });
+  ok('вкладки анкети в калькуляторі немає, а розмітка на місці',
+     формаСхована.кнопкаЄ && !формаСхована.кнопкаВидима && формаСхована.розміткаЄ,
+     JSON.stringify(формаСхована));
+
+  ok('помилок JS немає на сторінках сейла', errs.length === 0, errs.slice(0, 3).join(' || '));
+
+  // Окрему сторінку відкриваємо в тому самому браузері: свій файл, свій стан.
+  const фрагФорми = fs.readFileSync(path.join(ROOT, 'artifacts/client-form.html'), 'utf8');
+  const tmpF = path.join(path.dirname(tmp), 'client-form.html');
+  fs.writeFileSync(tmpF, '<!doctype html><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' + фрагФорми);
+  const pf = await ctx.newPage();
+  const errsF = [];
+  pf.on('pageerror', e => errsF.push('pageerror: ' + e.message));
+  pf.on('console', m => {
+    if (m.type() === 'error' && !/ERR_CONNECTION|net::/.test(m.text())) errsF.push('console: ' + m.text());
+  });
+  await pf.goto('file://' + tmpF);
+  await pf.waitForTimeout(800);
+
   const VIS = () => {
     const vis = el => !!(el.offsetParent || el.getClientRects().length);
     return {
@@ -1169,32 +1203,55 @@ function expected(sel) {
       procs: document.querySelectorAll('#f-body .fprocs .fopt').length,
     };
   };
-  const f = await p.evaluate(VIS);
+  const f = await pf.evaluate(VIS);
+  const формаJSON = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/client-form.json'), 'utf8'));
+  const процесів = (формаJSON['процеси'] || []).length;
   ok('анкета: вступ називає межу про облік', /облік/i.test(f.intro), f.intro.slice(0, 120));
   ok('анкета: постійні розділи видні, блоки процесів сховані',
      f.secsVis >= 4 && f.secsVis < f.secsAll, 'видно ' + f.secsVis + ' із ' + f.secsAll);
-  ok('анкета: 15 процесів на вибір', f.procs === 15, 'процесів ' + f.procs);
+  ok('анкета: ' + процесів + ' процесів на вибір', f.procs === процесів, 'процесів ' + f.procs);
 
-  await p.evaluate(() => {
+  await pf.evaluate(() => {
     const i = document.querySelector('#f-body .fprocs .fopt input');
     if (i) i.click();
   });
-  await p.waitForTimeout(500);
-  const f2 = await p.evaluate(VIS);
+  await pf.waitForTimeout(400);
+  const f2 = await pf.evaluate(VIS);
   ok('галочка процесу відкриває блок питань', f2.fieldsVis > f.fieldsVis,
      'було видно ' + f.fieldsVis + ', стало ' + f2.fieldsVis);
 
-  await p.evaluate(() => { const b = document.getElementById('f-btn'); if (b) b.click(); });
-  await p.waitForTimeout(300);
-  const fo = await p.evaluate(() => {
+  await pf.evaluate(() => {
+    const i = document.querySelector('#f-body .ffield input[type=text]');
+    if (i) { i.value = 'ТОВ Проба'; i.dispatchEvent(new Event('input', { bubbles: true })); }
+  });
+  await pf.waitForTimeout(200);
+  await pf.evaluate(() => { const b = document.getElementById('f-btn'); if (b) b.click(); });
+  await pf.waitForTimeout(300);
+  const fo = await pf.evaluate(() => {
     const t = document.getElementById('f-out');
     return { hidden: t ? t.hidden : true, len: t ? (t.value || '').length : 0,
-             head: t ? (t.value || '').slice(0, 60) : '' };
+             head: t ? (t.value || '').slice(0, 60) : '', має: /ТОВ Проба/.test(t ? t.value : '') };
   });
-  ok('анкета: «Скопіювати відповіді» дає текст', !fo.hidden && fo.len > 40,
+  ok('анкета: «Скопіювати відповіді» дає текст із відповіддю', !fo.hidden && fo.має,
      fo.len + ' символів: ' + fo.head);
 
-  ok('помилок JS немає на всіх трьох сторінках', errs.length === 0, errs.slice(0, 3).join(' || '));
+  await pf.evaluate(() => document.getElementById('f-clear').click());
+  await pf.waitForTimeout(300);
+  const очищено = await pf.evaluate(() => ({
+    поле: (document.querySelector('#f-body .ffield input[type=text]') || {}).value,
+    лічильник: (document.getElementById('f-count') || {}).textContent,
+  }));
+  ok('анкета: «Очистити анкету» чистить поля', очищено.поле === '' && /^0 \//.test(очищено.лічильник),
+     JSON.stringify(очищено));
+
+  const цін = await pf.evaluate(() => {
+    const t = document.body.innerText;
+    return { євро: /€/.test(t), рівень: /рівень|рівня/i.test(t), вкладки: !!document.getElementById('tab-calc') };
+  });
+  ok('на сторінці клієнта немає ні цін, ні рівнів, ні вкладок калькулятора',
+     !цін.євро && !цін.рівень && !цін.вкладки, JSON.stringify(цін));
+
+  ok('помилок JS немає на сторінці клієнта', errsF.length === 0, errsF.slice(0, 3).join(' || '));
 
   await b.close();
   fs.rmSync(path.dirname(tmp), { recursive: true, force: true });

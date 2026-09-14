@@ -616,6 +616,8 @@ select.chip{padding-right:8px}
   text-transform:uppercase;color:var(--allow);margin-left:8px;font-weight:400;
 }
 
+/* ---------- кінець стилів анкети ---------- */
+
 .verdict{
   font-family:Literata,Georgia,serif;font-size:19px;line-height:1.25;
   font-weight:600;color:var(--accent);margin:0 0 4px;
@@ -811,6 +813,7 @@ select.chip{padding-right:8px}
     <p class="snone" id="s-alldone" hidden>Усе позначено — нічого не лишилося.</p>
   </div>
 
+  <!-- анкета: початок розмітки (вирізається в artifacts/client-form.html) -->
   <div class="page" id="page-form" role="tabpanel" aria-labelledby="tab-form" hidden>
     <div class="grid">
       <div>
@@ -832,10 +835,12 @@ select.chip{padding-right:8px}
           <span class="copied" id="f-copied" hidden>Скопійовано в буфер</span>
           <textarea id="f-out" readonly hidden aria-label="Відповіді анкети"></textarea>
           <p class="small" style="margin-top:10px">Текст можна вставити в лист або в мессенджер — нам зручно в будь-якому вигляді.</p>
+          <button class="chip" type="button" id="f-clear" style="margin-top:10px">Очистити анкету</button>
         </div>
       </div>
     </div>
   </div>
+  <!-- анкета: кінець розмітки -->
 
   <footer>
     Ціни в євро без ПДВ, зафіксовані в інструменті й не обговорюються на зустрічі. Знижка можлива тільки прибиранням позиції, ніколи зменшенням ціни.<br>
@@ -10409,7 +10414,10 @@ select.chip{padding-right:8px}
   // код лишаються на місці, вимикається тільки вхід — вкладка, вміст і стрілки.
   // «Повний перелік» — внутрішній довідник аналітика, у публікації для сейла він
   // не потрібен (рішення 10.09.2026). Повернути = прибрати id із цього списку.
-  var СХОВАНІ = ['spec'];
+  // 'form' — анкета клієнта: з 14.09.2026 вона окремий файл artifacts/client-form.html
+  // і окремий артефакт, який відкриває сам клієнт. У вікні сейла вкладка зайва:
+  // джерело даних те саме, тому розходження неможливе.
+  var СХОВАНІ = ['spec', 'form'];
   function схована(p){ return СХОВАНІ.indexOf(p) >= 0; }
   var RESETLBL = { calc:'Почати заново', spec:'Очистити пошук', qual:'Почати заново', form:'Очистити анкету' };
   function showPage(p){
