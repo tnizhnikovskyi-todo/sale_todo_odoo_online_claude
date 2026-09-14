@@ -1,0 +1,455 @@
+{
+  "блок": "pln",
+  "база": "edu-online-todo (Odoo 19)",
+  "загальне": {
+    "модулі_встановлені": ["planning (застосунок)", "planning_holidays", "planning_hr_skills", "project_forecast", "sale_planning", "project_timesheet_forecast", "sale_renting_planning", "hr_gantt", "web_gantt", "hr_skills", "hr_holidays", "hr_timesheet", "resource"],
+    "модулі_не_встановлені": ["planning_attendance (табель приходу/виходу)", "hr_work_entry_planning", "hr_payroll_planning", "hr_work_entry_planning_attendance"],
+    "меню_застосунку": "Planning (id 616): Schedule (619) → By Resource (620/act 1042), By Role (621/act 1045), By Project (631/act 1040), By Sales Order (630/act 1039); Open Shifts (618/act 1033); My Planning (617/act 1026); Reporting (628) → Planning Analysis (629/act 1036), Planning / Timesheets Analysis (632/act 1044); Configuration (622) → Settings (623), Employees (624/act 776), Materials (625), Roles (626/act 1031), Shift Templates (627/act 1032). Плюс уже створене на стенді «Planning/Завантаження команди» (меню 804 → act 1341)",
+    "налаштування_компанії": "res.company: planning_generation_interval = 6 (Rate Of Shift Generation, місяців наперед для повторюваних змін), planning_employee_unavailabilities = 'switch' (варіанти: switch «Switch shifts with other employees» / unassign «Unassign themselves from shifts»), planning_self_unassign_days_before = 0. На стенді три компанії, у кожної свій resource_calendar_id"
+  },
+  "позиції": {
+    "pln-1-1": {
+      "моделі": [
+        "planning.slot — головна модель зміни. Подання: gantt id 3967 planning.slot.gantt (primary, база), розширення 4030 і 4045, варіанти 3968 (група за роллю), 4033 (проєкт), 4003/4004 (замовлення), 3973 (nosample); також calendar 3961, list 3954, pivot 3962, graph 3963",
+        "ir.actions.act_window: 1042 «Schedule by Resource» (view_mode gantt,calendar,list,form,kanban,pivot,graph; view_id 4030; context planning_expand_resource/role/project), 1045 «By Role» (planning_groupby_role), 1040 «By Project» (planning_groupby_project), 1039 «By Sales Order» (planning_groupby_sale_order), 1026 «My Planning» (view_mode calendar,gantt,list,form,kanban; context search_default_my_shifts + search_default_open_shifts + search_default_unwanted_shifts)"
+      ],
+      "рішення": [
+        "який розріз бачить керівник за замовчуванням: за виконавцем (By Resource), за роллю, за проєктом чи за замовленням — це чотири різні пункти меню, а не перемикач",
+        "який масштаб часу відкривається першим (день / тиждень / місяць) і з якого дня починається тиждень",
+        "чи потрібне окреме подання «моє планування» для рядового виконавця, чи всі дивляться один загальний календар",
+        "чи ведеться планування у ґанті мишкою (перетягуванням) чи через форму зміни"
+      ],
+      "залежності": [
+        "усе тримається на resource.calendar виконавця — без графіка роботи ґант малює порожнє тло",
+        "групування за проєктом працює лише коли заповнено planning.slot.project_id, за замовленням — sale_line_id"
+      ],
+      "пастки": [
+        "усі штатні дії Schedule мають domain [('start_datetime','!=',False),('end_datetime','!=',False)] — зміна без дат просто зникає з календаря, її видно тільки в списку",
+        "«My Planning» одразу вмикає три фільтри (мої зміни + відкриті + небажані) — новий користувач бачить не все і думає, що даних немає",
+        "час зберігається в UTC; на стенді tz = Europe/Kiev, тож у базі зміна 08:00–17:00 лежить як 05:00–14:00 — при вивантаженні через API легко переплутати"
+      ],
+      "межі": [
+        "ґант штатний: змінити можна тільки те, що дає context і view_id дії; сам вигляд смуг, підсумки й кольори — це XML подання, поза периметром",
+        "кольори у ґанті беруться з planning.role.color / resource_color — окремої палітри «за статусом» немає"
+      ],
+      "меню": "Planning → Schedule → By Resource / By Role / By Project / By Sales Order"
+    },
+    "pln-1-2": {
+      "моделі": [
+        "planning.slot: resource_id (Resource, many2one resource.resource, НЕ обовʼязкове — порожнє = відкрита зміна), employee_id (Employee, m2o hr.employee, зберігається), user_id, department_id, manager_id, job_title, work_email, work_location_id (усі похідні від співробітника)",
+        "planning.slot: start_datetime (Start Date, datetime, не обовʼязкове), end_datetime (End Date, datetime, не обовʼязкове), allocated_hours (Allocated Time, float), allocated_percentage (Allocated Time %, float), duration (не зберігається)",
+        "planning.slot: name (Note, text), role_id (Role, m2o planning.role), state (Status, selection: draft «Draft» / published «Published»), publication_warning (Modified Since Last Publication), was_copied (This Shift Was Copied From Previous Week), is_past, is_hatched",
+        "planning.slot: template_id (Shift Templates, m2o planning.slot.template), template_creation (Save as Template), previous_template_id, template_reset",
+        "planning.slot повторення: repeat (bool), repeat_interval (Repeat every), repeat_unit (обовʼязкове; day/week/month/year), repeat_type (forever / until / x_times «Number of Occurrences»), repeat_until (date), repeat_number (Repetitions), recurrency_id → planning.recurrency (repeat_interval обовʼязкове, repeat_unit обовʼязкове, repeat_until datetime, last_generated_end_datetime)",
+        "planning.slot самообслуговування: allow_self_unassign, self_unassign_days_before, unassign_deadline, is_unassign_deadline_passed, request_to_switch",
+        "planning.slot.template: name (Hours), start_time (Planned Hours, float), end_time (End Hour, float), duration_days (integer), role_id, project_id, company_id — на стенді ЖОДНОГО шаблону не заведено"
+      ],
+      "рішення": [
+        "чим є одна зміна для клієнта: робочий день людини, конкретне завдання, виїзд до клієнта чи бронь обладнання",
+        "хто ставить людину на зміну — керівник вручну, чи людина сама бере з відкритих",
+        "чи є типові зміни, які повторюються щодня/щотижня (тоді потрібні шаблони й повторення), і на скільки місяців наперед їх генерувати",
+        "чи бачить виконавець зміну одразу, чи тільки після «Опублікувати» (state draft/published)",
+        "чи може виконавець відмовитися від зміни і за скільки днів до неї (self_unassign_days_before)"
+      ],
+      "залежності": [
+        "resource_id вимагає resource.resource, який автоматично створюється разом з hr.employee",
+        "щоб людина побачила свою зміну й могла самопризначитись, у hr.employee має бути user_id — на стенді з трьох співробітників користувача має лише один",
+        "повторення «forever» генерує зміни на глибину res.company.planning_generation_interval (на стенді 6 місяців)"
+      ],
+      "пастки": [
+        "allocated_hours НЕ дорівнює тривалості інтервалу: заміряно на стенді — зміна 07:00–15:00 UTC (10:00–18:00 Київ, 8 годин) дала allocated_hours = 6.0, бо година обіду й час після 17:00 не входять у робочий графік. Клієнт бачить «поставив 8 годин — у звіті 6»",
+        "start_datetime і end_datetime не обовʼязкові: зміну можна зберегти без дат, і вона випаде з усіх подань Schedule",
+        "state за замовчуванням draft — на стенді всі 5 змін у draft; поки не натиснуто Publish, виконавець не бачить нічого, а керівник думає, що графік розданий",
+        "publication_warning вмикається після будь-якої правки опублікованої зміни — треба публікувати повторно",
+        "видалення однієї зміни з повторюваного ряду вимагає вибору recurrence_update (ця / ця й наступні / усі) — легко знести весь ряд"
+      ],
+      "межі": [
+        "жодного узгодження змін (запит → затвердження керівником) у Planning немає: є тільки самопризначення, відмова й запит на обмін",
+        "сповіщення виконавцю — штатна розсилка при публікації; налаштувати текст і канал (SMS на +380) не можна: IAP-акаунта sms на стенді немає"
+      ],
+      "меню": "Planning → Schedule (форма зміни); Planning → Configuration → Shift Templates"
+    },
+    "pln-1-3": {
+      "моделі": [
+        "resource.calendar: name (обовʼязкове), tz (Timezone, selection, обовʼязкове), schedule_type (Schedule Type, selection, ОБОВʼЯЗКОВЕ: fully_fixed «Fully Fixed» / flexible «Flexible» — нове у 19), flexible_hours (bool), duration_based (Attendance based on duration), hours_per_day (Average Hour per Day, float), hours_per_week (float), full_time_required_hours (Full Time Equivalent, float), work_time_rate, is_fulltime, two_weeks_calendar, attendance_ids / attendance_ids_1st_week / attendance_ids_2nd_week, global_leave_ids (Global Time Off), leave_ids (Time Off), associated_leaves_count, company_id, active",
+        "resource.resource: name (обовʼязкове), resource_type (Type, selection, обовʼязкове: user / material), calendar_id (Working Time), tz (обовʼязкове), user_id, company_id, department_id, employee_skill_ids",
+        "hr.employee: resource_calendar_id (Working Hours), resource_id (обовʼязкове), tz, is_flexible (bool), employee_type (обовʼязкове)",
+        "resource.calendar.leaves: name (Reason), calendar_id (Working Hours), resource_id, date_from (обовʼязкове), date_to (обовʼязкове), time_type (selection: leave / other), company_id, holiday_id (Time Off Request → hr.leave), elligible_for_accrual_rate",
+        "planning.slot: is_absent (bool, не зберігається), leave_warning (char) — від модуля planning_holidays"
+      ],
+      "рішення": [
+        "звідки система дізнається, що людина доступна: єдиний графік на всю компанію, свій графік у кожного, чи «гнучкий» без фіксованих годин",
+        "чи враховувати відпустки й лікарняні при плануванні — тоді потрібен застосунок «Відпустки» і фактичне затвердження заявок у системі, а не на словах",
+        "як позначаються державні свята й корпоративні неробочі дні (global_leave_ids на графіку)",
+        "у якому часовому поясі працює команда і чи є люди в іншому поясі"
+      ],
+      "залежності": [
+        "allocated_hours кожної зміни перераховується від графіка виконавця — змінили графік, змінилися години в усіх майбутніх змінах",
+        "відпустка потрапляє в планування тільки через ланцюг: hr.leave (затверджена) → resource.calendar.leaves (time_type = leave, holiday_id заповнено) → is_absent/leave_warning на зміні. На стенді є такий запис: «Олена Касир: Відпустка», 21–25.09.2026",
+        "порожній resource_calendar_id у співробітника → бере графік компанії (res.company.resource_calendar_id)"
+      ],
+      "пастки": [
+        "рядок обіду (day_period = lunch) має duration_hours = 0 і вирізається з будь-якої зміни, що його перетинає: 4-годинна зміна 11:00–15:00 дала allocated_hours = 3.0",
+        "години поза робочим графіком просто не рахуються: зміна до 18:00 при графіку до 17:00 втрачає годину мовчки, без попередження",
+        "tz є на трьох рівнях — resource.calendar.tz, resource.resource.tz, hr.employee.tz. Розбіжність зсуває години зміни, помилки не буде",
+        "resource.calendar.leaves спільна для людей і обладнання: на стенді один запис — відпустка людини, другий — зайнятість «Фасувальної лінії» виробничим замовленням. Фільтрувати треба за resource_type",
+        "schedule_type = 'flexible' означає, що рядків присутності немає взагалі і доступність рахується тільки з hours_per_day / hours_per_week — ґант виглядатиме порожнім, але години будуть",
+        "hr.employee.employee_type обовʼязкове — але це кадрова класифікація; заповнюємо формально, кадрового обліку не ведемо"
+      ],
+      "межі": [
+        "табеля приходу/виходу немає — planning_attendance не встановлено; фактична присутність у планування не потрапляє",
+        "розрахунку зарплати й кадрових форм не робимо (hr_payroll_planning, hr_work_entry_planning не встановлені) — це поза контуром за рішенням проєкту",
+        "заявка на відпустку — це застосунок «Відпустки» з типами й залишками; його налаштування (типи, ліміти, узгодження) окремий обсяг, у планування входить лише факт «зайнятий»"
+      ],
+      "меню": "Налаштування → Технічні → Робочі графіки (act 96); картка співробітника → вкладка «Робоча інформація»; Відпустки (для заявок)"
+    },
+    "pln-1-4": {
+      "моделі": [
+        "planning.slot: overlap_slot_count (Overlap Slot Count, integer, обчислюване, не зберігається), conflicting_slot_ids (Conflicting Slot, many2many planning.slot, не зберігається)",
+        "planning.slot: is_absent, leave_warning (конфлікт із відпусткою, від planning_holidays)",
+        "planning.slot: allocated_percentage (Allocated Time %) — частка робочого часу, яку займає зміна"
+      ],
+      "рішення": [
+        "що для клієнта є конфліктом: та сама людина у двох місцях одночасно, зміна поверх відпустки, чи перевищення денної/тижневої норми",
+        "що робить керівник, коли бачить конфлікт: переставляє, ділить зміну навпіл (allocated_percentage), чи свідомо лишає",
+        "чи є ситуації, коли перетин нормальний (людина веде дві короткі роботи паралельно)"
+      ],
+      "залежності": [
+        "конфлікт рахується тільки в межах одного resource_id — відкриті зміни (resource_id порожній) не конфліктують ні з чим",
+        "конфлікт із відпусткою зʼявляється лише якщо відпустка затверджена й лягла в resource.calendar.leaves"
+      ],
+      "пастки": [
+        "заміряно на стенді: дві зміни того самого виконавця на 10.09 (07:00–15:00 і 08:00–12:00 UTC) дали overlap_slot_count = 1 в обох — але система дозволила їх зберегти. Це ІНДИКАТОР, а не заборона: жорсткого блокування подвійного бронювання в Odoo немає",
+        "перевищення норми годин конфліктом не вважається взагалі: три зміни по 8 годин поспіль в один день дадуть 0 конфліктів, якщо вони не перетинаються",
+        "overlap_slot_count не зберігається в базі — за ним не можна ні відфільтрувати список штатно, ні побудувати звіт",
+        "перетин із неробочим часом (вихідний, ніч) конфліктом не є — години просто не рахуються"
+      ],
+      "межі": [
+        "правило «не можна ставити двічі» реалізується лише через Python-обмеження — поза периметром; лишається візуальний контроль керівника",
+        "автоматичного перепланування при виявленні конфлікту немає"
+      ],
+      "меню": "Planning → Schedule (індикатор просто у ґанті й на формі зміни)"
+    },
+    "pln-1-5": {
+      "моделі": [
+        "planning.analysis.report (звітна модель, лише читання). Показники: allocated_hours (Allocated Time), allocated_percentage, effective_hours (Effective Time), remaining_hours (Time Remaining), percentage_hours (Progress %), allocated_hours_cost (Allocated Time Cost), effective_hours_cost, billable_allocated_hours, non_billable_allocated_hours. Розрізи: employee_id, department_id, manager_id, job_title, role_id, project_id, sale_line_id, resource_id, resource_type, recurrency_id, company_id, start_datetime, end_datetime, employee_skill_ids, publication_warning, request_to_switch",
+        "ir.actions.act_window 1036 «Planning Analysis», view_mode pivot,graph",
+        "planning.slot: власні pivot (3962) і graph (3963) подання — доступні прямо з будь-якого пункту Schedule",
+        "hr.employee.hourly_cost (Hourly Cost, monetary) — джерело для вартісних показників"
+      ],
+      "рішення": [
+        "у якому розрізі керівник дивиться завантаження: людина × тиждень, роль × місяць, проєкт × людина, відділ × місяць",
+        "що є мірою — години, відсоток чи гроші (для грошей потрібна вартість години кожної людини)",
+        "за який період звіт має сенс: тиждень наперед, місяць, квартал",
+        "хто цей звіт відкриває і як часто"
+      ],
+      "залежності": [
+        "department_id / manager_id / job_title підтягуються зі співробітника — без заповнених карток розрізи порожні",
+        "розрізи за проєктом і замовленням працюють лише коли на змінах заповнені project_id / sale_line_id",
+        "effective_hours і percentage_hours беруться з табелів (hr_timesheet) — без табелів це нулі"
+      ],
+      "пастки": [
+        "allocated_hours_cost = 0, якщо не заповнено hr.employee.hourly_cost. На стенді у одного зі співробітників 0.0, у двох — 250.0, і це у валюті компанії, а не в євро",
+        "звіт показує ПЛАН, а не факт: колонка effective_hours — це табелі, і якщо табелі не ведуться, «прогрес» завжди 0",
+        "у звіт входять і чернетки, і опубліковані зміни разом — фільтра «тільки опубліковані» за замовчуванням немає",
+        "порожні (відкриті) зміни без виконавця теж у звіті — і в розрізі «за співробітником» падають у групу «не задано»"
+      ],
+      "межі": [
+        "звіт штатний pivot/graph; власні обчислювані показники — це Python, поза периметром. Складніші зведення робимо у Spreadsheet",
+        "у звіті НЕМАЄ норми доступних годин (див. pln-3-3)"
+      ],
+      "меню": "Planning → Reporting → Planning Analysis"
+    },
+    "pln-1-6": {
+      "моделі": [
+        "hr.employee: name (Employee Name), user_id, company_id (обовʼязкове), resource_id (Resource, обовʼязкове), resource_calendar_id (Working Hours), tz, employee_type (обовʼязкове, selection), department_id, job_id, hourly_cost (monetary), default_planning_role_id (Default Role → planning.role), planning_role_ids (Roles, many2many planning.role), is_flexible, skill_ids / employee_skill_ids, active",
+        "resource.resource — створюється автоматично разом зі співробітником; resource_type user / material",
+        "ir.actions.act_window 776, меню Planning → Configuration → Employees",
+        "стенд: 3 співробітники — у кожного одна роль і default_planning_role_id, двоє з hourly_cost 250.0, один 0.0, користувача (user_id) має лише один"
+      ],
+      "рішення": [
+        "кого взагалі заводимо як виконавця: штатні, підрядники, зовнішні майстри — і чи потрібне їм окреме входження в систему",
+        "які поля картки клієнт реально заповнюватиме: посада, відділ, керівник, місце роботи, вартість години",
+        "чи потрібна вартість години людини (без неї не буде грошових показників у звіті завантаження)",
+        "чи є обладнання/машини, які теж треба планувати (resource.resource типу material без картки співробітника)"
+      ],
+      "залежності": [
+        "картка співробітника — вхід у планування: без неї немає ні ресурсу, ні графіка, ні ролі",
+        "user_id потрібен для «My Planning», самопризначення й відмови від зміни",
+        "департамент і керівник дають розрізи у звіті завантаження"
+      ],
+      "пастки": [
+        "employee_type обовʼязкове — але це кадрова класифікація; заповнення не означає, що ми ведемо кадровий облік",
+        "деактивація співробітника не прибирає його зміни — вони лишаються в графіку й у звітах",
+        "hourly_cost у валюті компанії; на стенді дві людини мають 250.0 без вказаної валюти в самому полі — вартісні звіти в мультивалюті вводять в оману",
+        "співробітник без user_id не бачить нічого і не може взяти відкриту зміну — а керівник вважає, що людина «просто не заходить»",
+        "resource.resource створюється автоматично, але його tz і calendar_id можна змінити окремо від картки — і тоді картка й ресурс розходяться"
+      ],
+      "межі": [
+        "кадровий облік, договори, зарплата, кадрові форми — поза контуром за рішенням проєкту; картка виконавця заводиться рівно настільки, наскільки потрібна плануванню",
+        "навички у картці — довідково (див. pln-2-4)"
+      ],
+      "меню": "Planning → Configuration → Employees; Співробітники (застосунок)"
+    },
+    "pln-2-1": {
+      "моделі": [
+        "planning.role: name (обовʼязкове), active, color (integer), sequence, resource_ids (Resources, many2many resource.resource), product_ids (Services, one2many product.template), slot_properties_definition (properties_definition), sync_shift_rental, rental_product_count",
+        "hr.employee: planning_role_ids (Roles, m2m planning.role), default_planning_role_id (Default Role)",
+        "planning.slot: role_id (Role), resource_roles (Roles, m2m, не зберігається — ролі виконавця), is_users_role (Is the shifts role one of the current user roles), department_id (Department → hr.department)",
+        "ir.actions.act_window 1031 «Roles» (list,kanban,form); 1045 «Schedule by Role» (context planning_groupby_role)",
+        "стенд: три ролі — «Аналітик», «Консультант», «Касир», у кожної один ресурс"
+      ],
+      "рішення": [
+        "які саме ролі існують у клієнта і чим вони відрізняються з погляду планування (кого можна поставити замість кого)",
+        "чи потрібні «команди» окремо від ролей — і що вони означають: відділ, бригада, зміна, локація",
+        "чи може одна людина працювати в кількох ролях і яка з них основна",
+        "чи планують у клієнта обладнання/техніку поряд з людьми"
+      ],
+      "залежності": [
+        "роль на зміні + список ролей у співробітника — це те, за чим працює автопідбір (pln-3-1). Без ролей у картках автопідбір не знайде нікого",
+        "planning.role.product_ids повʼязує роль із послугами, які продаються (див. pln-2-3)",
+        "planning.role.slot_properties_definition визначає додаткові поля зміни (див. pln-2-4)"
+      ],
+      "пастки": [
+        "окремої моделі «команда» в Odoo НЕМАЄ: команда — це або hr.department (є розрізом у звіті й полем на зміні), або роль. Клієнт, який каже «у нас 4 бригади», отримає або 4 ролі, або 4 відділи, і це різні речі",
+        "роль — не право доступу: будь-хто з доступом до Planning бачить усі ролі й усі зміни. Роль лише фарбує, групує й фільтрує",
+        "default_planning_role_id і planning_role_ids — окремі поля; якщо роль не додано в planning_role_ids, автопідбір людину не знайде, навіть коли ця роль стоїть як основна",
+        "planning.role.resource_ids заповнюється з боку ролі й з боку співробітника — два входи в те саме, легко розсинхронити",
+        "видалення ролі не чистить зміни — у них лишається порожній role_id"
+      ],
+      "межі": [
+        "розмежування доступу «кожна бригада бачить своє» — не роль; це або окремі юрособи, або пункт меню з доменом (pln-3-4). Прав «на роль» у Odoo немає"
+      ],
+      "меню": "Planning → Configuration → Roles; Planning → Schedule → By Role"
+    },
+    "pln-2-2": {
+      "моделі": [
+        "resource.calendar (сам графік): name (обовʼязкове), tz (обовʼязкове), schedule_type (обовʼязкове: fully_fixed / flexible), flexible_hours, duration_based, hours_per_day (Average Hour per Day), hours_per_week, full_time_required_hours (Full Time Equivalent), work_time_rate, is_fulltime, two_weeks_calendar (Calendar in 2 weeks mode), two_weeks_explanation, attendance_ids / attendance_ids_1st_week / attendance_ids_2nd_week, global_leave_ids, company_id, active",
+        "resource.calendar.attendance (рядок присутності): name (обовʼязкове), calendar_id (обовʼязкове), dayofweek (Day of Week, обовʼязкове, selection 0=Monday … 6=Sunday), hour_from (Work from, float, обовʼязкове), hour_to (Work to, float, обовʼязкове), day_period (Day Period, обовʼязкове: morning / lunch «Break» / afternoon / full_day), duration_hours, duration_days, duration_based, week_type (Week Number: 0 «First», 1 «Second»), display_type, sequence",
+        "ir.actions.act_window 96 «Working Schedules» (list,form; domain за allowed_company_ids)",
+        "стенд, 4 графіки, усі Europe/Kiev, усі fully_fixed, жоден не двотижневий: «Standard 40 hours/week» = Пн–Пт 08:00–12:00 morning, 12:00–13:00 lunch (duration_hours 0), 13:00–17:00 afternoon; «Зміна 2/2 по 12 годин» = лише Пн 08–20 і Вт 08–20, hours_per_week 24, hours_per_day 12, full_time_required_hours 40"
+      ],
+      "рішення": [
+        "як реально влаштований робочий тиждень: однаковий для всіх, кілька типових графіків, чи в кожного свій",
+        "коли обід і чи вираховувати його з робочих годин",
+        "чи є змінна робота — і з яким ритмом (тиждень фіксований / чергування двох тижнів / доба через дві)",
+        "чи є неповний день, part-time, і від якої норми рахувати ставку (full_time_required_hours)",
+        "які дні неробочі для всіх — свята, корпоративні вихідні (global_leave_ids)"
+      ],
+      "залежності": [
+        "графік визначає allocated_hours кожної зміни й тло ґанта",
+        "графік належить компанії (company_id) — у мультиюрособі кожній потрібен свій",
+        "у графіку живуть глобальні неробочі дні; персональні відсутності — у resource.calendar.leaves"
+      ],
+      "пастки": [
+        "ГОЛОВНА МЕЖА: resource.calendar — це ТИЖНЕВИЙ шаблон (максимум — чергування двох тижнів через two_weeks_calendar + week_type First/Second). Справжнє чергування 2/2, 3/3, «доба через три» з періодом, що не ділиться на 7 або 14 днів, графіком НЕ виражається. На стенді графік із назвою «Зміна 2/2 по 12 годин» насправді описує «щотижня понеділок і вівторок 08–20» — назва обіцяє те, чого немає",
+        "рядок обіду (day_period = lunch) має duration_hours = 0 і мовчки вирізається з будь-якої зміни, що його перетинає",
+        "hours_per_day, hours_per_week і full_time_required_hours не виводяться автоматично одне з одного: у «Зміні 2/2» стоїть hours_per_week 24 при FTE 40 — work_time_rate і is_fulltime рахуються неправильно, а це впливає на переведення днів відпустки в години",
+        "hour_from/hour_to — десяткові float, а не час: 08:30 треба вводити як 8.5",
+        "schedule_type = flexible прибирає рядки присутності взагалі — доступність зводиться до середніх годин на день",
+        "зміна графіка діє на ВЖЕ створені майбутні зміни (allocated_hours перерахується) — можна тихо зіпсувати вже погоджений графік"
+      ],
+      "межі": [
+        "чергування з періодом, що не 7 і не 14 днів, — тільки ручним заведенням змін у Planning, а не графіком; графік у такому разі роблять «гнучким», а норму контролюють очима",
+        "узгодження заміни/обміну змінами обмежене штатним самообслуговуванням (switch / unassign), окремого маршруту затвердження немає",
+        "табеля фактичного приходу немає — planning_attendance не встановлено"
+      ],
+      "меню": "Налаштування → Технічні → Робочі графіки; картка співробітника → Робоча інформація → Робочі години"
+    },
+    "pln-2-3": {
+      "моделі": [
+        "planning.slot: project_id (Project → project.project, зберігається), sale_line_id (Sales Order Item → sale.order.line, зберігається), sale_order_id (Sales Order, зберігається), sale_order_state, partner_id (Customer, похідне), role_id, sale_line_plannable (Plan Services), role_product_ids (Services), allow_timesheets, timesheet_ids, effective_hours (Effective Time), percentage_hours (Progress)",
+        "product.template: planning_enabled (Plan Services, bool), planning_role_id (Planning Role → planning.role), service_tracking (Create on Order), service_policy (Service Invoicing Policy)",
+        "sale.order.line: planning_hours_planned, planning_hours_to_plan, planning_slot_ids (one2many planning.slot)",
+        "planning.slot.template: role_id + project_id",
+        "дії/меню: 1040 «Schedule by Project» (planning_groupby_project), 1039 «Schedule by Sales Order» (planning_groupby_sale_order), 1041 — кнопка «Планування» на самому проєкті (domain project_id = active_id, default_project_id = active_id)",
+        "стенд: ЖОДНОГО сервісного товару з planning_enabled = True; товар «Field Service» має service_tracking = task_global_project і service_policy = delivered_timesheet, uom = Hours"
+      ],
+      "рішення": [
+        "від чого клієнт відштовхується, коли планує: від проєкту, від замовлення клієнта, чи просто від людини й дати",
+        "які саме продані послуги мають перетворюватися на зміни (planning_enabled на товарі) і якою роллю вони виконуються (planning_role_id)",
+        "чи має система показувати «продано 40 годин, заплановано 24, лишилось 16» — тоді послуга продається в годинах",
+        "чи ведуться табелі, щоб бачити план проти факту"
+      ],
+      "залежності": [
+        "звʼязка «замовлення → зміна» вмикається на КАРТЦІ ТОВАРУ (planning_enabled + planning_role_id), а не в налаштуваннях планування",
+        "planning_hours_to_plan рахується від проданої кількості — одиниця виміру послуги має бути «Години»",
+        "project_id на зміні потрібен для розрізу за проєктом у звіті завантаження; sale_line_id — для розрізу за замовленням",
+        "effective_hours / percentage_hours беруться з табелів (hr_timesheet), встановлений project_timesheet_forecast"
+      ],
+      "пастки": [
+        "з коробки нічого не звʼязано: на стенді жоден сервісний товар не має planning_enabled — «планування за замовленнями» не працює, поки товари не позначені по одному",
+        "на стенді з 5 змін лише одна має проєкт і жодна не має sale_line_id — розрізи за проєктом і замовленням у звіті будуть майже порожні, поки поля не заповнюють дисципліновано",
+        "project_id і sale_line_id заповнюються вручну на зміні — автоматичного проставляння за виконавцем чи роллю немає",
+        "якщо послуга продається в штуках, а не годинах, planning_hours_to_plan дає безглузді числа",
+        "зміна, привʼязана до рядка замовлення, не перевіряє стан замовлення (sale_order_state лише показує) — можна планувати під скасоване замовлення"
+      ],
+      "межі": [
+        "автоматичного створення змін із замовлення «як є» немає: є кнопка планування проданих годин, але розкладає їх людина",
+        "звʼязку з обліком доходів/собівартості не робимо — облік поза контуром; маржинальні показники у звіті Planning/Timesheets лишаються довідковими"
+      ],
+      "меню": "Planning → Schedule → By Project / By Sales Order; проєкт → кнопка «Планування»; картка товару-послуги"
+    },
+    "pln-2-4": {
+      "моделі": [
+        "planning.role.slot_properties_definition (Planning Slot Properties, тип properties_definition) → planning.slot.slot_properties (Properties, тип properties, зберігається). На стенді роль «Аналітик» визначає властивість misce_roboty типу selection «Місце роботи» зі значеннями Офіс / У клієнта / Віддалено; зміна id 1 несе значення 'client'. Ролі «Консультант» і «Касир» мають порожнє визначення",
+        "hr_skills: hr.skill.type (на стенді 2 типи — Languages з 21 навичкою і 6 рівнями, Soft Skills з 15 і 5), hr.skill, hr.skill.level, hr.employee.skill (employee_id, skill_id, skill_type_id, skill_level_id, level_progress)",
+        "hr.employee: skill_ids (m2m hr.skill), employee_skill_ids (o2m hr.employee.skill)",
+        "planning.slot.employee_skill_ids (Skills, o2m, не зберігається) і planning.analysis.report.employee_skill_ids — від модуля planning_hr_skills",
+        "стенд: hr.employee.skill ПОРОЖНЯ — жодному співробітнику навички не проставлені"
+      ],
+      "рішення": [
+        "яку додаткову інформацію має нести сама зміна: місце роботи, адреса обʼєкта, потрібний інструмент, контакт на місці, номер машини",
+        "чи відрізняється цей набір для різних ролей (властивості визначаються ПО РОЛІ)",
+        "чи справді потрібні навички як довідник — і хто буде їх підтримувати в актуальному стані",
+        "яка шкала рівня навички має сенс для клієнта (типи навичок і рівні заводяться окремо)"
+      ],
+      "залежності": [
+        "властивості зміни живуть на ролі: без ролі на зміні додаткових полів не буде",
+        "навички вимагають заповнених hr.skill.type / hr.skill / hr.skill.level, а потім проставляння кожному співробітнику вручну"
+      ],
+      "пастки": [
+        "визначення властивостей окреме в КОЖНІЙ ролі — те саме поле доводиться заводити стільки разів, скільки ролей; на стенді воно є лише в однієї з трьох",
+        "зміна ролі на зміні змінює набір властивостей: значення, яких немає в новій ролі, стають недоступними",
+        "властивості — не звичайні поля: розрізи у pivot і фільтри по них обмежені, а вивантаження через API повертає їх одним JSON-обʼєктом разом із визначенням",
+        "навички ніяк не впливають на планування: автопідбір за ними НЕ фільтрує (це вже зафіксовано в прайсі) — вони лише видимі в картці й у звіті",
+        "на стенді навички не заповнені жодному — обіцяти «підбір за навичками» неможливо навіть візуально, поки довідник не наповнили"
+      ],
+      "межі": [
+        "обчислювані поля (Compute) у Studio відсутні — будь-яке «поле, що само рахується» поза периметром",
+        "власних моделей і успадкування не робимо: додаткова інформація на зміні — це або властивість ролі, або штатне поле"
+      ],
+      "меню": "Planning → Configuration → Roles → вкладка властивостей; Співробітники → картка → Навички"
+    },
+    "pln-3-1": {
+      "моделі": [
+        "planning.slot: role_id (Role), resource_id (порожній = відкрита зміна), is_users_role, resource_roles, employee_skill_ids (довідково), allow_self_unassign (Let Employee Unassign Themselves), self_unassign_days_before (Days before shift for unassignment), unassign_deadline (Deadline for unassignment), is_unassign_deadline_passed, request_to_switch (Has there been a request to switch on this shift slot?)",
+        "метод planning.slot.action_self_assign — перевірено раніше; Auto Plan — кнопка у поданні-ґанті",
+        "hr.employee.planning_role_ids + default_planning_role_id — база для збігу за роллю",
+        "res.company.planning_employee_unavailabilities (selection: switch «Switch shifts with other employees» / unassign «Unassign themselves from shifts»), res.company.planning_self_unassign_days_before — на стенді 'switch' і 0"
+      ],
+      "рішення": [
+        "чи хоче клієнт, щоб систему підбирала людину сама, чи керівник розставляє руками і система лише підказує",
+        "за чим має бути збіг: тільки роль, роль + вільний час, роль + локація",
+        "чи можуть виконавці самі брати відкриті зміни, і чи потрібне підтвердження керівника після цього",
+        "чи може людина відмовитися від уже призначеної зміни й за скільки днів до неї",
+        "що робить система, коли підходящої вільної людини немає — лишає зміну відкритою чи ставить попри зайнятість"
+      ],
+      "залежності": [
+        "автопідбір спирається на роль (planning.role) і доступність (resource.calendar + resource.calendar.leaves) — тобто на pln-2-1, pln-2-2 і pln-1-3 разом",
+        "самопризначення й відмова вимагають user_id у картці співробітника",
+        "режим самообслуговування (обмін чи відмова) — налаштування на рівні КОМПАНІЇ, одне на всіх"
+      ],
+      "пастки": [
+        "автопідбір заповнює лише зміни з ПОРОЖНІМ виконавцем і ЗАПОВНЕНОЮ роллю — якщо роль не поставлена, він їх не бачить",
+        "без ролей у картках співробітників (planning_role_ids) підбір не знайде нікого і мовчки нічого не зробить",
+        "навички НЕ беруть участі у підборі — попри те, що поле навичок є і на зміні, і у звіті",
+        "self_unassign_days_before = 0 на стенді означає, що відмовитися можна аж до самого початку зміни",
+        "підібрані зміни лишаються в стані draft — доки не натиснуто Publish, виконавці не побачать нічого",
+        "на стенді користувача має один співробітник із трьох — самопризначення фізично нікому виконувати"
+      ],
+      "межі": [
+        "правил підбору (пріоритети, вартість, черговість, рівномірність навантаження) налаштувати не можна — алгоритм штатний і не конфігурується",
+        "власної логіки підбору не пишемо: це Python, поза периметром"
+      ],
+      "меню": "Planning → Schedule (кнопка Auto Plan у ґанті); Planning → Open Shifts; Planning → Configuration → Settings (самообслуговування)"
+    },
+    "pln-3-2": {
+      "моделі": [
+        "planning.slot: resource_id порожній = відкрита зміна; ir.actions.act_window 1033 «Open Shifts» (view_mode calendar,gantt,list,form,kanban,pivot,graph; context search_default_open_shifts), меню Planning → Open Shifts (618)",
+        "planning.slot: overlap_slot_count, conflicting_slot_ids — індикатор перевантаження",
+        "planning.slot: allocated_hours (Allocated Time), allocated_percentage (Allocated Time %) — на стенді у всіх 5 змін 100.0",
+        "planning.slot: state (draft / published), publication_warning, was_copied (This Shift Was Copied From Previous Week), is_past, is_hatched",
+        "res.company.planning_employee_unavailabilities — хто і як може зняти себе зі зміни"
+      ],
+      "рішення": [
+        "чи існує у клієнта поняття «відкрита зміна», яку може взяти будь-хто з роллю — чи всі призначення робить керівник",
+        "що для клієнта є перевантаженням: більше N годин на день, більше норми на тиждень, дві зміни підряд без відпочинку",
+        "що система має зробити при перевантаженні — попередити, показати кольором, чи все одно дозволити",
+        "чи планують частково (людина на 50 % на цій зміні і 50 % на іншій)"
+      ],
+      "залежності": [
+        "відкриті зміни мають сенс лише разом з ролями (pln-2-1) і користувачами у виконавців",
+        "показник перевантаження зчитується з allocated_hours, а той рахується від графіка (pln-2-2)"
+      ],
+      "пастки": [
+        "жорсткого обмеження годин у Odoo НЕМАЄ: система дозволить призначити людину на три зміни, що перетинаються — заміряно, зберігається без помилки, лише overlap_slot_count зростає",
+        "перевантаження без перетину (три зміни по 8 годин поспіль) не дає жодного індикатора взагалі",
+        "allocated_percentage < 100 ділить години, але дві зміни по 50 % на тому самому інтервалі все одно рахуються як перетин",
+        "відкрита зміна (resource_id порожній) не конфліктує ні з чим і не потрапляє у розріз «за співробітником» у звіті",
+        "кнопка копіювання попереднього тижня ставить was_copied і переносить зміни разом з їхніми виконавцями — включно з тими, хто у відпустці на новому тижні",
+        "усі призначення лишаються draft, поки не опубліковані"
+      ],
+      "межі": [
+        "порогів навантаження й автоматичних заборон налаштувати не можна — контроль лише через індикатор і звіт",
+        "автоматичного «розкидати відкриті зміни по вільних людях за розкладом» поза кнопкою Auto Plan немає"
+      ],
+      "меню": "Planning → Open Shifts; Planning → Schedule"
+    },
+    "pln-3-3": {
+      "моделі": [
+        "planning.analysis.report (act 1036, pivot+graph): allocated_hours, allocated_percentage, allocated_hours_cost, billable_allocated_hours, non_billable_allocated_hours, effective_hours, effective_hours_cost, remaining_hours (Time Remaining), percentage_hours (Progress %); розрізи employee_id, department_id, manager_id, job_title, role_id, project_id, sale_line_id, resource_id, resource_type, company_id, start_datetime/end_datetime, employee_skill_ids",
+        "project.timesheet.forecast.report.analysis (act 1044, меню Planning → Reporting → Planning / Timesheets Analysis; pivot,graph; context pivot_row_groupby entry_date:month, pivot_measures planned_hours/effective_hours/difference): planned_hours (Planned Time), effective_hours (Effective Time), difference (Time Remaining), planned_costs, effective_costs, planned_revenues, effective_revenues, planned_margin, effective_margin, planned/effective billable і non-billable hours, entry_date, line_type, is_published, employee_id, project_id, company_id",
+        "джерело норми доступних годин: resource.calendar.hours_per_day / hours_per_week / full_time_required_hours + віднімання resource.calendar.leaves"
+      ],
+      "рішення": [
+        "з чим клієнт хоче порівнювати план: із нормою робочого часу, з проданими годинами, чи з фактично відпрацьованими",
+        "у якому періоді дивиться — тиждень, місяць, квартал",
+        "яка норма вважається 100 % завантаження (40 годин на тиждень? 8 на день? з урахуванням відпусток?)",
+        "хто веде цей звіт і чи потрібен він як окремий Spreadsheet-дашборд"
+      ],
+      "залежності": [
+        "порівняння план/факт вимагає табелів (hr_timesheet, project_timesheet_forecast встановлені) — без них effective_hours = 0",
+        "вартісні й маржинальні показники залежать від hr.employee.hourly_cost і від ціни продажу",
+        "доступність залежить від графіків і від затверджених відпусток"
+      ],
+      "пастки": [
+        "ГОЛОВНЕ: доступних годин у ЖОДНОМУ зі штатних звітів НЕМАЄ. planning.analysis.report показує лише заплановані години, а норма (hours_per_week, hours_per_day) лежить на resource.calendar і в звіт не приєднана. «План проти доступного» штатно збирається тільки очима у ґанті (неробочий час заштрихований) або у Spreadsheet, куди норму вносять руками",
+        "відпустки зменшують реальну доступність, але не є показником ніде: їх довелося б рахувати окремо по resource.calendar.leaves",
+        "у звіті Planning/Timesheets є маржа й доходи — це фінансові показники, і в нашому контурі їх не обіцяємо",
+        "звіти змішують чернетки й опубліковані зміни; є ознака is_published, але за замовчуванням фільтра немає",
+        "вартісні показники — у валюті компанії; при кількох юрособах з різними валютами зведення без конвертації обманює"
+      ],
+      "межі": [
+        "власних обчислюваних показників у звіті не робимо — це Python, поза периметром",
+        "Spreadsheet — штатний інструмент Odoo (план Custom), формули пише людина; це не програмування, але й не автоматичний перерахунок норми"
+      ],
+      "меню": "Planning → Reporting → Planning Analysis; Planning → Reporting → Planning / Timesheets Analysis; Spreadsheet із pivot"
+    },
+    "pln-3-4": {
+      "моделі": [
+        "ir.ui.view: приклад ЖИВЕ на стенді — id 4889 «planning.slot.list.kerivnyk.todo», model planning.slot, type list, mode primary, inherit_id false, active true",
+        "ir.actions.act_window: id 1341 «Завантаження команди», res_model planning.slot, view_mode 'list,form', view_id = 4889, domain false, context {'group_by': ['role_id']}",
+        "ir.ui.menu: id 804 «Planning/Завантаження команди», parent_id 616 (Planning), sequence 90, action = ir.actions.act_window,1341",
+        "для порівняння штатна дія 1042 «Schedule by Resource»: view_id = 4030 (planning.slot.gantt, extension), view_mode gantt,calendar,list,form,kanban,pivot,graph, domain [('start_datetime','!=',False),('end_datetime','!=',False)], context planning_expand_resource/role/project",
+        "ir.ui.menu.group_ids пишеться через API; ir.ui.view.group_ids — ні (зафіксовано раніше)"
+      ],
+      "рішення": [
+        "що саме має бачити керівник, відкривши свій пункт меню: список змін, ґант завантаження, зведення за ролями",
+        "яке групування й який фільтр стоять одразу (за роллю, за виконавцем, за проєктом; тільки цей тиждень; тільки опубліковані)",
+        "як називається пункт меню і де він стоїть — у Planning чи окремо",
+        "кому цей пункт видно: усім, чи лише групі керівників",
+        "чи потрібні окремі робочі місця різним керівникам (кожен свій фільтр)"
+      ],
+      "залежності": [
+        "робоче місце — це трійка записів: подання (ir.ui.view) + дія (ir.actions.act_window з view_id, domain, context) + пункт меню (ir.ui.menu). Усі три пишуться через API",
+        "обмеження видимості робиться на рівні МЕНЮ (ir.ui.menu.group_ids), а не подання",
+        "групування за роллю/проєктом працює тільки якщо ці поля на змінах заповнені"
+      ],
+      "пастки": [
+        "ir.ui.view.group_ids не записується — сховати саме подання від групи не вийде; ховається лише пункт меню, а сама дія лишається доступною тому, хто знає адресу",
+        "primary-подання з inherit_id = false доводиться описувати повністю, і воно НЕ підхоплює зміни, які Odoo вносить у штатне подання при оновленні версії",
+        "view_mode дії визначає, що бачить керівник: у наявному прикладі 'list,form' — ґанта завантаження там немає взагалі, лише список. Якщо обіцяємо «подання завантаження», у view_mode має бути gantt",
+        "domain дії 1341 = false, тобто до неї потрапляють і зміни без дат, яких немає у штатному Schedule — списки розійдуться, і керівник побачить інші числа, ніж у ґанті",
+        "context з planning_expand_* штатні дії мають, а власна — ні: ґант без них згортає порожні рядки й «втрачає» людей без змін"
+      ],
+      "межі": [
+        "тільки штатні записи через API: жодного XML-модуля, жодного успадкування моделей",
+        "умови всередині подання (показати колонку лише за умовою) правляться в XML — замінюємо окремими поданнями/діями",
+        "прав «на склад»/«на бригаду» в Odoo немає — розмежування тільки меню або окремими юрособами"
+      ],
+      "меню": "власний пункт у Planning (приклад на стенді: Planning → Завантаження команди)"
+    }
+  },
+  "запитів_до_бази": 35
+}

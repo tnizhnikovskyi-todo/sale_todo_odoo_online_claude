@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Зливає відповіді агентів у data/questions.json.
+
+Агенти пишуть кожен у СВІЙ файл `<тека>/<sid>.json` — спільний реєстр вони не
+чіпають. Інакше 336 паралельних записів у той самий файл затирали б одне одного.
+Цей скрипт зводить їх в один реєстр і рахує, скільки позицій справді закрито.
+
+    python3 tools/merge_answers.py <тека_findings> <тека_answers>
+"""
+import io, json, os, sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+QUEST = os.path.join(ROOT, 'data', 'questions.json')
+
+# Аудиторія питань — Замовник, тому внутрішня лексика в них помилка, а не стиль.
+# Те саме правило, за яким живе анкета клієнта в калькуляторі.
+# «рівень» не ловимо підрядком: «керівник» і «рівно» дають хибні спрацювання.
+ВНУТРІШНІ = ['прайс', 'наш контур', 'маржа', 'дискваліф', 'стоп-', '€',
+             'рівень', 'рівня', 'рівні ']
+
+
+def лексика(текст):
+    t = ' ' + (текст or '').lower().replace('\u02bc', "'") + ' '
+    погані = []
+    for w in ВНУТРІШНІ:
+        if w in ('рівень', 'рівня', 'рівні '):
+            # тільки як окреме слово
+            import re as _re
+            if _re.search(r'(?<![а-яіїєґa-z])' + w.strip(), t):
+                погані.append(w.strip())
+        elif w in t:
+            погані.append(w)
+    return погані
+
+
+def main():
+    if len(sys.argv) < 3:
+        print(__doc__)
+        return 2
+    fdir, adir = sys.argv[1], sys.argv[2]
+    Q = json.load(io.open(QUEST, encoding='utf-8'))
+    поз = Q['позиції']
+    нових_ф, нових_в, чужі = 0, 0, []
+
+    # Дослідники працюють поблочно і пишуть один файл на блок: <блок>-BLOCK.json.
+    # Розкладаємо його по sid, щоб реєстр лишався поштучним.
+    поблочні = {}
+    for назва in sorted(os.listdir(fdir)) if os.path.isdir(fdir) else []:
+        if not назва.endswith('-BLOCK.json'):
+            continue
+        try:
+            d = json.load(io.open(os.path.join(fdir, назва), encoding='utf-8'))
+        except Exception as e:
+            чужі.append('%s: файл блоку нечитабельний (%s)' % (назва, e)); continue
+        for sid, тіло in (d.get('позиції') or {}).items():
+            if sid in поз:
+                поблочні[sid] = тіло
+            else:
+                чужі.append('%s: у файлі блоку невідомий sid' % sid)
+
+    for sid in list(поз):
+        if sid in поблочні:
+            if поз[sid].get('знайдено') is None:
+                нових_ф += 1
+            поз[sid]['знайдено'] = поблочні[sid]
+            if поз[sid]['стан'] == 'pending':
+                поз[sid]['стан'] = 'explored'
+        f = os.path.join(fdir, sid + '.json')
+        if os.path.exists(f):
+            try:
+                d = json.load(io.open(f, encoding='utf-8'))
+            except Exception as e:
+                чужі.append('%s: findings нечитабельні (%s)' % (sid, e)); continue
+            if поз[sid].get('знайдено') is None:
+                нових_ф += 1
+            поз[sid]['знайдено'] = d
+            if поз[sid]['стан'] == 'pending':
+                поз[sid]['стан'] = 'explored'
+        a = os.path.join(adir, sid + '.json')
+        if os.path.exists(a):
+            try:
+                d = json.load(io.open(a, encoding='utf-8'))
+            except Exception as e:
+                чужі.append('%s: answers нечитабельні (%s)' % (sid, e)); continue
+            пит = d.get('питання') or []
+            погані = [q for q in пит if not q.get('q') or not q.get('ставить')]
+            if not пит:
+                чужі.append('%s: файл відповідей без питань' % sid); continue
+            if погані:
+                чужі.append('%s: %d питань без формулювання або без «що ставить»' % (sid, len(погані))); continue
+            лекс = [(q.get('q'), лексика(q.get('q'))) for q in пит]
+            лекс = [(t, w) for t, w in лекс if w]
+            if лекс:
+                чужі.append('%s: внутрішня лексика в питанні до Замовника — %s («%s…»)'
+                            % (sid, ', '.join(лекс[0][1]), (лекс[0][0] or '')[:50])); continue
+            if not поз[sid].get('питання'):
+                нових_в += 1
+            поз[sid]['питання'] = пит
+            поз[sid]['стан'] = 'done'
+
+    io.open(QUEST, 'w', encoding='utf-8').write(json.dumps(Q, ensure_ascii=False, indent=1))
+    всього = len(поз)
+    expl = sum(1 for r in поз.values() if r['стан'] in ('explored', 'done'))
+    done = sum(1 for r in поз.values() if r['стан'] == 'done')
+    пит = sum(len(r.get('питання') or []) for r in поз.values())
+    print('Долито: досліджень +%d, наборів питань +%d' % (нових_ф, нових_в))
+    print('Реєстр: досліджено %d/%d · питання записано %d/%d · усього питань %d'
+          % (expl, всього, done, всього, пит))
+    print('Звітів разом: %d із 672' % (expl + done))
+    if чужі:
+        print('НЕ ЗАРАХОВАНО (%d):' % len(чужі))
+        for c in чужі[:20]:
+            print('  •', c)
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
