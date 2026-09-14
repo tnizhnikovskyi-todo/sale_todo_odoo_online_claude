@@ -1,0 +1,7 @@
+id,partner_id/.id,date_order,client_order_ref,order_line/product_id/.id,order_line/product_uom_qty,order_line/price_unit,order_line/tax_ids
+mig_test.so_1,28,2026-07-14 09:00:00,ЗМ-0431 (стара система),5,40,430,
+,,,,3,100,110,
+mig_test.so_2,29,2026-08-02 11:30:00,ЗМ-0447 (стара система),20,25,500,
+mig_test.so_3,28,2026-08-21 15:45:00,ЗМ-0468 (стара система),2,12,600,
+,,,,19,10,680,
+mig_test.so_4,29,2026-08-28 10:00:00,ЗМ-0471 (стара система),3,50,115,
