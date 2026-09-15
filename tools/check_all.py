@@ -153,6 +153,16 @@ def main():
         head = [l for l in out.splitlines() if l.startswith('Кроків')]
         print('  ok  %-30s %s' % ('emit --всі (покриття)', head[0] if head else ''))
 
+    # Бриф на демо: без відповіді менеджера збірка не має початися взагалі.
+    # Перевіряємо на профілі-прикладі, де відповідь є, — інструмент мусить
+    # пройти (код 0) і назвати рівень.
+    code, out, err = run_raw(['python3', 'tools/demo_brief.py', PLAN[1]])
+    if code != 0:
+        bad.append('бриф на демо не пройшов на профілі-прикладі:\n%s' % (err or out)[:1200])
+    else:
+        рядок = [l for l in out.splitlines() if l.startswith('Повнота:')]
+        print('  ok  %-30s %s' % ('tools/demo_brief.py', рядок[0] if рядок else ''))
+
     # Перевірка в браузері — після генераторів: вона читає щойно перезібраний
     # artifacts/calculator.html, тобто перевіряє те, що зараз у репозиторії.
     code, out = run(BROWSER)
