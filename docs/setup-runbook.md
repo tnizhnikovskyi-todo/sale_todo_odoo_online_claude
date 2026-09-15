@@ -97,7 +97,7 @@
 | Пункт | Де в Odoo | Шлях у меню |
 |---|---|---|
 | компанія з реквізитами | `res.company` | Налаштування → Користувачі та компанії → Компанії |
-| українська мова інтерфейсу, часовий пояс і валюта UAH | `res.lang`, `res.users`, `res.company`<br>поля: `res.users.tz`, `res.company.currency_id` |  |
+| одна мова інтерфейсу, часовий пояс і валюта | `res.lang`, `res.users`, `res.company`<br>поля: `res.users.tz`, `res.company.currency_id` |  |
 | користувачі та групи доступу | `res.users`, `res.groups.privilege`<br>поля: `res.users.group_ids` |  |
 | довідник контрагентів | `res.partner` |  |
 | налаштування пошти й повідомлень | `mail.alias.domain`, `res.users`<br>поля: `res.users.notification_type` |  |
