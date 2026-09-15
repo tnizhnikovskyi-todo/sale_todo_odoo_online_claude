@@ -1,0 +1,5 @@
+id,move_type,name,partner_id/.id,invoice_date,invoice_date_due,ref,invoice_line_ids/product_id/.id,invoice_line_ids/quantity,invoice_line_ids/price_unit,invoice_line_ids/tax_ids
+mig_test.inv_1,out_invoice,РН-2026-0311,28,2026-06-30,2026-07-14,борг зі старої системи,5,40,465,
+mig_test.inv_2,out_invoice,РН-2026-0342,28,2026-07-25,2026-08-08,"борг зі старої системи, залишок після часткової оплати",3,100,74,
+mig_test.inv_3,out_invoice,РН-2026-0356,29,2026-08-05,2026-08-19,борг зі старої системи,2,8,650,
+mig_test.bill_1,in_invoice,ПН-2026-0088,30,2026-07-18,2026-08-01,борг постачальникові зі старої системи,5,100,420,

@@ -103,8 +103,20 @@ def convert(md):
                 out.append('<li>%s</li>' % inline(' '.join(it)))
             out.append('</%s>' % tag)
             continue
-        if ln.startswith('> '):
-            flush_para(buf); out.append('<blockquote>%s</blockquote>' % inline(ln[2:])); i += 1; continue
+        if ln.startswith('>'):
+            # Багаторядкова цитата — ОДИН блок, а не по коробці на рядок. Стара
+            # версія робила друге, і документ уже мав дві цитати на десяток рядків,
+            # які розсипалися на десяток окремих рамок. Помітно це стало на банері
+            # «застаріло» з таблицею всередині: таблиця надрукувалася сирим
+            # markdown-ом. Вміст конвертується рекурсивно, тому всередині працюють
+            # заголовки, таблиці й списки.
+            flush_para(buf)
+            цитата = []
+            while i < len(lines) and lines[i].startswith('>'):
+                цитата.append(lines[i][2:] if lines[i].startswith('> ') else lines[i][1:])
+                i += 1
+            out.append('<blockquote>%s</blockquote>' % convert('\n'.join(цитата)))
+            continue
         if not ln.strip():
             flush_para(buf); i += 1; continue
         if sec is None and not buf and ln.startswith('Дата:'):
